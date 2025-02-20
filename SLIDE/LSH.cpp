@@ -7,6 +7,15 @@
 
 using namespace std;
 
+/**
+ * @brief Initializes an LSH (Locality-Sensitive Hashing) structure with specified parameters.
+ * 
+ * The constructor sets up the LSH structure by allocating memory for buckets and initializing random hash values.
+ *
+ * @param K Number of hash functions per table, controlling the number of hashes used in each dimension.
+ * @param L Number of tables, which determines how many times the hashing is performed to reduce false negatives.
+ * @param RangePow Exponent used to determine the range of indices for buckets; the number of buckets per table is 2^RangePow.
+ */
 LSH::LSH(int K, int L, int RangePow)
 {
 	_K = K;

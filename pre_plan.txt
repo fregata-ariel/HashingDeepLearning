@@ -1,0 +1,18 @@
+I want to create detailed markdown documentation for all source files in the SLIDE directory.
+
+To achieve this goal, I will divide the first step into two steps: finding the logical structure from the implementation structure of the source files, and clarifying the details of the logical structure.
+
+The first step is as follows:
+1. List all source files under the SLIDE directory. (This project is mainly written in c++.)
+2. Parse CMakeLists.txt to clarify the relationships between the listed source files and determine which source file group each source file belongs to (assuming that it is divided into libraries to realize the function and the main part, etc.).
+3. Parse each file in each source file group and determine which namespace classes, functions, variables, and other elements belong to. (If not defined, give them a convenient name such as default name space.)
+4. Summarize the results of steps 1 to 3 in detail in a Markdown document.
+
+The second step is as follows:
+1. Identify the role of classes, functions, and variables in each namespace.
+2. Identify how classes, functions, etc. interact with each other.
+3. Describe the program functions identified in 1. and 2. in a markdown document.
+
+Repeat steps 1 and 2 until there are no inconsistencies in the description, and organize the documents from steps 1 and 2.
+
+In fact, docs/papers/SLIDE is the original article (named "SLIDE: In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems") for this project, so please refer to that paper if necessary.

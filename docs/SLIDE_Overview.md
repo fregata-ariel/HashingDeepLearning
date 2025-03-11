@@ -37,3 +37,36 @@ To build and run SLIDE, follow these general steps:
 4. **Execution:** Run the compiled executable (e.g., `runme`) with the configuration file as an argument.
 
 Refer to the `README.md` file in the project root for more detailed instructions and dependency information.
+
+## Source Code Reference Graph 
+
+```mermaid
+stateDiagram-v2
+MurmurHash.h --> DensifiedMinHash.h
+MurmurHash.h --> DensifiedWtaHash.h
+MurmurHash.h --> WtaHash.h
+%%MurmurHash.h --> MurmurHash.cpp
+%%DensifiedMinHash.h --> DensifiedMinHash.cpp
+%%DensifiedWtaHash.h --> DensifiedWtaHash.cpp
+%%Config.h --> DensifiedWtaHash.cpp
+Config.h --> Bucket.h
+%%Bucket.h --> Bucket.cpp
+Bucket.h --> LSH.h
+%%LSH.h --> LSH.cpp
+%%Config.h --> LSH.cpp
+%%srp.h --> srp.cpp
+cnpy.h --> Layer.h
+Node.h --> Layer.h
+srp.h --> Layer.h
+LSH.h --> Layer.h
+DensifiedMinHash.h --> Layer.h
+DensifiedWtaHash.h --> Layer.h
+WtaHash.h --> Layer.h
+%%Layer.h --> Layer.cpp
+Layer.h --> Network.h
+cnpy.h --> Network.h
+%%Network.h --> Network.cpp
+Network.h --> main.cpp
+Node.h --> main.cpp
+Config.h --> main.cpp
+```

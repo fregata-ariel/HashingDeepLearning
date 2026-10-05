@@ -10,9 +10,13 @@ on:
 
 jobs:
   diagnostic:
-    name: AVX/BF16 zero-init diagnostic
+    name: AVX/BF16 zero-init diagnostic / sample ${{ matrix.sample }}
     runs-on: ubuntu-22.04
     timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3]
     steps:
       - uses: actions/checkout@v4
 

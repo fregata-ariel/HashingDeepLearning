@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - research/lsh-lineage-vendor
+    paths:
+      - "third_party/**"
   workflow_dispatch:
 
 jobs:

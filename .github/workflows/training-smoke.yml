@@ -1,0 +1,152 @@
+name: Training smoke tests
+
+on:
+  push:
+    branches:
+      - research/lsh-lineage-vendor
+  workflow_dispatch:
+
+jobs:
+  original-slide-one-step:
+    name: Original SLIDE / one training batch
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Original SLIDE
+        working-directory: third_party/slide-original
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Generate tiny SVM datasets and config
+        working-directory: third_party/slide-original
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def row(label, shift=0):
+              ids = [(shift+i) % 32 for i in range(4)]
+              vals = [1.0, 0.5, 0.25, 0.125]
+              return str(label) + " " + " ".join(f"{i}:{v}" for i, v in zip(ids, vals))
+
+          train = ["2 32 4", row(0,0), row(1,4)]
+          test = ["40 32 4"]
+          for i in range(40):
+              test.append(row(i % 4, (i*3) % 32))
+
+          Path("smoke_train.txt").write_text("\n".join(train) + "\n")
+          Path("smoke_test.txt").write_text("\n".join(test) + "\n")
+          Path("smoke.cfg").write_text("""RangePow=6
+          K=2
+          L=2
+          Sparsity=1,1
+          Batchsize=2
+          Rehash=1000
+          Rebuild=1000
+          InputDim=32
+          totRecords=2
+          totRecordsTest=40
+          Lr=0.001
+          Epoch=1
+          Stepsize=1000
+          sizesOfLayers=4
+          numLayer=1
+          trainData=smoke_train.txt
+          testData=smoke_test.txt
+          weight=unused.npz
+          savedweight=smoke_weights.npz
+          logFile=smoke_log.txt
+          """.replace("          ",""))
+          PY
+      - name: Run one training batch through normal shutdown
+        working-directory: third_party/slide-original
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          set -o pipefail
+          timeout 90s ./build/runme smoke.cfg 2>&1 | tee smoke_run.log
+          test -s smoke_weights.npz
+          test -s smoke_log.txt
+          grep -q "Network Initialization takes" smoke_run.log
+          grep -q "over all" smoke_run.log
+          echo "TRAINING_SMOKE_COMPLETED"
+
+  mongoose-triplet-one-step:
+    name: MONGOOSE / learnable-hash optimizer step
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU PyTorch
+        run: python -m pip install --upgrade pip && python -m pip install torch
+      - name: Execute one learnable-hash training step
+        working-directory: third_party/mongoose
+        run: |
+          python - <<'PY'
+          import torch
+          from mongoose_slide.slide_lib.triplet_network import TripletNet
+
+          torch.manual_seed(7)
+          model = TripletNet(margin=0.2, K=2, L=2, layer_size=8)
+          opt = torch.optim.SGD(model.parameters(), lr=0.05)
+
+          arc = torch.randn(6, 8)
+          pair = torch.randn(6, 8)
+          label = torch.tensor([1., 0., 1., 0., 1., 0.])
+
+          before = model.dense1.weight.detach().clone()
+          loss = model(arc, pair, label)
+          assert torch.isfinite(loss), loss
+          opt.zero_grad()
+          loss.backward()
+          assert model.dense1.weight.grad is not None
+          assert torch.isfinite(model.dense1.weight.grad).all()
+          opt.step()
+          after = model.dense1.weight.detach()
+          assert not torch.equal(before, after)
+          print("loss", float(loss))
+          print("weight_delta_l1", float((after-before).abs().sum()))
+          print("MONGOOSE_TRIPLET_TRAINING_STEP_COMPLETED")
+          PY
+
+  intel-oneapi-current:
+    name: Intel oneAPI current / compiler inventory
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    container:
+      image: intel/oneapi:2026.1.0-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show compiler inventory
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /opt/intel/oneapi/setvars.sh || true
+          command -v icx
+          command -v icpx
+          icx --version
+          icpx --version
+          command -v icc || true
+          command -v icpc || true
+
+  intel-oneapi-classic-era:
+    name: Intel oneAPI 2023.2 / classic compiler inventory
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    container:
+      image: intel/oneapi-basekit:2023.2.0-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show compiler inventory
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /opt/intel/oneapi/setvars.sh || true
+          command -v icx || true
+          command -v icpx || true
+          command -v icc
+          command -v icpc
+          icpc --version

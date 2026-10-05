@@ -80,3 +80,44 @@ jobs:
       - name: Import extension
         working-directory: third_party/mongoose/lsh_lib
         run: python -c "import clsh; print(clsh.__file__)"
+  slide-optimized-compat-probe:
+    name: Optimized SLIDE compat probe / ${{ matrix.variant }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: generic-gcc
+            cmake_args: "-DOPT_IA=ON -DOPT_AVX512=OFF -DOPT_AVX512_BF16=OFF"
+            arch_flags: ""
+          - variant: avx512-gcc
+            cmake_args: "-DOPT_IA=ON -DOPT_AVX512=ON -DOPT_AVX512_BF16=OFF"
+            arch_flags: "-mavx512f -mavx512bw -mavx512vl -mavx512dq -mfma"
+          - variant: avx512-bf16-gcc
+            cmake_args: "-DOPT_IA=ON -DOPT_AVX512=ON -DOPT_AVX512_BF16=ON"
+            arch_flags: "-mavx512f -mavx512bw -mavx512vl -mavx512dq -mavx512bf16 -mfma -flax-vector-conversions"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Revert known Klocwork constructor regression in CI workspace only
+        working-directory: third_party/slide-optimized-avx512
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("SLIDE/DataLayerOpt.h")
+          s = p.read_text()
+          bad = "DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};"
+          good = "DataLayerOpt() : numRecords_(0), numFeatures_(0), numLabels_(0) {}"
+          assert bad in s
+          p.write_text(s.replace(bad, good))
+          PY
+      - name: Configure
+        working-directory: third_party/slide-optimized-avx512
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          ${{ matrix.cmake_args }}
+          -DCMAKE_CXX_FLAGS="${{ matrix.arch_flags }}"
+      - name: Build
+        working-directory: third_party/slide-optimized-avx512
+        run: cmake --build build --parallel 2

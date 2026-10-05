@@ -157,14 +157,19 @@ jobs:
 
 
   optimized-slide-intel-classic-one-step:
-    if: github.event_name == 'workflow_dispatch'
-    name: Optimized SLIDE / Intel Classic / one training batch
+    name: Optimized SLIDE / Intel Classic / train + AVX compile
     runs-on: ubuntu-22.04
     timeout-minutes: 30
     container:
       image: intel/oneapi-hpckit:2023.2-devel-ubuntu22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Install build tooling missing from historical compiler image
+        shell: bash
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake make
+          cmake --version
       - name: Prepare historical source for executable smoke probe
         working-directory: third_party/slide-optimized-avx512
         shell: bash
@@ -280,6 +285,54 @@ jobs:
           grep -q "Data loading takes" smoke_run.log
           grep -q "over all" smoke_run.log
           echo "OPTIMIZED_SLIDE_INTEL_TRAINING_SMOKE_COMPLETED"
+
+      - name: Compile historical AVX-512 path with Intel Classic
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh || true
+          cmake -S . -B build-intel-avx512 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=icc \
+            -DCMAKE_CXX_COMPILER=icpc \
+            -DOPT_IA=ON \
+            -DOPT_AVX512=ON \
+            -DOPT_AVX512_BF16=OFF
+          cmake --build build-intel-avx512 --parallel 2
+          echo "INTEL_CLASSIC_AVX512_BUILD_COMPLETED"
+
+      - name: Run AVX-512 one-batch smoke when runner exposes AVX-512F
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          source /opt/intel/oneapi/setvars.sh || true
+          if grep -qw avx512f /proc/cpuinfo; then
+            echo "Runner exposes AVX-512F; executing AVX-512 training binary"
+            rm -f smoke_weights.npz smoke_log.txt
+            timeout 90s ./build-intel-avx512/runme smoke.cfg 2>&1 | tee smoke_avx512_run.log
+            test -s smoke_weights.npz
+            grep -q "over all" smoke_avx512_run.log
+            echo "INTEL_CLASSIC_AVX512_TRAINING_SMOKE_COMPLETED"
+          else
+            echo "Runner does not expose AVX-512F; compile-only result retained"
+          fi
+
+      - name: Compile historical AVX-512 BF16 path with Intel Classic
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh || true
+          cmake -S . -B build-intel-avx512-bf16 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=icc \
+            -DCMAKE_CXX_COMPILER=icpc \
+            -DOPT_IA=ON \
+            -DOPT_AVX512=ON \
+            -DOPT_AVX512_BF16=ON
+          cmake --build build-intel-avx512-bf16 --parallel 2
+          echo "INTEL_CLASSIC_AVX512_BF16_BUILD_COMPLETED"
 
 
   optimized-slide-gcc-one-step:

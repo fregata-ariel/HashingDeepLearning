@@ -8,6 +8,7 @@ on:
 
 jobs:
   original-slide-one-step:
+    if: github.event_name == 'workflow_dispatch'
     name: Original SLIDE / one training batch
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -72,6 +73,7 @@ jobs:
           echo "TRAINING_SMOKE_COMPLETED"
 
   mongoose-triplet-one-step:
+    if: github.event_name == 'workflow_dispatch'
     name: MONGOOSE / learnable-hash optimizer step
     runs-on: ubuntu-22.04
     timeout-minutes: 10
@@ -113,6 +115,7 @@ jobs:
           PY
 
   intel-oneapi-current:
+    if: github.event_name == 'workflow_dispatch'
     name: Intel oneAPI current / compiler inventory
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -133,6 +136,7 @@ jobs:
           command -v icpc || true
 
   intel-oneapi-classic-era:
+    if: github.event_name == 'workflow_dispatch'
     name: Intel oneAPI 2023.2 / classic compiler inventory
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -180,12 +184,14 @@ jobs:
 
           p = Path("SLIDE/main.cpp")
           s = p.read_text()
-          bad = """            if (numLayer >= MAX_BUFFER_SIZE) {
-                          numLayer = MAX_BUFFER_SIZE;
-                      }
-          """.replace("          ", "")
-          assert bad in s
-          s = s.replace(bad, "")
+          import re
+          s, n = re.subn(
+              r"\\n\\s*if \\(numLayer >= MAX_BUFFER_SIZE\\) \\{\\n\\s*numLayer = MAX_BUFFER_SIZE;\\n\\s*\\}",
+              "",
+              s,
+              count=1,
+          )
+          assert n == 1, "MAX_BUFFER_SIZE regression block not found"
           s = s.replace("    delete sizesOfLayers;\n", "")
           p.write_text(s)
 

@@ -1,105 +1,268 @@
-# Build smoke tests
+# Build and training smoke tests
 
-The research branch includes `.github/workflows/build-smoke.yml` to check whether
-the vendored historical code still builds on a modern Linux toolchain.
+This research branch keeps the imported source trees as archival snapshots and
+tests them through CI. Compatibility fixes needed to probe old code are applied
+only to the CI working copy unless/until a separate maintained port is created.
 
-These are **smoke tests**, not reproduction of the paper experiments. Dataset,
-huge-page, accelerator, accuracy, and performance reproduction are separate
-tasks.
+The workflows are:
 
-## Current results
+- `.github/workflows/build-smoke.yml` — compile/import checks.
+- `.github/workflows/training-smoke.yml` — tiny-data optimizer/training checks.
 
-Tested on GitHub Actions `ubuntu-22.04` runners.
+Automatic runs are limited to changes under `third_party/**`; both workflows
+can also be launched manually.
 
-| Component | Probe | Result |
+## High-level status
+
+| Component | Test | Result |
 | --- | --- | --- |
-| Original SLIDE | CMake + GCC build | **PASS** |
+| Original SLIDE | Ubuntu 22.04 / GCC / CMake build | **PASS** |
+| Original SLIDE | tiny synthetic 1-batch training, eval, weight save, process exit | **PASS** |
 | MONGOOSE | Python 3.10 `compileall` | **PASS** |
 | MONGOOSE | Cython/C++ `lsh_lib` build + `import clsh` | **PASS** |
-| Optimized SLIDE | untouched generic GCC build | **FAIL** |
-| Optimized SLIDE | untouched AVX-512 GCC build | **FAIL** |
-| Optimized SLIDE | untouched AVX-512+BF16 GCC build | **FAIL** |
-| Optimized SLIDE | compatibility probe, generic GCC | **FAIL later** |
-| Optimized SLIDE | compatibility probe, AVX-512 GCC | **FAIL later** |
-| Optimized SLIDE | compatibility probe, AVX-512+BF16 GCC | **FAIL later** |
+| MONGOOSE | learnable-hash `TripletNet`: forward, backward, SGD step, verified parameter change | **PASS** |
+| Optimized SLIDE | untouched historical snapshot / modern GCC | **FAIL (known source regressions)** |
+| Optimized SLIDE | CI compatibility fixes / generic GCC / 1-batch train + cleanup | **PASS** |
+| Optimized SLIDE | Intel Classic 2021.10 / generic FP32 / 1-batch train + cleanup | **PASS** |
+| Optimized SLIDE | Intel Classic 2021.10 / AVX-512 compile | **PASS** |
+| Optimized SLIDE | Intel Classic 2021.10 / AVX-512 actual 1-batch train + cleanup | **PASS** |
+| Optimized SLIDE | Intel Classic 2021.10 / AVX-512 BF16 compile | **PASS** |
+| Optimized SLIDE | AVX-512 BF16 runtime training | **NOT YET RUN** |
+| MONGOOSE Reformer | full historical CUDA/APEX training entrypoint | **BLOCKED; see Issue #4** |
 
-The successful MONGOOSE extension probe installs modern build tooling with
-`Cython<3` and NumPy, runs `python setup.py build_ext --inplace`, and imports
-the produced `clsh` module.
+These are smoke tests, not reproduction of the paper's accuracy/performance
+numbers.
 
-## Optimized SLIDE findings
+## Training results
 
-### 1. A source regression exists in the historical pinned tree
+### Original SLIDE
 
-The exact RUSH-LAB-pinned tree contains:
+A tiny SVM-format dataset is generated in CI:
 
-```cpp
-DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};
+- 2 training records,
+- 40 evaluation records,
+- 32 input features,
+- 4 output classes,
+- batch size 2,
+- one epoch / one training batch.
+
+The historical binary successfully reaches network construction, the training
+loop, final evaluation, NPZ weight save, and exit code 0.
+
+Representative output:
+
+```text
+Network Initialization takes 0.411 milliseconds
+...
+over all 0.25
+save for layer 0
+TRAINING_SMOKE_COMPLETED
 ```
 
-This is invalid C++. Yong Wu's earlier lineage anchor
-`85f758c631fd2e0e9f2d33f5fefb897370e4e911` contains the valid original:
+Important teardown caveat: the original `main()` does not delete the allocated
+`Network`, so this proves normal process exit but does not exercise the model
+destructors. The original layer destructor also contains an unsafe repeated
+delete for the softmax normalization buffer. See Issue #3.
 
-```cpp
-DataLayerOpt() {}
+### Optimized SLIDE: generic modern GCC
+
+The exact archived snapshot does not build unmodified, so CI applies a small
+compatibility patch only in the checkout workspace:
+
+1. repair the invalid `DataLayerOpt` constructor introduced by the later
+   static-analysis commit;
+2. remove its undefined `MAX_BUFFER_SIZE` guard;
+3. add the missing `<cstring>` include for `memset`;
+4. change four `reserve(numRecords_)` calls to `resize(numRecords_)` before
+   indexed writes;
+5. remove the duplicate `delete sizesOfLayers;` in `main()`.
+
+With those changes, generic FP32 optimized SLIDE builds on Ubuntu 22.04 / GCC,
+loads the tiny dataset, completes one batch, evaluates, writes the NPZ weights,
+executes `delete _mynet`, and returns exit code 0.
+
+Representative output:
+
+```text
+Precision: FP32
+Network Initialization takes 0.268 milliseconds
+Data loading takes 0.098 milliseconds
+...
+over all 0.25
+save for layer 0
+OPTIMIZED_SLIDE_GCC_TRAINING_SMOKE_COMPLETED
 ```
 
-The invalid change was introduced by
-`b6c92c5f63ebfefde95c884867f106af38b3581b` ("Static code analysis changes").
-The compatibility-probe job repairs only the CI workspace; the vendored source
-snapshot remains byte-for-byte unchanged.
+This is the strongest current evidence that the optimized training path itself
+is still executable once the known snapshot regressions are isolated.
 
-### 2. Generic GCC gets substantially further after repairing that regression
+## Intel compiler environment
 
-The next blockers are ordinary source portability issues:
+Two official Intel container generations have been tested.
 
-- `SLIDE/main.cpp`: `MAX_BUFFER_SIZE` is not declared.
-- `SLIDE/srp.cpp`: `memset` is used without including `<cstring>`.
+### Current image
 
-This indicates the generic code path is close to building with a modern GCC
-once several small historical-source issues are repaired.
+`intel/oneapi:2026.1.0-devel-ubuntu22.04`
 
-### 3. AVX-512 exposes an Intel-compiler-specific dependency
+Contains:
 
-After the constructor regression is repaired, the AVX-512 path reaches
-`Layer.cpp` and fails on:
+- `icx`
+- `icpx`
 
-```cpp
-_mm512_mask_exp_ps(...)
+Observed compiler version:
+
+```text
+Intel(R) oneAPI DPC++/C++ Compiler 2026.1.0
 ```
 
-Modern GCC does not provide this as a normal AVX-512 intrinsic. This is an
-Intel SVML/compiler intrinsic assumption, consistent with the repository's
-`README.Intel.md`, which specifies ICC >= 19.
+It no longer contains `icc/icpc`.
 
-A modern port should either:
+### Historical image matching the code's intended compiler family
 
-- build this historical path with a compatible Intel compiler/runtime, or
-- replace the SVML-specific exponential with a portable/vector-math
-  implementation while documenting the numerical/performance implications.
+`intel/oneapi-hpckit:2023.2-devel-ubuntu22.04`
 
-### 4. AVX-512 BF16 has an additional modern-GCC type mismatch
+Contains both compiler families:
 
-The untouched BF16 build also fails because modern GCC types
-`_mm512_cvtneps_pbh` as returning `__m256bh`, while the historical wrapper
-returns `__m256i`. Adding `-flax-vector-conversions` is enough for the probe
-to move past this mismatch, after which it reaches the same
-`_mm512_mask_exp_ps` blocker.
+- `icx/icpx` 2023.2 era
+- `icc/icpc` Classic
 
-This should not automatically become the permanent fix; a modern port should
-use explicit, type-correct BF16 handling.
+Observed Classic compiler:
 
-## What has not been tested yet
+```text
+icpc (ICC) 2021.10.0 20230609
+```
 
-- execution of Original SLIDE against the Amazon-670K dataset;
-- huge-page behavior and performance;
-- actual execution of optimized AVX-512/BF16 instructions on a guaranteed
-  AVX-512/BF16 runner;
-- Intel ICC / oneAPI `icpx` builds;
-- full MONGOOSE/Reformer training, which depends on historical CUDA/APEX and
-  old PyTorch-era packages;
-- numerical equivalence, accuracy, throughput, and memory benchmarks.
+The image does not include CMake by default, so CI installs `cmake` and
+`make` before building.
 
-The first three source trees remain preserved snapshots. Compatibility changes
-should be carried as separate patches or a separate maintained port, rather
-than silently editing the archival copies.
+This historical image is a good reproducibility container for the optimized
+SLIDE source because the repository's own `README.Intel.md` expects ICC.
+
+## Optimized SLIDE under Intel Classic
+
+Using the same CI-only compatibility fixes described above, the historical
+Intel image successfully completed the generic FP32 training smoke:
+
+```text
+Precision: FP32
+Network Initialization takes 1.637 milliseconds
+Data loading takes 0.071 milliseconds
+...
+over all 0.175
+save for layer 0
+OPTIMIZED_SLIDE_INTEL_TRAINING_SMOKE_COMPLETED
+```
+
+### AVX-512
+
+The same source then builds with:
+
+```text
+OPT_IA=ON
+OPT_AVX512=ON
+OPT_AVX512_BF16=OFF
+```
+
+under `icpc 2021.10`.
+
+The hosted runner used by the successful test exposed `AVX-512F`, so this was
+not compile-only: the AVX-512 binary was executed against the same tiny dataset
+and completed training, evaluation, weight save, cleanup, and exit 0.
+
+Representative output:
+
+```text
+INTEL_CLASSIC_AVX512_BUILD_COMPLETED
+Runner exposes AVX-512F; executing AVX-512 training binary
+Precision: FP32
+Network Initialization takes 1.555 milliseconds
+Data loading takes 0.088 milliseconds
+...
+over all 0.25
+save for layer 0
+INTEL_CLASSIC_AVX512_TRAINING_SMOKE_COMPLETED
+```
+
+This also confirms that the Intel/SVML-specific `_mm512_mask_exp_ps` path,
+which fails to compile with GCC, is accepted and executable with the historical
+Intel compiler.
+
+### AVX-512 BF16
+
+The source also builds successfully with:
+
+```text
+OPT_IA=ON
+OPT_AVX512=ON
+OPT_AVX512_BF16=ON
+```
+
+under the same `icpc 2021.10` environment:
+
+```text
+INTEL_CLASSIC_AVX512_BF16_BUILD_COMPLETED
+```
+
+The BF16 binary has not yet been executed. A runtime smoke should only be run on
+a runner that explicitly exposes the required AVX-512 BF16 CPU feature.
+
+## MONGOOSE
+
+### Buildable native LSH library
+
+On modern Python/Cython tooling the `lsh_lib` Cython/C++ extension builds and
+imports successfully.
+
+### Learnable-hash optimizer step
+
+The repository's `mongoose_slide/slide_lib/triplet_network.py` has been
+executed with real autograd and SGD:
+
+- finite forward loss,
+- `loss.backward()`,
+- finite weight gradients,
+- `optimizer.step()`,
+- explicit check that the learned hash weight tensor changed.
+
+Observed smoke-test values:
+
+```text
+loss 0.8027675747871399
+weight_delta_l1 0.0774054229259491
+MONGOOSE_TRIPLET_TRAINING_STEP_COMPLETED
+```
+
+This validates a real learnable-hash training step, not merely an import.
+
+The full MONGOOSE/Reformer training entrypoint remains tied to its historical
+CUDA/APEX environment: it raises without APEX, calls `.cuda()` unconditionally,
+and its scheduler's SimHash implementation uses CuPy/NVRTC. That work is tracked
+separately in Issue #4.
+
+## Known source issues
+
+- Issue #1 — invalid optimized-SLIDE constructor and undefined
+  `MAX_BUFFER_SIZE` introduced in the later pinned history:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/1
+- Issue #2 — `DataLayerOpt::loadData` writes by index after `reserve()`
+  instead of `resize()`:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/2
+- Issue #3 — original/optimized SLIDE teardown ownership and double-delete
+  problems:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/3
+- Issue #4 — full MONGOOSE/Reformer entrypoint hard-requires historical
+  CUDA/APEX stack:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/4
+
+## What remains
+
+The next useful runtime checks are:
+
+1. verify an actual parameter delta in the C++ SLIDE smoke tests, not only
+   successful traversal of the training/update code;
+2. execute the BF16 binary on hardware exposing AVX-512 BF16;
+3. add sanitizer-backed cleanup tests for the maintained compatibility port;
+4. build a CPU/reference backend for MONGOOSE scheduler hashing, or reproduce
+   the historical CUDA environment, then run a complete Reformer batch;
+5. only after those smoke tests are stable, move on to paper-level performance
+   and accuracy reproduction.

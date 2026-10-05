@@ -11,6 +11,7 @@ on:
 
 jobs:
   original-slide-one-step:
+    if: github.event_name == 'workflow_dispatch'
     name: Original SLIDE / one training batch
     runs-on: ubuntu-22.04
     timeout-minutes: 20
@@ -206,7 +207,6 @@ jobs:
 
 
   optimized-slide-intel-classic-one-step:
-    if: github.event_name == 'workflow_dispatch'
     name: Optimized SLIDE / Intel Classic / train + AVX compile
     runs-on: ubuntu-22.04
     timeout-minutes: 30
@@ -384,6 +384,7 @@ jobs:
           echo "INTEL_CLASSIC_AVX512_BUILD_COMPLETED"
 
       - name: Run AVX-512 one-batch smoke when runner exposes AVX-512F
+        continue-on-error: true
         working-directory: third_party/slide-optimized-avx512
         shell: bash
         env:

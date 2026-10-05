@@ -1,0 +1,200 @@
+name: Optimized SLIDE zero-init diagnostic
+
+on:
+  push:
+    branches:
+      - research/lsh-lineage-vendor
+    paths:
+      - ".github/workflows/zero-init-diagnostic.yml"
+  workflow_dispatch:
+
+jobs:
+  diagnostic:
+    name: AVX/BF16 zero-init diagnostic
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect CPU features
+        id: cpu
+        shell: bash
+        run: |
+          grep -m1 '^flags' /proc/cpuinfo || true
+          if grep -qw avx512_bf16 /proc/cpuinfo; then
+            echo "has_bf16=true" >> "$GITHUB_OUTPUT"
+            echo "AVX512_BF16_HOST_FOUND"
+          else
+            echo "has_bf16=false" >> "$GITHUB_OUTPUT"
+            echo "AVX512_BF16_NOT_EXPOSED"
+          fi
+
+      - name: Prepare compatibility and zero-init diagnostic patch
+        if: steps.cpu.outputs.has_bf16 == 'true'
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          # Known compatibility fixes; archival source remains untouched.
+          p = Path("SLIDE/DataLayerOpt.h")
+          s = p.read_text()
+          s = s.replace(
+              "DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};",
+              "DataLayerOpt() : numRecords_(0), numFeatures_(0), numLabels_(0) {}",
+          )
+          p.write_text(s)
+
+          p = Path("SLIDE/main.cpp")
+          lines = p.read_text().splitlines(keepends=True)
+          out = []
+          i = 0
+          while i < len(lines):
+              if "if (numLayer >= MAX_BUFFER_SIZE)" in lines[i]:
+                  i += 3
+                  continue
+              if "delete sizesOfLayers;" in lines[i]:
+                  i += 1
+                  continue
+              out.append(lines[i])
+              i += 1
+
+          instrumented = []
+          before = after = False
+          for line in out:
+              instrumented.append(line)
+              if "Network<T, Tp> *_mynet = new Network<T, Tp>(" in line:
+                  instrumented.extend([
+                      "    const int smokeWeightCount = sizesOfLayers[0] * InputDim;\n",
+                      "    std::vector<float> smokeInitialWeights(smokeWeightCount);\n",
+                      "    for (int sw = 0; sw < smokeWeightCount; ++sw) smokeInitialWeights[sw] = float(_mynet->getLayer(0)->_weights[sw]);\n",
+                  ])
+                  before = True
+              if line.strip() == "delete _mynet;":
+                  instrumented[-1:] = [
+                      "    double smokeWeightDeltaL1 = 0.0;\n",
+                      "    size_t smokeNonFiniteWeights = 0;\n",
+                      "    for (int sw = 0; sw < smokeWeightCount; ++sw) {\n",
+                      "        double cur = double(float(_mynet->getLayer(0)->_weights[sw]));\n",
+                      "        if (!std::isfinite(cur)) ++smokeNonFiniteWeights;\n",
+                      "        double d = cur - double(smokeInitialWeights[sw]);\n",
+                      "        smokeWeightDeltaL1 += (d < 0.0 ? -d : d);\n",
+                      "    }\n",
+                      "    cout << \"SMOKE_NONFINITE_WEIGHTS \" << smokeNonFiniteWeights << endl;\n",
+                      "    cout << \"SMOKE_WEIGHT_DELTA_L1 \" << smokeWeightDeltaL1 << endl;\n",
+                      "    if (smokeNonFiniteWeights != 0 || !std::isfinite(smokeWeightDeltaL1) || !(smokeWeightDeltaL1 > 0.0)) return 9;\n",
+                      line,
+                  ]
+                  after = True
+          assert before and after
+          p.write_text("".join(instrumented))
+
+          p = Path("SLIDE/srp.cpp")
+          s = p.read_text()
+          if "#include <cstring>" not in s:
+              p.write_text("#include <cstring>\n" + s)
+
+          p = Path("SLIDE/DataLayerOpt.cpp")
+          s = p.read_text()
+          for name in ("offsets_", "lengths_", "labelOffsets_", "labelLengths_"):
+              s = s.replace(f"{name}.reserve(numRecords_);", f"{name}.resize(numRecords_);")
+          p.write_text(s)
+
+          # Diagnostic change for Issue #6: explicitly zero all accumulators/state
+          # that are read before being overwritten.
+          p = Path("SLIDE/Layer.cpp")
+          s = p.read_text()
+          if "#include <cstring>" not in s:
+              s = s.replace("#include <x86intrin.h>\n", "#include <x86intrin.h>\n#include <cstring>\n")
+
+          s = s.replace(
+              "_biasGrads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);",
+              "_biasGrads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);\n"
+              "        memset(_weightGrads, 0, sizeof(T) * _noOfNodes * previousLayerNumOfNodes);\n"
+              "        memset(_biasGrads, 0, sizeof(T) * _noOfNodes);",
+          )
+          s = s.replace(
+              "_adamAvgVel = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);",
+              "_adamAvgVel = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);\n"
+              "            memset(_adamAvgMom, 0, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);\n"
+              "            memset(_adamAvgVel, 0, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);",
+          )
+          s = s.replace(
+              "_adamAvgVelBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);",
+              "_adamAvgVelBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);\n"
+              "            memset(_adamAvgMomBias, 0, sizeof(float) * _noOfNodes);\n"
+              "            memset(_adamAvgVelBias, 0, sizeof(float) * _noOfNodes);",
+          )
+          p.write_text(s)
+
+          def row(label, shift=0):
+              ids = [(shift+i) % 32 for i in range(4)]
+              vals = [1.0, 0.5, 0.25, 0.125]
+              return str(label) + " " + " ".join(f"{i}:{v}" for i, v in zip(ids, vals))
+
+          Path("smoke_train.txt").write_text("\n".join(["2 32 4", row(0,0), row(1,4)]) + "\n")
+          Path("smoke_test.txt").write_text("\n".join(["40 32 4"] + [row(i % 4, (i*3) % 32) for i in range(40)]) + "\n")
+          cfg = """RangePow=6
+          K=2
+          L=2
+          Sparsity=1,1
+          Batchsize=2
+          Rehash=1000
+          Rebuild=1000
+          InputDim=32
+          totRecords=2
+          totRecordsTest=40
+          Lr=0.001
+          Epoch=1
+          Stepsize=1000
+          sizesOfLayers=4
+          numLayer=1
+          trainData=smoke_train.txt
+          testData=smoke_test.txt
+          weight=unused.npz
+          savedweight=smoke_weights.npz
+          logFile=smoke_log.txt
+          Bfloat16Opt={mode}
+          """.replace("          ","")
+          for mode in (0, 1, 2):
+              Path(f"smoke_mode{mode}.cfg").write_text(cfg.format(mode=mode))
+          PY
+
+      - name: Build and run AVX FP32 plus BF16 modes after zero-init
+        if: steps.cpu.outputs.has_bf16 == 'true'
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            intel/oneapi-hpckit:2023.2-devel-ubuntu22.04 \
+            bash -lc '
+              set -euxo pipefail
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake make
+              source /opt/intel/oneapi/setvars.sh || true
+              cmake -S . -B build-zero-init \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=icc \
+                -DCMAKE_CXX_COMPILER=icpc \
+                -DOPT_IA=ON \
+                -DOPT_AVX512=ON \
+                -DOPT_AVX512_BF16=ON
+              cmake --build build-zero-init --parallel 2
+              failed=0
+              for mode in 0 1 2; do
+                rm -f smoke_weights.npz smoke_log.txt
+                set +e
+                OMP_NUM_THREADS=2 timeout 90s ./build-zero-init/runme "smoke_mode${mode}.cfg" 2>&1 | tee "zero_init_mode${mode}.log"
+                rc=${PIPESTATUS[0]}
+                set -e
+                echo "ZERO_INIT_MODE_${mode}_RC=${rc}"
+                grep "SMOKE_NONFINITE_WEIGHTS" "zero_init_mode${mode}.log" || true
+                grep "SMOKE_WEIGHT_DELTA_L1" "zero_init_mode${mode}.log" || true
+                if [ "${rc}" -ne 0 ]; then failed=1; fi
+              done
+              exit "${failed}"
+            '

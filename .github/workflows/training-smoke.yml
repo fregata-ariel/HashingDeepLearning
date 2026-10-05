@@ -6,6 +6,7 @@ on:
       - research/lsh-lineage-vendor
     paths:
       - "third_party/**"
+      - ".github/workflows/training-smoke.yml"
   workflow_dispatch:
 
 jobs:

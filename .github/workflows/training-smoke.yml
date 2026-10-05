@@ -137,7 +137,7 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 20
     container:
-      image: intel/oneapi-basekit:2023.2.0-devel-ubuntu22.04
+      image: intel/oneapi-hpckit:2023.2-devel-ubuntu22.04
     steps:
       - uses: actions/checkout@v4
       - name: Show compiler inventory
@@ -150,3 +150,118 @@ jobs:
           command -v icc
           command -v icpc
           icpc --version
+
+
+  optimized-slide-intel-classic-one-step:
+    name: Optimized SLIDE / Intel Classic / one training batch
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    container:
+      image: intel/oneapi-hpckit:2023.2-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare historical source for executable smoke probe
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /opt/intel/oneapi/setvars.sh || true
+          command -v icpc
+          icpc --version
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("SLIDE/DataLayerOpt.h")
+          s = p.read_text()
+          bad = "DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};"
+          good = "DataLayerOpt() : numRecords_(0), numFeatures_(0), numLabels_(0) {}"
+          assert bad in s
+          p.write_text(s.replace(bad, good))
+
+          p = Path("SLIDE/main.cpp")
+          s = p.read_text()
+          bad = """            if (numLayer >= MAX_BUFFER_SIZE) {
+                          numLayer = MAX_BUFFER_SIZE;
+                      }
+          """.replace("          ", "")
+          assert bad in s
+          s = s.replace(bad, "")
+          s = s.replace("    delete sizesOfLayers;\n", "")
+          p.write_text(s)
+
+          p = Path("SLIDE/srp.cpp")
+          s = p.read_text()
+          if "#include <cstring>" not in s:
+              s = "#include <cstring>\n" + s
+          p.write_text(s)
+
+          p = Path("SLIDE/DataLayerOpt.cpp")
+          s = p.read_text()
+          for name in ("offsets_", "lengths_", "labelOffsets_", "labelLengths_"):
+              s = s.replace(f"{name}.reserve(numRecords_);", f"{name}.resize(numRecords_);")
+          p.write_text(s)
+          PY
+      - name: Configure and build with icpc
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh || true
+          cmake -S . -B build-intel             -DCMAKE_BUILD_TYPE=Release             -DCMAKE_C_COMPILER=icc             -DCMAKE_CXX_COMPILER=icpc             -DOPT_IA=ON             -DOPT_AVX512=OFF             -DOPT_AVX512_BF16=OFF
+          cmake --build build-intel --parallel 2
+      - name: Generate tiny SVM datasets and config
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def row(label, shift=0):
+              ids = [(shift+i) % 32 for i in range(4)]
+              vals = [1.0, 0.5, 0.25, 0.125]
+              return str(label) + " " + " ".join(f"{i}:{v}" for i, v in zip(ids, vals))
+
+          train = ["2 32 4", row(0,0), row(1,4)]
+          test = ["40 32 4"]
+          for i in range(40):
+              test.append(row(i % 4, (i*3) % 32))
+
+          Path("smoke_train.txt").write_text("\n".join(train) + "\n")
+          Path("smoke_test.txt").write_text("\n".join(test) + "\n")
+          Path("smoke.cfg").write_text("""RangePow=6
+          K=2
+          L=2
+          Sparsity=1,1
+          Batchsize=2
+          Rehash=1000
+          Rebuild=1000
+          InputDim=32
+          totRecords=2
+          totRecordsTest=40
+          Lr=0.001
+          Epoch=1
+          Stepsize=1000
+          sizesOfLayers=4
+          numLayer=1
+          trainData=smoke_train.txt
+          testData=smoke_test.txt
+          weight=unused.npz
+          savedweight=smoke_weights.npz
+          logFile=smoke_log.txt
+          Bfloat16Opt=0
+          """.replace("          ",""))
+          PY
+      - name: Run one optimized training batch through destructor and exit
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          set -euxo pipefail
+          source /opt/intel/oneapi/setvars.sh || true
+          timeout 90s ./build-intel/runme smoke.cfg 2>&1 | tee smoke_run.log
+          test -s smoke_weights.npz
+          test -s smoke_log.txt
+          grep -q "Network Initialization takes" smoke_run.log
+          grep -q "Data loading takes" smoke_run.log
+          grep -q "over all" smoke_run.log
+          echo "OPTIMIZED_SLIDE_INTEL_TRAINING_SMOKE_COMPLETED"

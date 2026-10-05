@@ -1,0 +1,173 @@
+name: AVX512 BF16 runtime probe
+
+on:
+  push:
+    branches:
+      - research/lsh-lineage-vendor
+    paths:
+      - ".github/workflows/bf16-runtime-probe.yml"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    name: BF16 probe / ${{ matrix.runner }} / sample ${{ matrix.sample }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-22.04, ubuntu-24.04]
+        sample: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect CPU features
+        id: cpu
+        shell: bash
+        run: |
+          set -euxo pipefail
+          grep -m1 '^flags' /proc/cpuinfo || true
+          if grep -qw avx512_bf16 /proc/cpuinfo; then
+            echo "has_bf16=true" >> "$GITHUB_OUTPUT"
+            echo "AVX512_BF16_HOST_FOUND"
+          else
+            echo "has_bf16=false" >> "$GITHUB_OUTPUT"
+            echo "AVX512_BF16_NOT_EXPOSED"
+          fi
+
+      - name: Prepare tiny BF16 runtime workspace
+        if: steps.cpu.outputs.has_bf16 == 'true'
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("SLIDE/DataLayerOpt.h")
+          s = p.read_text()
+          bad = "DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};"
+          good = "DataLayerOpt() : numRecords_(0), numFeatures_(0), numLabels_(0) {}"
+          assert bad in s
+          p.write_text(s.replace(bad, good))
+
+          p = Path("SLIDE/main.cpp")
+          lines = p.read_text().splitlines(keepends=True)
+          out = []
+          i = 0
+          removed = False
+          while i < len(lines):
+              if "if (numLayer >= MAX_BUFFER_SIZE)" in lines[i]:
+                  assert "numLayer = MAX_BUFFER_SIZE;" in lines[i + 1]
+                  i += 3
+                  removed = True
+                  continue
+              if "delete sizesOfLayers;" in lines[i]:
+                  i += 1
+                  continue
+              out.append(lines[i])
+              i += 1
+          assert removed
+
+          instrumented = []
+          before = after = False
+          for line in out:
+              instrumented.append(line)
+              if "Network<T, Tp> *_mynet = new Network<T, Tp>(" in line:
+                  instrumented.extend([
+                      "    const int smokeWeightCount = sizesOfLayers[0] * InputDim;\n",
+                      "    std::vector<float> smokeInitialWeights(smokeWeightCount);\n",
+                      "    for (int sw = 0; sw < smokeWeightCount; ++sw) smokeInitialWeights[sw] = float(_mynet->getLayer(0)->_weights[sw]);\n",
+                  ])
+                  before = True
+              if line.strip() == "delete _mynet;":
+                  instrumented[-1:] = [
+                      "    double smokeWeightDeltaL1 = 0.0;\n",
+                      "    for (int sw = 0; sw < smokeWeightCount; ++sw) {\n",
+                      "        double d = double(float(_mynet->getLayer(0)->_weights[sw])) - double(smokeInitialWeights[sw]);\n",
+                      "        smokeWeightDeltaL1 += (d < 0.0 ? -d : d);\n",
+                      "    }\n",
+                      "    cout << \"SMOKE_WEIGHT_DELTA_L1 \" << smokeWeightDeltaL1 << endl;\n",
+                      "    if (!(smokeWeightDeltaL1 > 0.0)) return 9;\n",
+                      line,
+                  ]
+                  after = True
+          assert before and after
+          p.write_text("".join(instrumented))
+
+          p = Path("SLIDE/srp.cpp")
+          s = p.read_text()
+          if "#include <cstring>" not in s:
+              p.write_text("#include <cstring>\n" + s)
+
+          p = Path("SLIDE/DataLayerOpt.cpp")
+          s = p.read_text()
+          for name in ("offsets_", "lengths_", "labelOffsets_", "labelLengths_"):
+              s = s.replace(f"{name}.reserve(numRecords_);", f"{name}.resize(numRecords_);")
+          p.write_text(s)
+
+          def row(label, shift=0):
+              ids = [(shift+i) % 32 for i in range(4)]
+              vals = [1.0, 0.5, 0.25, 0.125]
+              return str(label) + " " + " ".join(f"{i}:{v}" for i, v in zip(ids, vals))
+
+          Path("smoke_train.txt").write_text("\n".join(["2 32 4", row(0,0), row(1,4)]) + "\n")
+          Path("smoke_test.txt").write_text("\n".join(["40 32 4"] + [row(i % 4, (i*3) % 32) for i in range(40)]) + "\n")
+          cfg = """RangePow=6
+          K=2
+          L=2
+          Sparsity=1,1
+          Batchsize=2
+          Rehash=1000
+          Rebuild=1000
+          InputDim=32
+          totRecords=2
+          totRecordsTest=40
+          Lr=0.001
+          Epoch=1
+          Stepsize=1000
+          sizesOfLayers=4
+          numLayer=1
+          trainData=smoke_train.txt
+          testData=smoke_test.txt
+          weight=unused.npz
+          savedweight=smoke_weights.npz
+          logFile=smoke_log.txt
+          Bfloat16Opt={mode}
+          """.replace("          ","")
+          Path("smoke_bf16_mode1.cfg").write_text(cfg.format(mode=1))
+          Path("smoke_bf16_mode2.cfg").write_text(cfg.format(mode=2))
+          PY
+
+      - name: Build and run BF16 modes in Intel Classic container
+        if: steps.cpu.outputs.has_bf16 == 'true'
+        working-directory: third_party/slide-optimized-avx512
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker run --rm \
+            -v "$PWD:/work" \
+            -w /work \
+            intel/oneapi-hpckit:2023.2-devel-ubuntu22.04 \
+            bash -lc '
+              set -euxo pipefail
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake make
+              source /opt/intel/oneapi/setvars.sh || true
+              icpc --version
+              cmake -S . -B build-bf16-runtime \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_C_COMPILER=icc \
+                -DCMAKE_CXX_COMPILER=icpc \
+                -DOPT_IA=ON \
+                -DOPT_AVX512=ON \
+                -DOPT_AVX512_BF16=ON
+              cmake --build build-bf16-runtime --parallel 2
+              for mode in 1 2; do
+                rm -f smoke_weights.npz smoke_log.txt
+                OMP_NUM_THREADS=2 timeout 90s ./build-bf16-runtime/runme "smoke_bf16_mode${mode}.cfg" 2>&1 | tee "smoke_bf16_mode${mode}.log"
+                test -s smoke_weights.npz
+                grep -q "over all" "smoke_bf16_mode${mode}.log"
+                grep -q "SMOKE_WEIGHT_DELTA_L1" "smoke_bf16_mode${mode}.log"
+                echo "BF16_MODE_${mode}_RUNTIME_COMPLETED"
+              done
+            '

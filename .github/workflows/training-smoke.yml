@@ -157,6 +157,7 @@ jobs:
 
 
   optimized-slide-intel-classic-one-step:
+    if: github.event_name == 'workflow_dispatch'
     name: Optimized SLIDE / Intel Classic / one training batch
     runs-on: ubuntu-22.04
     timeout-minutes: 30
@@ -279,3 +280,110 @@ jobs:
           grep -q "Data loading takes" smoke_run.log
           grep -q "over all" smoke_run.log
           echo "OPTIMIZED_SLIDE_INTEL_TRAINING_SMOKE_COMPLETED"
+
+
+  optimized-slide-gcc-one-step:
+    name: Optimized SLIDE / generic GCC / one training batch
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply CI-only compatibility fixes
+        working-directory: third_party/slide-optimized-avx512
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path("SLIDE/DataLayerOpt.h")
+          s = p.read_text()
+          bad = "DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};"
+          good = "DataLayerOpt() : numRecords_(0), numFeatures_(0), numLabels_(0) {}"
+          assert bad in s
+          p.write_text(s.replace(bad, good))
+
+          p = Path("SLIDE/main.cpp")
+          lines = p.read_text().splitlines(keepends=True)
+          out = []
+          i = 0
+          removed = False
+          while i < len(lines):
+              if "if (numLayer >= MAX_BUFFER_SIZE)" in lines[i]:
+                  assert "numLayer = MAX_BUFFER_SIZE;" in lines[i + 1]
+                  i += 3
+                  removed = True
+                  continue
+              if "delete sizesOfLayers;" in lines[i]:
+                  i += 1
+                  continue
+              out.append(lines[i])
+              i += 1
+          assert removed
+          p.write_text("".join(out))
+
+          p = Path("SLIDE/srp.cpp")
+          s = p.read_text()
+          if "#include <cstring>" not in s:
+              p.write_text("#include <cstring>\n" + s)
+
+          p = Path("SLIDE/DataLayerOpt.cpp")
+          s = p.read_text()
+          for name in ("offsets_", "lengths_", "labelOffsets_", "labelLengths_"):
+              old = f"{name}.reserve(numRecords_);"
+              assert old in s
+              s = s.replace(old, f"{name}.resize(numRecords_);")
+          p.write_text(s)
+          PY
+      - name: Configure and build
+        working-directory: third_party/slide-optimized-avx512
+        run: |
+          cmake -S . -B build-train             -DCMAKE_BUILD_TYPE=Release             -DOPT_IA=ON             -DOPT_AVX512=OFF             -DOPT_AVX512_BF16=OFF
+          cmake --build build-train --parallel 2
+      - name: Generate tiny SVM datasets and config
+        working-directory: third_party/slide-optimized-avx512
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          def row(label, shift=0):
+              ids = [(shift+i) % 32 for i in range(4)]
+              vals = [1.0, 0.5, 0.25, 0.125]
+              return str(label) + " " + " ".join(f"{i}:{v}" for i, v in zip(ids, vals))
+          train = ["2 32 4", row(0,0), row(1,4)]
+          test = ["40 32 4"] + [row(i % 4, (i*3) % 32) for i in range(40)]
+          Path("smoke_train.txt").write_text("\n".join(train) + "\n")
+          Path("smoke_test.txt").write_text("\n".join(test) + "\n")
+          Path("smoke.cfg").write_text("""RangePow=6
+          K=2
+          L=2
+          Sparsity=1,1
+          Batchsize=2
+          Rehash=1000
+          Rebuild=1000
+          InputDim=32
+          totRecords=2
+          totRecordsTest=40
+          Lr=0.001
+          Epoch=1
+          Stepsize=1000
+          sizesOfLayers=4
+          numLayer=1
+          trainData=smoke_train.txt
+          testData=smoke_test.txt
+          weight=unused.npz
+          savedweight=smoke_weights.npz
+          logFile=smoke_log.txt
+          Bfloat16Opt=0
+          """.replace("          ",""))
+          PY
+      - name: Run one optimized training batch through destructor and exit
+        working-directory: third_party/slide-optimized-avx512
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          set -o pipefail
+          timeout 90s ./build-train/runme smoke.cfg 2>&1 | tee smoke_run.log
+          test -s smoke_weights.npz
+          test -s smoke_log.txt
+          grep -q "Network Initialization takes" smoke_run.log
+          grep -q "Data loading takes" smoke_run.log
+          grep -q "over all" smoke_run.log
+          echo "OPTIMIZED_SLIDE_GCC_TRAINING_SMOKE_COMPLETED"

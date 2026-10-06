@@ -55,3 +55,114 @@ jobs:
           grep -q "training device: cpu" reformer-smoke.log
           grep -q "end of epoch" reformer-smoke.log
           echo "MONGOOSE_REFORMER_CPU_ENTRYPOINT_PASS"
+
+      - name: Verify main-model and learnable-hash rotation updates
+        working-directory: ports/mongoose
+        env:
+          PYTHONPATH: ${{ github.workspace }}/ports/mongoose
+        run: |
+          python - <<'PY'
+          import torch
+          from mongoose_reformer.reformer_lib.reformer_pytorch import ReformerLM_tune
+          from mongoose_reformer.reformer_lib.generative_tools import TrainingWrapper
+
+          torch.manual_seed(23)
+
+          net = ReformerLM_tune(
+              dim=32,
+              emb_dim=32,
+              depth=1,
+              max_seq_len=32,
+              num_tokens=16,
+              heads=4,
+              bucket_size_list=[8],
+              fixed_position_emb=True,
+              n_hashes_list=[1],
+              ff_chunks=1,
+              ff_mult=1,
+              attn_chunks=1,
+              layer_dropout=0.,
+              ff_dropout=0.,
+              post_attn_dropout=0.,
+              lsh_dropout=0.,
+              weight_tie=False,
+              causal=True,
+              n_local_attn_heads=0,
+              use_full_attn=False,
+              reverse_thres=9999999999,
+              full_attn_thres=0,
+              num_mem_kv=0,
+              attn_type_list=['triplet'],
+              store_stats=False,
+              pkm_num_keys=0,
+              scheduler_hashes=4,
+              # Smoke-only forcing condition: always permit the scheduler
+              # controlled learnable-LSH update in this single iteration.
+              thresh=-1.0,
+          )
+          net.set_alpha(10.0)
+          model = TrainingWrapper(net)
+
+          rotation_params = [
+              p for name, p in model.named_parameters() if 'rotation' in name
+          ]
+          main_params = [
+              p for name, p in model.named_parameters() if 'rotation' not in name
+          ]
+          assert rotation_params, "no learnable rotation parameters found"
+          assert main_params, "no main-model parameters found"
+
+          rotation_before = [p.detach().clone() for p in rotation_params]
+          main_before = [p.detach().clone() for p in main_params]
+
+          optimizer_main = torch.optim.Adam(main_params, lr=1e-3)
+          optimizer_tri = torch.optim.Adam(rotation_params, lr=1e-3)
+
+          data = torch.randint(1, 15, (2, 32), dtype=torch.long)
+          loss_weight = torch.ones_like(data)
+
+          model.train()
+          loss = model(
+              data,
+              loss_weight=loss_weight,
+              return_loss=True,
+              calc_triplet=True,
+          )
+          tri_loss = model.net.net.get_triplet_loss()
+
+          assert torch.is_tensor(loss) and torch.isfinite(loss)
+          assert torch.is_tensor(tri_loss) and torch.isfinite(tri_loss)
+          assert float(tri_loss.detach()) > 0.0
+
+          tri_loss.backward()
+          model.net.net.clear_triplet_loss()
+          loss.backward()
+
+          for p in rotation_params:
+              assert p.grad is not None
+              assert torch.isfinite(p.grad).all()
+          for p in main_params:
+              if p.grad is not None:
+                  assert torch.isfinite(p.grad).all()
+
+          optimizer_main.step()
+          optimizer_tri.step()
+
+          rotation_delta = sum(
+              float((p.detach() - b).abs().sum())
+              for p, b in zip(rotation_params, rotation_before)
+          )
+          main_delta = sum(
+              float((p.detach() - b).abs().sum())
+              for p, b in zip(main_params, main_before)
+          )
+
+          print("main_loss", float(loss.detach()))
+          print("triplet_loss", float(tri_loss.detach()))
+          print("main_parameter_delta_l1", main_delta)
+          print("rotation_parameter_delta_l1", rotation_delta)
+
+          assert main_delta > 0.0
+          assert rotation_delta > 0.0
+          print("MONGOOSE_REFORMER_MAIN_AND_HASH_UPDATE_PASS")
+          PY

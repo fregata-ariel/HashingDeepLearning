@@ -1,0 +1,81 @@
+name: Vendor research papers
+
+on:
+  push:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - ".github/workflows/vendor-papers.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: research/lsh-lineage-vendor
+
+      - name: CPU and commit information
+        run: |
+          uname -a
+          lscpu || true
+          grep -m1 '^flags' /proc/cpuinfo || true
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git rev-parse HEAD
+
+      - name: Download primary-source PDFs
+        run: |
+          set -euxo pipefail
+          mkdir -p papers/pdf
+          curl --fail --location --retry 3 --retry-delay 2             https://export.arxiv.org/pdf/1903.03129v2             -o papers/pdf/slide-2020-arxiv-1903.03129v2.pdf
+          curl --fail --location --retry 3 --retry-delay 2             https://export.arxiv.org/pdf/2103.10891v1             -o papers/pdf/slide-optimized-2021-arxiv-2103.10891v1.pdf
+          curl --fail --location --retry 3 --retry-delay 2             https://openreview.net/pdf/fe8456585f1f710b957e2300306b8007044772f0.pdf             -o papers/pdf/mongoose-iclr-2021.pdf
+          file papers/pdf/*.pdf
+          sha256sum papers/pdf/*.pdf
+
+      - name: Verify PDF identity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          checks = {
+              "papers/pdf/slide-2020-arxiv-1903.03129v2.pdf": b"SLIDE",
+              "papers/pdf/slide-optimized-2021-arxiv-2103.10891v1.pdf": b"SLIDE",
+              "papers/pdf/mongoose-iclr-2021.pdf": b"MONGOOSE",
+          }
+          for name, marker in checks.items():
+              data = Path(name).read_bytes()
+              assert data.startswith(b"%PDF-"), name
+              assert len(data) > 100_000, (name, len(data))
+              print(name, len(data), "bytes")
+          PY
+
+      - name: Register local paper files
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("papers/traceability.json")
+          data = json.loads(path.read_text())
+          data["papers"]["slide-2020"]["local_file"] = "papers/pdf/slide-2020-arxiv-1903.03129v2.pdf"
+          data["papers"]["slide-optimized-2021"]["local_file"] = "papers/pdf/slide-optimized-2021-arxiv-2103.10891v1.pdf"
+          data["papers"]["mongoose-2021"]["local_file"] = "papers/pdf/mongoose-iclr-2021.pdf"
+          path.write_text(json.dumps(data, indent=2) + "\n")
+          PY
+          python3 tools/validate_traceability.py --emit-dir /tmp/traceability
+          sha256sum papers/pdf/*.pdf
+
+      - name: Commit vendored papers
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add papers/pdf papers/traceability.json
+          if git diff --cached --quiet; then
+            echo "Paper PDFs are already vendored."
+            exit 0
+          fi
+          git commit -m "Vendor primary-source paper PDFs"
+          git push origin HEAD:research/lsh-lineage-vendor

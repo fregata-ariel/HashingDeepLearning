@@ -38,7 +38,15 @@ jobs:
 
       - name: Download MONGOOSE 2021 from OpenReview
         run: |
-          curl --fail --location --retry 3 --retry-delay 2 --user-agent "Mozilla/5.0" "https://openreview.net/pdf/fe8456585f1f710b957e2300306b8007044772f0.pdf" -o papers/pdf/mongoose-iclr-2021.pdf
+          for url in \
+  "https://openreview.net/attachment?id=wWK7yXkULyh&name=original_pdf" \
+  "https://openreview.net/attachment?id=wWK7yXkULyh&name=pdf" \
+  "https://openreview.net/pdf/fe8456585f1f710b957e2300306b8007044772f0.pdf"; do
+  if curl --fail --location --user-agent "Mozilla/5.0" "$url" -o papers/pdf/mongoose-iclr-2021.pdf; then
+    break
+  fi
+done
+test -s papers/pdf/mongoose-iclr-2021.pdf
 
       - name: Verify PDF files and print hashes
         run: |

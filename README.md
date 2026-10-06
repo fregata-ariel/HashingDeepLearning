@@ -15,6 +15,7 @@ not embedded.
 - `SOURCE_MANIFEST.tsv` — machine-readable source manifest
 - `ports/` — maintained/annotated working copies; raw snapshots remain untouched
 - `papers/CODE_PAPER_MAP.md` — paper section → implementation index
+- `SESSION_HANDOFF_2026-10-06.md` — session intent, commit-SHA map, validation state, and next-step handoff
 
 The previous root layout is intentionally replaced on this branch so that this
 workspace can later be transplanted into a separate repository.

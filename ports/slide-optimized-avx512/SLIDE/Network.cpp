@@ -232,7 +232,7 @@ int Network<T, Tp>::ProcessInput(int **inputIndices, T **inputValues, int *lengt
         // layers
         for (int j = _numberOfLayers - 1; j >= 0; j--) {
             Layer<T, Tp>* layer = _hiddenlayers[j];
-            Layer<T, Tp>* prev_layer = _hiddenlayers[j - 1];
+            Layer<T, Tp>* prev_layer = j > 0 ? _hiddenlayers[j - 1] : nullptr;
             // nodes
             for (int k = 0; k < sizesPerBatch[i][j + 1]; k++) {
                 Node<T, Tp>* node = layer->getNodebyID(activeNodesPerBatch[i][j + 1][k]);
@@ -435,7 +435,7 @@ int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchI
     // Now backpropagate.
     for (int l = _numberOfLayers - 1; l >= 0; l--) {
       Layer<T, Tp>* layer = _hiddenlayers[l];
-      Layer<T, Tp>* prev_layer = _hiddenlayers[l - 1];
+      Layer<T, Tp>* prev_layer = l > 0 ? _hiddenlayers[l - 1] : nullptr;
 
       if (l == _numberOfLayers - 1)
         layer->computeExtraStatsForSoftMaxOpt(labels, labelSize, n,

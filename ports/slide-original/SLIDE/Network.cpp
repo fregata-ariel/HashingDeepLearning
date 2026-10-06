@@ -190,7 +190,7 @@ int Network::ProcessInput(int **inputIndices, float **inputValues, int *lengths,
         // layers
         for (int j = _numberOfLayers - 1; j >= 0; j--) {
             Layer* layer = _hiddenlayers[j];
-            Layer* prev_layer = _hiddenlayers[j - 1];
+            Layer* prev_layer = j > 0 ? _hiddenlayers[j - 1] : nullptr;
             // nodes
             for (int k = 0; k < sizesPerBatch[i][j + 1]; k++) {
                 Node* node = layer->getNodebyID(activeNodesPerBatch[i][j + 1][k]);

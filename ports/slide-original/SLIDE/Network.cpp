@@ -119,6 +119,28 @@ int Network::predictClass(int **inputIndices, float **inputValues, int *length, 
 }
 
 
+/**
+ * @brief Executes one sparse training batch: forward selection, backpropagation, and parameter updates.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Algorithm 1 and Section 3.1 "Sparse Backpropagation or
+ * Gradient Update". Hash-table maintenance relates to Section 4.2 "Updating
+ * Overhead".
+ *
+ * @par Implementation note
+ * Each sample records only the active computation path, backpropagates through
+ * that path, accumulates sparse gradients, and then applies the layer updates.
+ * The rehash/rebuild flags cause hash tables or hash functions to be refreshed
+ * after the parameter step.
+ *
+ * @par Paper/code distinction
+ * Section 4.2 describes an exponentially decaying hash-table update frequency.
+ * This snapshot's surrounding training driver exposes fixed Rehash/Rebuild
+ * intervals, so the fixed-interval code should not be described as a literal
+ * implementation of the paper's decay heuristic.
+ *
+ * @see https://arxiv.org/abs/1903.03129
+ */
 int Network::ProcessInput(int **inputIndices, float **inputValues, int *lengths, int **labels, int *labelsize, int iter, bool rehash, bool rebuild) {
 
     float logloss = 0.0;

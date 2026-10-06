@@ -63,6 +63,21 @@ void LSH::count()
 }
 
 
+/**
+ * @brief Combines K component hashes into one bucket address for each of L tables.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 2 "Locality Sensitive Hashing" and Section 2.1
+ * "LSH for Estimation and Sampling", especially Algorithm 2.
+ *
+ * @par Implementation note
+ * The paper's (K, L) construction forms one meta-hash per table from K base
+ * hashes. This function is the bucket-address step of that construction. The
+ * exact bit shifting / integer mixing below is specific to this snapshot and
+ * depends on the selected HashFunction.
+ *
+ * @see https://arxiv.org/abs/1903.03129
+ */
 int* LSH::hashesToIndex(int * hashes)
 {
 
@@ -121,6 +136,20 @@ int LSH::add(int tableId, int indices, int id)
 /*
 * Returns all the buckets
 */
+/**
+ * @brief Returns the candidate bucket for each LSH table.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 2.1 and Algorithm 2: hash the query, probe one
+ * bucket in each of L tables, then combine the retrieved candidates into the
+ * active-neuron sample.
+ *
+ * @par Implementation note
+ * This routine exposes raw bucket storage; candidate union/counting and the
+ * sampling policy are implemented by Layer::queryActiveNodeandComputeActivations.
+ *
+ * @see https://arxiv.org/abs/1903.03129
+ */
 int** LSH::retrieveRaw(int *indices)
 {
 	int ** rawResults = new int*[_L];

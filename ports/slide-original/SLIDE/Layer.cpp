@@ -129,6 +129,20 @@ void Layer::updateRandomNodes()
 }
 
 
+/**
+ * @brief Hashes a neuron's weight vector and inserts the neuron into this layer's LSH tables.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 3.1 "Introduction to the overall system",
+ * initialization in Figure 2, and Algorithm 1 initialization steps.
+ *
+ * @par Implementation note
+ * The selected hash family produces K*L component hashes; hashesToIndex maps
+ * them to L buckets and the neuron id is inserted into each table. The stored
+ * bucket positions are later used when the layer is maintained.
+ *
+ * @see https://arxiv.org/abs/1903.03129
+ */
 void Layer::addtoHashTable(float* weights, int length, float bias, int ID)
 {
     //LSH logic
@@ -204,6 +218,27 @@ float collision(int* hashes, int* table_hashes, int k, int l){
 }
 
 
+/**
+ * @brief Selects active neurons with LSH and computes only their activations.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Algorithm 1 sampling/forward steps, Section 3.1
+ * "Sparse Feed-Forward Pass with Hash Table Sampling", and Figure 3.
+ *
+ * @par Implementation note
+ * For LSH modes, the input activation is hashed, one bucket per table is
+ * retrieved, and candidates are aggregated into a sparse active-neuron set.
+ * Activations are then evaluated only for that set; inactive neurons are
+ * represented implicitly by their absence from the returned sparse arrays.
+ * The function also contains non-LSH comparison modes used by experiments.
+ *
+ * @par Reported effect
+ * The paper attributes SLIDE's system-level compute reduction to this adaptive
+ * sparsity. No paper speedup number should be attributed to this function in
+ * isolation.
+ *
+ * @see https://arxiv.org/abs/1903.03129
+ */
 int Layer::queryActiveNodeandComputeActivations(int** activenodesperlayer, float** activeValuesperlayer, int* lengths, int layerIndex, int inputID, int* label, int labelsize, float Sparsity, int iter)
 {
     //LSH QueryLogic

@@ -185,10 +185,10 @@ void parseconfig(string filename)
         }
         else if (trim(first) == "numLayer")
         {
+            // Maintained port: the historical pinned tree referenced an
+            // undefined MAX_BUFFER_SIZE here (Issue #1). Use the configured
+            // layer count directly.
             numLayer = atoi(trim(second).c_str());
-            if (numLayer >= MAX_BUFFER_SIZE) {
-                numLayer = MAX_BUFFER_SIZE;
-            }
         }
         else if (trim(first) == "logFile")
         {

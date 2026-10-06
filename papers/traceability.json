@@ -1,33 +1,88 @@
 {
   "schema_version": 1,
   "papers": {
-    "slide-2020": {"title": "SLIDE: In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems", "version": "arXiv:1903.03129v2", "source_url": "https://arxiv.org/abs/1903.03129", "local_file": null},
-    "slide-optimized-2021": {"title": "Accelerating SLIDE Deep Learning on Modern CPUs: Vectorization, Quantizations, Memory Optimizations, and More", "version": "arXiv:2103.10891v1", "source_url": "https://arxiv.org/abs/2103.10891", "local_file": null},
-    "mongoose-2021": {"title": "MONGOOSE: A Learnable LSH Framework for Efficient Neural Network Training", "version": "ICLR 2021 OpenReview wWK7yXkULyh", "source_url": "https://openreview.net/forum?id=wWK7yXkULyh", "local_file": null}
+    "slide-2020": {
+      "title": "SLIDE: In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems",
+      "version": "MLSys 2020 proceedings",
+      "source_url": "https://arxiv.org/abs/1903.03129",
+      "local_file": "papers/pdf/slide-2020-mlsys.pdf"
+    },
+    "slide-optimized-2021": {
+      "title": "Accelerating SLIDE Deep Learning on Modern CPUs: Vectorization, Quantizations, Memory Optimizations, and More",
+      "version": "MLSys 2021 proceedings",
+      "source_url": "https://arxiv.org/abs/2103.10891",
+      "local_file": "papers/pdf/slide-optimized-2021-mlsys.pdf"
+    },
+    "mongoose-2021": {
+      "title": "MONGOOSE: A Learnable LSH Framework for Efficient Neural Network Training",
+      "version": "ICLR 2021 OpenReview wWK7yXkULyh",
+      "source_url": "https://openreview.net/forum?id=wWK7yXkULyh",
+      "local_file": null
+    }
   },
   "experiments": [
     {
-      "id": "SLIDE2020-LSH-PACKING", "paper": "slide-2020", "paper_location": "Section 2.1; Algorithm 2",
-      "mechanism": "Combine K component hashes into one bucket address for each LSH table.", "relation": "variant",
-      "implementation": {"file": "ports/slide-original/SLIDE/LSH.cpp", "symbol": "LSH::hashesToIndex"},
-      "test": {"file": "tests/traceability/test_slide_lsh_packing.cpp", "id": "SLIDE2020-LSH-PACKING"},
-      "conditions": {"HashFunction": "DWTA", "binsize": 8, "K": 2, "L": 1, "RangePow": 6},
+      "id": "SLIDE2020-LSH-PACKING",
+      "paper": "slide-2020",
+      "paper_location": "Section 2.1; Algorithm 2",
+      "mechanism": "Combine K component hashes into one bucket address for each LSH table.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/LSH.cpp",
+        "symbol": "LSH::hashesToIndex"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_lsh_packing.cpp",
+        "id": "SLIDE2020-LSH-PACKING"
+      },
+      "conditions": {
+        "HashFunction": "DWTA",
+        "binsize": 8,
+        "K": 2,
+        "L": 1,
+        "RangePow": 6
+      },
       "note": "The snapshot uses floor(log(binsize)) as the shift width. The test records the resulting non-injective packing; it is not evidence that the packing is a literal paper bit concatenation."
     },
     {
-      "id": "OPT2021-BF16-CONVERSION", "paper": "slide-optimized-2021", "paper_location": "Section 4.4 BF16 Optimization",
-      "mechanism": "Represent FP32 values in BF16 and convert between storage and computation formats.", "relation": "direct",
-      "implementation": {"file": "ports/slide-optimized-avx512/SLIDE/Bfloat16.h", "symbol": "bfloat16"},
-      "test": {"file": "tests/traceability/test_bfloat16_conversion.cpp", "id": "OPT2021-BF16-CONVERSION"},
-      "conditions": {"path": "software scalar conversion helpers", "hardware": "no AVX-512 execution required"},
+      "id": "OPT2021-BF16-CONVERSION",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Section 4.4 BF16 Optimization",
+      "mechanism": "Represent FP32 values in BF16 and convert between storage and computation formats.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Bfloat16.h",
+        "symbol": "bfloat16"
+      },
+      "test": {
+        "file": "tests/traceability/test_bfloat16_conversion.cpp",
+        "id": "OPT2021-BF16-CONVERSION"
+      },
+      "conditions": {
+        "path": "software scalar conversion helpers",
+        "hardware": "no AVX-512 execution required"
+      },
       "note": "The test distinguishes the float constructor RNE conversion from the templated assignment operator truncating behavior."
     },
     {
-      "id": "MONGOOSE-SCHEDULER-CHANGE", "paper": "mongoose-2021", "paper_location": "Sections 3.1-3.2",
-      "mechanism": "Gate expensive learnable-LSH work using a cheap hash-code change detector.", "relation": "approximation",
-      "implementation": {"file": "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py", "symbol": "Scheduler"},
-      "test": {"file": "tests/traceability/test_mongoose_scheduler.py", "id": "MONGOOSE-SCHEDULER-CHANGE"},
-      "conditions": {"oracle": "fixed synthetic hash codes", "threshold_rule": "strict greater-than", "cache": "advance only when detector fires"},
+      "id": "MONGOOSE-SCHEDULER-CHANGE",
+      "paper": "mongoose-2021",
+      "paper_location": "Sections 3.1-3.2",
+      "mechanism": "Gate expensive learnable-LSH work using a cheap hash-code change detector.",
+      "relation": "approximation",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py",
+        "symbol": "Scheduler"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_scheduler.py",
+        "id": "MONGOOSE-SCHEDULER-CHANGE"
+      },
+      "conditions": {
+        "oracle": "fixed synthetic hash codes",
+        "threshold_rule": "strict greater-than",
+        "cache": "advance only when detector fires"
+      },
       "note": "The repository detector is a practical proxy for the paper scheduler, not a literal implementation of the full maintenance algorithm."
     }
   ]

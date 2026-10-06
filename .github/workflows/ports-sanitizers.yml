@@ -1,0 +1,93 @@
+name: Maintained ports sanitizers
+
+on:
+  push:
+    branches:
+      - research/lsh-lineage-vendor
+    paths:
+      - ".github/workflows/ports-sanitizers.yml"
+      - "ports/slide-original/**"
+      - "ports/slide-optimized-avx512/**"
+  workflow_dispatch:
+
+jobs:
+  original:
+    name: Original SLIDE / ASan+UBSan teardown
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with sanitizers
+        working-directory: ports/slide-original
+        run: |
+          cmake -S . -B build-san \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DCMAKE_CXX_FLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-san --parallel 2
+      - name: Generate smoke fixture
+        working-directory: ports/slide-original
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def row(label,shift):
+              return str(label)+" "+" ".join(f"{(shift+i)%32}:{v}" for i,v in enumerate([1.0,.5,.25,.125]))
+          Path("train.txt").write_text("\n".join(["2 32 4",row(0,0),row(1,4)])+"\n")
+          Path("test.txt").write_text("\n".join(["40 32 4"]+[row(i%4,(i*3)%32) for i in range(40)])+"\n")
+          cfg=["RangePow=6","K=2","L=2","Sparsity=1,1","Batchsize=2","Rehash=1000","Rebuild=1000",
+               "InputDim=32","totRecords=2","totRecordsTest=40","Lr=0.001","Epoch=1","Stepsize=1000",
+               "sizesOfLayers=4","numLayer=1","trainData=train.txt","testData=test.txt","weight=unused.npz",
+               "savedweight=weights.npz","logFile=log.txt"]
+          Path("smoke.cfg").write_text("\n".join(cfg)+"\n")
+          PY
+      - name: Run sanitizer smoke
+        working-directory: ports/slide-original
+        env:
+          OMP_NUM_THREADS: "2"
+          ASAN_OPTIONS: "detect_leaks=0:halt_on_error=1"
+          UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
+        run: |
+          timeout 90s ./build-san/runme smoke.cfg
+          test -s weights.npz
+          echo "ORIGINAL_SANITIZER_PASS"
+
+  optimized:
+    name: Optimized SLIDE / ASan+UBSan scalar teardown
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build with sanitizers
+        working-directory: ports/slide-optimized-avx512
+        run: |
+          cmake -S . -B build-san \
+            -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+            -DOPT_IA=ON -DOPT_AVX512=OFF -DOPT_AVX512_BF16=OFF \
+            -DCMAKE_CXX_FLAGS="-O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
+            -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+          cmake --build build-san --parallel 2
+      - name: Generate smoke fixture
+        working-directory: ports/slide-optimized-avx512
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def row(label,shift):
+              return str(label)+" "+" ".join(f"{(shift+i)%32}:{v}" for i,v in enumerate([1.0,.5,.25,.125]))
+          Path("train.txt").write_text("\n".join(["2 32 4",row(0,0),row(1,4)])+"\n")
+          Path("test.txt").write_text("\n".join(["40 32 4"]+[row(i%4,(i*3)%32) for i in range(40)])+"\n")
+          cfg=["RangePow=6","K=2","L=2","Sparsity=1,1","Batchsize=2","Rehash=1000","Rebuild=1000",
+               "InputDim=32","totRecords=2","   ","totRecordsTest=40","Lr=0.001","Epoch=1","Stepsize=1000",
+               "sizesOfLayers=4","numLayer=1","trainData=train.txt","testData=test.txt","weight=unused.npz",
+               "savedweight=weights.npz","logFile=log.txt","Bfloat16Opt=0"]
+          Path("smoke.cfg").write_text("\n".join(cfg)+"\n")
+          PY
+      - name: Run sanitizer smoke
+        working-directory: ports/slide-optimized-avx512
+        env:
+          OMP_NUM_THREADS: "2"
+          ASAN_OPTIONS: "detect_leaks=0:halt_on_error=1"
+          UBSAN_OPTIONS: "halt_on_error=1:print_stacktrace=1"
+        run: |
+          timeout 90s ./build-san/runme smoke.cfg
+          test -s weights.npz
+          echo "OPTIMIZED_SANITIZER_PASS"

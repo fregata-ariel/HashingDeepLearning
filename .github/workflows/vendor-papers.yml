@@ -36,9 +36,17 @@ jobs:
         run: |
           curl --fail --location --retry 3 --retry-delay 2 "https://proceedings.mlsys.org/paper_files/paper/2021/file/de4086ad4276d895be8ef25ec03c964b-Paper.pdf" -o papers/pdf/slide-optimized-2021-mlsys.pdf
 
-      - name: Download MONGOOSE 2021 from OpenReview API
+      - name: Download MONGOOSE 2021 with OpenReview client
         run: |
-          curl --fail --location --retry 3 --retry-delay 2 "https://api.openreview.net/pdf?id=wWK7yXkULyh" -o papers/pdf/mongoose-iclr-2021.pdf
+          python3 -m pip install --quiet openreview-py
+          python3 - <<'PY'
+          from pathlib import Path
+          import openreview
+          client = openreview.Client(baseurl="https://api.openreview.net")
+          data = client.get_pdf("wWK7yXkULyh")
+          Path("papers/pdf/mongoose-iclr-2021.pdf").write_bytes(data)
+          print("downloaded", len(data), "bytes")
+          PY
 
       - name: Verify PDF files and print hashes
         run: |

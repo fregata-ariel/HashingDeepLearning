@@ -30,7 +30,7 @@ AVX-512 and AVX512-BF16 hardware.
 | Optimized port | AVX512-BF16 mode 2: BF16 activation + BF16 weight | **PASS** |
 | MONGOOSE | Python syntax + native Cython/C++ LSH extension | **PASS** |
 | MONGOOSE | learnable-hash backward + optimizer step | **PASS — weight delta observed** |
-| MONGOOSE Reformer full historical entrypoint | CUDA/APEX/CuPy/NVRTC stack | **BLOCKED — Issue #4** |
+| MONGOOSE Reformer maintained port | CPU one-batch train/eval + main/hash parameter updates | **PASS — Issue #4 resolved** |
 
 These are correctness smoke tests, not reproduction of the papers' benchmark
 accuracy or throughput.
@@ -196,9 +196,45 @@ weight_delta_l1 0.0774054229259491
 MONGOOSE_TRIPLET_TRAINING_STEP_COMPLETED
 ```
 
-The full Reformer training entrypoint remains the only open compatibility item:
-Issue #4. It assumes the historical CUDA/APEX stack, calls `.cuda()`
-unconditionally, and routes scheduler hashing through CuPy/NVRTC.
+The maintained Reformer port now has a CPU/reference execution path for the
+historical CUDA/APEX assumptions tracked in Issue #4:
+
+- APEX is optional for the FP32 path.
+- `--device {auto,cpu,cuda}` replaces unconditional `.cuda()` placement.
+- scheduler SimHash has a PyTorch reference fingerprint path when CuPy/NVRTC is
+  unavailable.
+- internal `reformer_lib` imports support normal package imports as well as the
+  historical script entrypoint.
+
+CPU entrypoint run:
+https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/37452616474
+
+The tiny Reformer smoke completes one train batch and one eval batch with APEX
+absent:
+
+```text
+training device: cpu
+APEX available: False
+| end of epoch   0 | ... | valid loss 2.79 | valid ppl 16.30
+MONGOOSE_REFORMER_CPU_ENTRYPOINT_PASS
+```
+
+The same workflow separately verifies that both ordinary model parameters and
+the learnable-LSH rotation parameters receive finite gradients and change after
+their optimizer steps:
+
+```text
+main_loss 2.716763734817505
+triplet_loss 9.328916549682617
+main_parameter_delta_l1 6.317929459735751
+rotation_parameter_delta_l1 0.03199991211295128
+MONGOOSE_REFORMER_MAIN_AND_HASH_UPDATE_PASS
+```
+
+Issue #4 is therefore resolved for the maintained CPU correctness path. This
+does not reproduce the historical CUDA/APEX performance environment; that
+remains a separate benchmark/reproduction concern rather than a portability
+blocker.
 
 ## CI files
 
@@ -210,6 +246,7 @@ unconditionally, and routes scheduler hashing through CuPy/NVRTC.
 - `.github/workflows/ports-avx-probe.yml` — samples hosted runners and executes
   maintained AVX/BF16 paths only when the CPU exposes the needed features.
 - `.github/workflows/ports-sanitizers.yml` — ASan/UBSan maintained-port gate.
+- `.github/workflows/mongoose-reformer-smoke.yml` — maintained MONGOOSE/Reformer CPU entrypoint and learnable-hash update gate.
 
 Older diagnostic workflows are retained because they document how the AVX/BF16
 failures were isolated.
@@ -220,7 +257,11 @@ The C++ SLIDE correctness/maintenance baseline is now strong enough to proceed
 with paper-linked documentation and larger reproduction work without mixing
 archival defects into the analysis.
 
-The main unresolved engineering item is MONGOOSE Issue #4. The next practical
-choice is either to reproduce its historical CUDA/APEX environment or add a
-maintained CPU/reference scheduler-hash backend plus modern optional AMP/device
-handling, then run a complete Reformer training batch.
+The maintained correctness baseline now covers Original SLIDE, optimized
+SLIDE scalar/AVX/BF16 paths, and a one-batch MONGOOSE/Reformer CPU training
+path with verified main-model and learnable-hash parameter updates.
+
+Next work can focus on paper-linked documentation, larger fixtures, and
+benchmark/accuracy reproduction. Reconstructing the historical CUDA/APEX
+environment is still useful for performance archaeology, but it is no longer a
+blocker for maintained-port correctness testing.

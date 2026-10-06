@@ -35,6 +35,29 @@ Issue #5, the original AVX NaN diagnostic, is also closed: deterministic
 scalar-vs-AVX comparison and the corrected four-output tail fixture show finite,
 numerically consistent behavior after #6/#7 are controlled.
 
+## MONGOOSE fixes
+
+Issue #4 is closed in the maintained port. The historical source remains under
+`third_party/mongoose/`, while `ports/mongoose/` now provides:
+
+- optional APEX use for the FP32 training path;
+- explicit CPU/CUDA device selection;
+- a PyTorch reference SimHash fingerprint backend when CuPy/NVRTC is absent;
+- package-relative `reformer_lib` imports;
+- a CPU one-batch Reformer smoke test that reaches train, eval, and normal exit;
+- a separate optimizer-step assertion proving both main-model and learnable
+  rotation/hash parameters change.
+
+Successful verification:
+https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/37452616474
+
+Observed deltas in the strengthened check were
+`main_parameter_delta_l1 = 6.317929459735751` and
+`rotation_parameter_delta_l1 = 0.03199991211295128`.
+
+This resolves modern CPU correctness/portability for the smoke fixture; it does
+not claim reproduction of the historical CUDA/APEX throughput results.
+
 ## Current verification
 
 - Original port: GCC train/save/teardown PASS.
@@ -45,6 +68,7 @@ numerically consistent behavior after #6/#7 are controlled.
   128-output fixture: `7.45e-09`.
 - AVX four-output tail: PASS.
 - AVX512-BF16 mode 1 and mode 2 on capable hardware: PASS.
+- MONGOOSE/Reformer CPU train/eval + main/hash optimizer updates: PASS.
 
 See `BUILDING.md` for run links and details.
 

@@ -150,9 +150,9 @@ jobs:
               )
 
               # Deterministic parameter initialization for A/B comparison.
-              needle = "random_device rd;\n        default_random_engine dre(rd());"
+              needle = "random_device rd;\n        std::mt19937 re(rd());"
               assert needle in s
-              s = s.replace(needle, "default_random_engine dre(123456);")
+              s = s.replace(needle, "std::mt19937 re(123456);")
               p.write_text(s)
 
               def row(label, shift=0):

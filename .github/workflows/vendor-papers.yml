@@ -38,7 +38,7 @@ jobs:
 
       - name: Download MONGOOSE 2021 from OpenReview API
         run: |
-          curl --fail --location --retry 3 --retry-delay 2 "https://api2.openreview.net/pdf?id=wWK7yXkULyh" -o papers/pdf/mongoose-iclr-2021.pdf
+          curl --fail --location --retry 3 --retry-delay 2 "https://api.openreview.net/pdf?id=wWK7yXkULyh" -o papers/pdf/mongoose-iclr-2021.pdf
 
       - name: Verify PDF files and print hashes
         run: |

@@ -547,6 +547,17 @@ class LSHAttention(nn.Module):
 # customized training for hash functions
 
 class TripletLSHAttention(LSHAttention):
+    """Reformer attention with trainable LSH rotations.
+
+    Paper mapping:
+        MONGOOSE (ICLR 2021), Section 3.3 and Section 3.3.1 "Learnable LSH",
+        especially Equation 3 and Algorithm 2.
+
+    The base LSH attention supplies current query/key neighborhoods. This class
+    parameterizes the hash rotations so positive/negative examples mined from
+    those neighborhoods can update the hash function during training.
+    """
+
     def __init__(self,
                  alpha=1.0,  # triplet loss margin
                  dim=512,  # embedding dimension
@@ -605,10 +616,18 @@ class TripletLSHAttention(LSHAttention):
                         p,  # positive example
                         n,  # negative example
                         ):
-        '''
-        Given inputs, positive and negative examples, compute the
-        triplet loss given by cosine similarity
-        '''
+        """Compute the MONGOOSE learnable-LSH triplet objective.
+
+        Paper mapping:
+            Section 3.3.1, Equation 3. Positive examples should have greater
+            similarity under the learned hash projection than negative
+            examples by the configured margin alpha.
+
+        Implementation note:
+            x, p, and n are detached from the main model so this loss updates
+            the rotation/hash parameters rather than backpropagating through
+            the example-mining path.
+        """
         x = x.detach()
         p = p.detach()
         n = n.detach()
@@ -697,6 +716,18 @@ class FullQKAttention(nn.Module):
 
 
 class LSHSelfAttention(nn.Module):
+    """LSH attention wrapper that couples MONGOOSE scheduling and hash learning.
+
+    Paper mapping:
+        MONGOOSE Section 3.2 (adaptive update scheduling) and Section 3.3
+        (learnable parameterized LSH).
+
+    When attn_type == 'triplet', the module owns both a Scheduler and a
+    TripletLSHAttention instance. The forward path asks the scheduler whether
+    the model has changed enough before mining examples and accumulating a
+    triplet loss.
+    """
+
     def __init__(self, dim, heads=8, bucket_size=64, n_hashes=8, causal=False, dim_head=None, attn_chunks=1,
                  random_rotations_per_head=False, attend_across_buckets=True, allow_duplicate_attention=True,
                  num_mem_kv=0, one_value_head=False, use_full_attn=False, full_attn_thres=None, return_attn=False,
@@ -767,6 +798,13 @@ class LSHSelfAttention(nn.Module):
 
     def forward(self, x, keys=None, input_mask=None, input_attn_mask=None, context_mask=None, calc_triplet=False,
                 **kwargs):
+        """Run attention and optionally refresh the learnable-LSH training signal.
+
+        If calc_triplet is requested, Scheduler.detect_change() first applies
+        the inexpensive change test. Only a positive trigger allows triplet
+        example mining and accumulation of the learned-hash loss, matching the
+        Section 3.2 -> Section 3.3 control flow described by MONGOOSE.
+        """
         device, dtype = x.device, x.dtype
         b, t, e, h, dh, m, l_h = *x.shape, self.heads, self.dim_head, self.num_mem_kv, self.n_local_attn_heads
 

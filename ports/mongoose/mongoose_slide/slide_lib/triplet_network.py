@@ -5,6 +5,22 @@ use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 
 class TripletNet(nn.Module):
+	"""Learn a projection used as a data-dependent hash function.
+
+	Paper mapping:
+	    MONGOOSE (ICLR 2021), Section 3.3 "Learnable LSH" and Section 3.3.1.
+
+	Implementation note:
+	    This is the SLIDE-side experimental learner in the released code. The
+	    projection has K*L outputs, corresponding to hash-function components
+	    across L tables. Its forward objective is pairwise/BCE based; it is not
+	    a literal implementation of the margin-based triplet Equation 3 used by
+	    the Reformer-side TripletLSHAttention implementation.
+
+	Paper:
+	    https://openreview.net/forum?id=wWK7yXkULyh
+	"""
+
 	def __init__(self, margin, K, L, layer_size):
 		super(TripletNet, self).__init__()
 		self.K = K
@@ -20,6 +36,15 @@ class TripletNet(nn.Module):
 		bias.data.fill_(0)
 
 	def forward(self, arc, pair, label):
+		"""Compute the differentiable hash-agreement loss for labeled pairs.
+
+		The linear projection is split into L table-sized chunks, passed through
+		tanh as a smooth sign/hash surrogate, and compared by inner product.
+		Binary cross entropy encourages the supplied positive/negative pair
+		labels. This realizes the paper's Section 3.3 idea of learning hash
+		functions from training signals, but with this repository's own pairwise
+		objective.
+		"""
 
 		emb_arc = self.dense1(arc)
 		emb_pair = self.dense1(pair)

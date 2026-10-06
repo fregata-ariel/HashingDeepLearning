@@ -36,18 +36,6 @@ jobs:
         run: |
           curl --fail --location --retry 3 --retry-delay 2 "https://proceedings.mlsys.org/paper_files/paper/2021/file/de4086ad4276d895be8ef25ec03c964b-Paper.pdf" -o papers/pdf/slide-optimized-2021-mlsys.pdf
 
-      - name: Download MONGOOSE 2021 with OpenReview client
-        run: |
-          python3 -m pip install --quiet openreview-py
-          python3 - <<'PY'
-          from pathlib import Path
-          import openreview
-          client = openreview.Client(baseurl="https://api.openreview.net")
-          data = client.get_pdf("wWK7yXkULyh")
-          Path("papers/pdf/mongoose-iclr-2021.pdf").write_bytes(data)
-          print("downloaded", len(data), "bytes")
-          PY
-
       - name: Verify PDF files and print hashes
         run: |
           file papers/pdf/*.pdf
@@ -57,7 +45,6 @@ jobs:
           names = [
               "papers/pdf/slide-2020-mlsys.pdf",
               "papers/pdf/slide-optimized-2021-mlsys.pdf",
-              "papers/pdf/mongoose-iclr-2021.pdf",
           ]
           for name in names:
               data = Path(name).read_bytes()
@@ -77,7 +64,6 @@ jobs:
           data["papers"]["slide-2020"]["local_file"] = "papers/pdf/slide-2020-mlsys.pdf"
           data["papers"]["slide-optimized-2021"]["version"] = "MLSys 2021 proceedings"
           data["papers"]["slide-optimized-2021"]["local_file"] = "papers/pdf/slide-optimized-2021-mlsys.pdf"
-          data["papers"]["mongoose-2021"]["local_file"] = "papers/pdf/mongoose-iclr-2021.pdf"
           path.write_text(json.dumps(data, indent=2) + "\n")
           PY
           python3 tools/validate_traceability.py --emit-dir /tmp/traceability

@@ -357,6 +357,30 @@ int Network<T, Tp>::ProcessInput(int **inputIndices, T **inputValues, int *lengt
 }
 
 template <class T, class Tp>
+/**
+ * @brief Executes optimized sparse forward/backward work and the parameter-update phase for one batch.
+ *
+ * @par Paper mapping
+ * Optimized SLIDE (MLSys 2021), Section 4.3.1 "Parameter Updates with ADAM"
+ * and Section 4.3.2 "Vectorizing Sparse-Dense and Dense-Sparse Operations in
+ * SLIDE".
+ *
+ * @par Implementation note
+ * The function first records active paths and sparse gradients, then updates
+ * the contiguous weight/Adam buffers. With OPT_IA && OPT_AVX512 the update
+ * loop operates on SIMD blocks; otherwise the corresponding scalar path is
+ * used. Rehash/rebuild maintenance follows the parameter update.
+ *
+ * @warning
+ * Reproduction tests found gradient and Adam-state buffers that are allocated
+ * without guaranteed initialization before read/accumulate use; see
+ * https://github.com/fregata-ariel/HashingDeepLearning/issues/6 . Strict AVX
+ * smoke tests also exposed non-finite parameters on the original tiny fixture;
+ * see Issues #5 and #7 before interpreting that result as an AVX arithmetic
+ * defect.
+ *
+ * @see https://arxiv.org/abs/2103.10891
+ */
 int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchIndex,
                              int iter, bool rehash, bool rebuild) {
 

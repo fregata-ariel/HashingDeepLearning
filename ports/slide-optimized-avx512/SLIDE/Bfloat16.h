@@ -28,6 +28,25 @@ union float_raw { // helper data type
 };
 using float_raw = union float_raw;
 
+/**
+ * @brief Software representation and conversion helpers for Brain Float 16 (BF16).
+ *
+ * @par Paper mapping
+ * Optimized SLIDE (MLSys 2021), Section 4.4 "BF16 Optimization".
+ *
+ * @par Implementation note
+ * The optimized code uses this type both for BF16 activations with FP32 master
+ * weights and for BF16 activations plus BF16 weights. AVX-512 helper functions
+ * later in this header convert, load, and store packed BF16 values.
+ *
+ * @par Reported effect
+ * Section 5.6 / Table 3 reports workload-dependent BF16 results: BF16 helps
+ * some Amazon-670K and WikiLSH-325K settings, while using BF16 for both
+ * activations and weights is slower on Text8. Treat BF16 as a configuration
+ * trade-off rather than a universally faster representation.
+ *
+ * @see https://arxiv.org/abs/2103.10891
+ */
 struct bfloat16 {
   enum class Rounding : uint16_t {
     RNE = 0,

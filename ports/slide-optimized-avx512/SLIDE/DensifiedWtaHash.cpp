@@ -56,6 +56,26 @@ DensifiedWtaHash::DensifiedWtaHash(int numHashes, int noOfBitsToHash)
 
 
 template <class T>
+/**
+ * @brief Computes Densified-WTA hashes, using an AVX-512 fast path when applicable.
+ *
+ * @par Paper mapping
+ * Optimized SLIDE (MLSys 2021), Section 4.3.3 "Vectorizing
+ * Densified-Winner-Takes-All (DTWA)".
+ *
+ * @par Implementation note
+ * The random index-to-bin mapping is precomputed by the constructor. Under
+ * OPT_IA && OPT_AVX512, dense stride-1 inputs whose length is divisible by 16
+ * use 512-bit loads plus gather/compare/scatter operations to update bin maxima;
+ * other inputs fall back to the scalar loop.
+ *
+ * @par Reported effect
+ * Section 5.5 reports an overall AVX-512 training-time improvement of up to
+ * about 1.2x for the paper's evaluated configurations. That is a system-level
+ * ablation and not a timing claim for this hash routine alone.
+ *
+ * @see https://arxiv.org/abs/2103.10891
+ */
 int * DensifiedWtaHash::getHashEasy(T* data, int dataLen, int topk, int stride)
 {
     // binsize is the number of times the range is larger than the total number of hashes we need.

@@ -546,6 +546,28 @@ int Layer<T, Tp>::queryActiveNodeandComputeActivations(int** activenodesperlayer
 
 
 template <class T, class Tp>
+/**
+ * @brief Queries active neurons and computes the optimized sparse/dense forward path.
+ *
+ * @par Paper mapping
+ * Optimized SLIDE (MLSys 2021), Section 4.3.2 "Vectorizing Sparse-Dense and
+ * Dense-Sparse Operations in SLIDE"; BF16-specialized instantiations also map
+ * to Section 4.4 "BF16 Optimization".
+ *
+ * @par Implementation note
+ * The routine keeps the SLIDE active-neuron semantics while arranging dense
+ * portions of the computation for wide SIMD loads/stores. Template parameters
+ * distinguish activation storage (T) from master-weight storage (Tp), enabling
+ * FP32, BF16-activation/FP32-weight, and BF16-activation/BF16-weight modes.
+ *
+ * @warning
+ * The historical AVX dense-forward loop processes outputs in 128-neuron
+ * blocks and has no general tail implementation. Small or non-aligned output
+ * dimensions can skip work; see
+ * https://github.com/fregata-ariel/HashingDeepLearning/issues/7 .
+ *
+ * @see https://arxiv.org/abs/2103.10891
+ */
 int Layer<T, Tp>::queryActiveNodeandComputeActivationsOpt(
     int* in_indices, T* in_values, int ICI,
     int layerID, int inputID, int* label, int labelsize,

@@ -5,6 +5,26 @@
 #include "DataLayerOpt.h"
 
 template <class T>
+/**
+ * @brief Loads sparse records into contiguous index/value arrays plus per-record offsets.
+ *
+ * @par Paper mapping
+ * Optimized SLIDE (MLSys 2021), Section 4.1 "Memory Coalescing and cache
+ * utilization", specifically "Removing Data Memory Fragmentation".
+ *
+ * @par Implementation note
+ * The paper proposes replacing per-example fragmented sparse vectors with long
+ * contiguous arrays and offset metadata so neighboring records can benefit from
+ * cache-line loading and prefetching. indices_/values_ are the packed payload;
+ * offsets_/lengths_ and labelOffsets_/labelLengths_ locate each record.
+ *
+ * @warning
+ * The archived snapshot reserves, but does not resize, several metadata vectors
+ * before indexed writes. That is undefined behavior and is tracked as
+ * https://github.com/fregata-ariel/HashingDeepLearning/issues/2 .
+ *
+ * @see https://arxiv.org/abs/2103.10891
+ */
 void DataLayerOpt<T>::loadData(const std::string &srcFile) {
   std::ifstream ifile(srcFile);
   std::string line;

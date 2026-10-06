@@ -25,16 +25,16 @@ jobs:
         shell: bash
         run: |
           grep -m1 '^flags' /proc/cpuinfo || true
-          if grep -qw avx512_bf16 /proc/cpuinfo; then
-            echo "has_bf16=true" >> "$GITHUB_OUTPUT"
-            echo "AVX512_BF16_HOST_FOUND"
+          if grep -qw avx512f /proc/cpuinfo; then
+            echo "has_avx512=true" >> "$GITHUB_OUTPUT"
+            echo "AVX512F_HOST_FOUND"
           else
-            echo "has_bf16=false" >> "$GITHUB_OUTPUT"
-            echo "AVX512_BF16_NOT_EXPOSED"
+            echo "has_avx512=false" >> "$GITHUB_OUTPUT"
+            echo "AVX512F_NOT_EXPOSED"
           fi
 
       - name: Prepare aligned 128-output A/B workspaces
-        if: steps.cpu.outputs.has_bf16 == 'true'
+        if: steps.cpu.outputs.has_avx512 == 'true'
         shell: bash
         run: |
           python3 - <<'PY'
@@ -183,7 +183,7 @@ jobs:
           PY
 
       - name: Build and run aligned A/B comparison
-        if: steps.cpu.outputs.has_bf16 == 'true'
+        if: steps.cpu.outputs.has_avx512 == 'true'
         shell: bash
         run: |
           set -euxo pipefail
@@ -198,6 +198,9 @@ jobs:
               source /opt/intel/oneapi/setvars.sh || true
 
               overall_fail=0
+              host_bf16=0
+              if grep -qw avx512_bf16 /proc/cpuinfo; then host_bf16=1; fi
+              echo "HOST_AVX512_BF16=${host_bf16}"
               for variant in nozero zero; do
                 cd "/repo/diagnostic-aligned/${variant}"
                 cmake -S . -B build \
@@ -210,6 +213,10 @@ jobs:
                 cmake --build build --parallel 2
 
                 for mode in 0 1 2; do
+                  if [ "${mode}" -gt 0 ] && [ "${host_bf16}" -ne 1 ]; then
+                    echo "ALIGNED_${variant}_MODE_${mode}_SKIPPED_NO_BF16"
+                    continue
+                  fi
                   rm -f smoke_weights.npz smoke_log.txt
                   set +e
                   OMP_NUM_THREADS=2 timeout 90s ./build/runme "smoke_mode${mode}.cfg" 2>&1 | tee "${variant}_mode${mode}.log"

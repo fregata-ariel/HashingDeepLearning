@@ -1,0 +1,56 @@
+name: Paper-code traceability
+
+on:
+  push:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "papers/**"
+      - "tools/validate_traceability.py"
+      - "tests/traceability/**"
+      - "ports/slide-original/SLIDE/LSH.*"
+      - "ports/slide-original/SLIDE/Bucket.*"
+      - "ports/slide-original/SLIDE/Config.h"
+      - "ports/slide-optimized-avx512/SLIDE/Bfloat16.h"
+      - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
+      - ".github/workflows/traceability.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: CPU and commit information
+        run: |
+          uname -a
+          lscpu || true
+          grep -m1 '^flags' /proc/cpuinfo || true
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git rev-parse HEAD
+
+      - name: Validate ledger and materialize artifact
+        run: |
+          python3 tools/validate_traceability.py --emit-dir traceability-artifact
+          if find papers -type f -name '*.pdf' -print -quit | grep -q .; then
+            find papers -type f -name '*.pdf' -print0 | sort -z | xargs -0 sha256sum
+          else
+            echo "No local paper PDFs are present in this commit."
+          fi
+
+      - name: Original SLIDE LSH packing characterization
+        run: |
+          g++ -std=c++11 -O0             tests/traceability/test_slide_lsh_packing.cpp             ports/slide-original/SLIDE/LSH.cpp             ports/slide-original/SLIDE/Bucket.cpp             -Iports/slide-original/SLIDE             -o /tmp/test_slide_lsh_packing
+          /tmp/test_slide_lsh_packing
+
+      - name: Optimized SLIDE BF16 conversion characterization
+        run: |
+          g++ -std=c++17 -O0 -mavx512f             tests/traceability/test_bfloat16_conversion.cpp             -Iports/slide-optimized-avx512/SLIDE             -o /tmp/test_bfloat16_conversion
+          /tmp/test_bfloat16_conversion
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: paper-code-traceability
+          path: traceability-artifact/

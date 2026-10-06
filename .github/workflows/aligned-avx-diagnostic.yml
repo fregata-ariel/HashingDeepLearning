@@ -1,0 +1,226 @@
+name: Optimized SLIDE aligned AVX diagnostic
+
+on:
+  push:
+    branches:
+      - research/lsh-lineage-vendor
+    paths:
+      - ".github/workflows/aligned-avx-diagnostic.yml"
+  workflow_dispatch:
+
+jobs:
+  diagnostic:
+    name: Aligned AVX diagnostic / sample ${{ matrix.sample }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect CPU features
+        id: cpu
+        shell: bash
+        run: |
+          grep -m1 '^flags' /proc/cpuinfo || true
+          if grep -qw avx512_bf16 /proc/cpuinfo; then
+            echo "has_bf16=true" >> "$GITHUB_OUTPUT"
+            echo "AVX512_BF16_HOST_FOUND"
+          else
+            echo "has_bf16=false" >> "$GITHUB_OUTPUT"
+            echo "AVX512_BF16_NOT_EXPOSED"
+          fi
+
+      - name: Prepare aligned 128-output A/B workspaces
+        if: steps.cpu.outputs.has_bf16 == 'true'
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+
+          src = Path("third_party/slide-optimized-avx512")
+          root = Path("diagnostic-aligned")
+          if root.exists():
+              shutil.rmtree(root)
+          shutil.copytree(src, root / "nozero")
+          shutil.copytree(src, root / "zero")
+
+          def patch_common(base: Path):
+              p = base / "SLIDE/DataLayerOpt.h"
+              s = p.read_text()
+              bad = "DataLayerOpt() numRecords_{0}, numFeatures_ {0}, numLabels_ {0} {};"
+              good = "DataLayerOpt() : numRecords_(0), numFeatures_(0), numLabels_(0) {}"
+              assert bad in s
+              p.write_text(s.replace(bad, good))
+
+              p = base / "SLIDE/main.cpp"
+              lines = p.read_text().splitlines(keepends=True)
+              out = []
+              i = 0
+              removed = False
+              while i < len(lines):
+                  if "if (numLayer >= MAX_BUFFER_SIZE)" in lines[i]:
+                      assert "numLayer = MAX_BUFFER_SIZE;" in lines[i + 1]
+                      i += 3
+                      removed = True
+                      continue
+                  if "delete sizesOfLayers;" in lines[i]:
+                      i += 1
+                      continue
+                  out.append(lines[i])
+                  i += 1
+              assert removed
+
+              instrumented = []
+              before = after = False
+              for line in out:
+                  instrumented.append(line)
+                  if "Network<T, Tp> *_mynet = new Network<T, Tp>(" in line:
+                      instrumented.extend([
+                          "    const int smokeWeightCount = sizesOfLayers[0] * InputDim;\n",
+                          "    std::vector<float> smokeInitialWeights(smokeWeightCount);\n",
+                          "    for (int sw = 0; sw < smokeWeightCount; ++sw) smokeInitialWeights[sw] = float(_mynet->getLayer(0)->_weights[sw]);\n",
+                      ])
+                      before = True
+                  if line.strip() == "delete _mynet;":
+                      instrumented[-1:] = [
+                          "    double smokeWeightDeltaL1 = 0.0;\n",
+                          "    size_t smokeNonFiniteWeights = 0;\n",
+                          "    for (int sw = 0; sw < smokeWeightCount; ++sw) {\n",
+                          "        double cur = double(float(_mynet->getLayer(0)->_weights[sw]));\n",
+                          "        if (!std::isfinite(cur)) ++smokeNonFiniteWeights;\n",
+                          "        double d = cur - double(smokeInitialWeights[sw]);\n",
+                          "        smokeWeightDeltaL1 += (d < 0.0 ? -d : d);\n",
+                          "    }\n",
+                          "    cout << \"SMOKE_NONFINITE_WEIGHTS \" << smokeNonFiniteWeights << endl;\n",
+                          "    cout << \"SMOKE_WEIGHT_DELTA_L1 \" << smokeWeightDeltaL1 << endl;\n",
+                          "    if (smokeNonFiniteWeights != 0 || !std::isfinite(smokeWeightDeltaL1) || !(smokeWeightDeltaL1 > 0.0)) return 9;\n",
+                          line,
+                      ]
+                      after = True
+              assert before and after
+              p.write_text("".join(instrumented))
+
+              p = base / "SLIDE/srp.cpp"
+              s = p.read_text()
+              if "#include <cstring>" not in s:
+                  p.write_text("#include <cstring>\n" + s)
+
+              p = base / "SLIDE/DataLayerOpt.cpp"
+              s = p.read_text()
+              for name in ("offsets_", "lengths_", "labelOffsets_", "labelLengths_"):
+                  old = f"{name}.reserve(numRecords_);"
+                  assert old in s
+                  s = s.replace(old, f"{name}.resize(numRecords_);")
+              p.write_text(s)
+
+              def row(label, shift=0):
+                  ids = [(shift+i) % 32 for i in range(4)]
+                  vals = [1.0, 0.5, 0.25, 0.125]
+                  return str(label) + " " + " ".join(f"{i}:{v}" for i, v in zip(ids, vals))
+
+              (base / "smoke_train.txt").write_text(
+                  "\n".join(["2 32 128", row(0,0), row(1,4)]) + "\n"
+              )
+              (base / "smoke_test.txt").write_text(
+                  "\n".join(["40 32 128"] + [row(i % 4, (i*3) % 32) for i in range(40)]) + "\n"
+              )
+              cfg = """RangePow=6
+              K=2
+              L=2
+              Sparsity=1,1
+              Batchsize=2
+              Rehash=1000
+              Rebuild=1000
+              InputDim=32
+              totRecords=2
+              totRecordsTest=40
+              Lr=0.001
+              Epoch=1
+              Stepsize=1000
+              sizesOfLayers=128
+              numLayer=1
+              trainData=smoke_train.txt
+              testData=smoke_test.txt
+              weight=unused.npz
+              savedweight=smoke_weights.npz
+              logFile=smoke_log.txt
+              Bfloat16Opt={mode}
+              """.replace("              ","")
+              for mode in (0, 1, 2):
+                  (base / f"smoke_mode{mode}.cfg").write_text(cfg.format(mode=mode))
+
+          patch_common(root / "nozero")
+          patch_common(root / "zero")
+
+          # A/B-only difference: zero the accumulator and Adam state storage.
+          p = root / "zero/SLIDE/Layer.cpp"
+          s = p.read_text()
+          if "#include <cstring>" not in s:
+              s = s.replace("#include <x86intrin.h>\n", "#include <x86intrin.h>\n#include <cstring>\n")
+          s = s.replace(
+              "_biasGrads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);",
+              "_biasGrads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);\n"
+              "        memset(_weightGrads, 0, sizeof(T) * _noOfNodes * previousLayerNumOfNodes);\n"
+              "        memset(_biasGrads, 0, sizeof(T) * _noOfNodes);",
+          )
+          s = s.replace(
+              "_adamAvgVel = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);",
+              "_adamAvgVel = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);\n"
+              "            memset(_adamAvgMom, 0, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);\n"
+              "            memset(_adamAvgVel, 0, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);",
+          )
+          s = s.replace(
+              "_adamAvgVelBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);",
+              "_adamAvgVelBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);\n"
+              "            memset(_adamAvgMomBias, 0, sizeof(float) * _noOfNodes);\n"
+              "            memset(_adamAvgVelBias, 0, sizeof(float) * _noOfNodes);",
+          )
+          p.write_text(s)
+          PY
+
+      - name: Build and run aligned A/B comparison
+        if: steps.cpu.outputs.has_bf16 == 'true'
+        shell: bash
+        run: |
+          set -euxo pipefail
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            intel/oneapi-hpckit:2023.2-devel-ubuntu22.04 \
+            bash -lc '
+              set -euxo pipefail
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake make
+              source /opt/intel/oneapi/setvars.sh || true
+
+              overall_fail=0
+              for variant in nozero zero; do
+                cd "/repo/diagnostic-aligned/${variant}"
+                cmake -S . -B build \
+                  -DCMAKE_BUILD_TYPE=Release \
+                  -DCMAKE_C_COMPILER=icc \
+                  -DCMAKE_CXX_COMPILER=icpc \
+                  -DOPT_IA=ON \
+                  -DOPT_AVX512=ON \
+                  -DOPT_AVX512_BF16=ON
+                cmake --build build --parallel 2
+
+                for mode in 0 1 2; do
+                  rm -f smoke_weights.npz smoke_log.txt
+                  set +e
+                  OMP_NUM_THREADS=2 timeout 90s ./build/runme "smoke_mode${mode}.cfg" 2>&1 | tee "${variant}_mode${mode}.log"
+                  rc=${PIPESTATUS[0]}
+                  set -e
+                  echo "ALIGNED_${variant}_MODE_${mode}_RC=${rc}"
+                  grep "SMOKE_NONFINITE_WEIGHTS" "${variant}_mode${mode}.log" || true
+                  grep "SMOKE_WEIGHT_DELTA_L1" "${variant}_mode${mode}.log" || true
+                  if [ "${variant}" = "zero" ] && [ "${rc}" -ne 0 ]; then overall_fail=1; fi
+                done
+                cd /repo
+              done
+              exit "${overall_fail}"
+            '

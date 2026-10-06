@@ -12,17 +12,20 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.nn.parallel import DistributedDataParallel as DDP
 
 try:
-    # from apex.parallel import DistributedDataParallel as DDP
+    # Historical environment used NVIDIA APEX, but this script does not rely on
+    # those symbols for the FP32 training path exercised here.
     from apex.fp16_utils import *
     from apex import optimizers
     from apex.multi_tensor_apply import multi_tensor_applier
+    APEX_AVAILABLE = True
 except ImportError:
-    raise ImportError("This code requires APEX")
+    APEX_AVAILABLE = False
 
 seed=17
 torch.manual_seed(seed)
-torch.cuda.manual_seed(seed)
-torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)  # if you are using multi-GPU.
 np.random.seed(seed)  # Numpy module.
 random.seed(seed)  # Python random module.
 torch.manual_seed(seed)
@@ -57,10 +60,22 @@ parser.add_argument('--note', type=str, default='')
 parser.add_argument('--scheduler_hashes', type=int, default=10)
 parser.add_argument('--thresh', type=float, default=0.01)
 parser.add_argument('--local_rank', type=int, default=0)
+parser.add_argument('--device', choices=['auto', 'cpu', 'cuda'], default='auto')
 
 
 GRADIENT_ACCUMULATE_EVERY = 1
 args = parser.parse_args()
+
+if args.device == 'auto':
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+elif args.device == 'cuda':
+    if not torch.cuda.is_available():
+        raise RuntimeError("--device cuda requested but CUDA is unavailable")
+    device = torch.device('cuda')
+else:
+    device = torch.device('cpu')
+print("training device:", device)
+print("APEX available:", APEX_AVAILABLE)
 
 args.distributed = False
 if 'WORLD_SIZE' in os.environ:
@@ -71,12 +86,13 @@ args.world_size = 1
 
 if args.distributed:
     rank = int(os.environ['RANK'])
-    num_gpus = torch.cuda.device_count()
-    gpu_id = rank % num_gpus
-    torch.cuda.set_device(gpu_id)
-    # args.gpu = args.local_rank
-    # torch.cuda.set_device(args.gpu)
-    torch.distributed.init_process_group(backend='nccl')
+    if device.type == 'cuda':
+        num_gpus = torch.cuda.device_count()
+        gpu_id = rank % num_gpus
+        torch.cuda.set_device(gpu_id)
+        torch.distributed.init_process_group(backend='nccl')
+    else:
+        torch.distributed.init_process_group(backend='gloo')
     args.world_size = torch.distributed.get_world_size()
 
 # generating Tensorboard writer
@@ -144,8 +160,8 @@ def sequence_copy_inputs(
                 x = np.concatenate([zero, w, zero, np.flip(w, axis=1)], axis=1)
             else:
                 x = np.concatenate([zero, w, zero, w], axis=1)
-            x = torch.Tensor(_pad_to_multiple_of(x, pad_to_multiple, 1)).cuda().long()
-            loss_weights = torch.Tensor(_pad_to_multiple_of(loss_weights, pad_to_multiple, 1)).cuda().long()
+            x = torch.Tensor(_pad_to_multiple_of(x, pad_to_multiple, 1)).to(device).long()
+            loss_weights = torch.Tensor(_pad_to_multiple_of(loss_weights, pad_to_multiple, 1)).to(device).long()
             yield (x,x,loss_weights)  # Here inputs and targets are the same.
 
     train_lengths = [2 * (i + 2) for i in range(train_length - 1)]
@@ -255,7 +271,7 @@ if __name__ == "__main__":
     )
 
     model = TrainingWrapper(model)
-    model.cuda()
+    model.to(device)
 
     params_1 = []
     params_2 = []
@@ -273,13 +289,16 @@ if __name__ == "__main__":
 
     if args.distributed:
         global ddp_model
-        model = DDP(model, device_ids=[args.local_rank], output_device=args.local_rank)
+        if device.type == 'cuda':
+            model = DDP(model, device_ids=[args.local_rank], output_device=args.local_rank)
+        else:
+            model = DDP(model)
         ddp_model = model
 
     for epoch in range(0, args.epochs):
         epoch_start_time = time.time()
         train(model, train_loader, epoch)
-        val_loss = evaluate(model, eval_loader, args.print_loss, epoch)
+        val_loss = evaluate(model, eval_loader, args.eval_batches, epoch)
 
         if args.log and args.local_rank==0:
             writer.add_scalar('Loss/val', val_loss, epoch)

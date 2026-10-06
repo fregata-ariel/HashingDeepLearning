@@ -1,7 +1,11 @@
 
 import torch
-from mongoose_slide.slide_lib.cupy_kernel import cupyKernel
 import numpy as np
+
+try:
+    from mongoose_slide.slide_lib.cupy_kernel import cupyKernel
+except (ImportError, OSError):
+    cupyKernel = None
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
@@ -36,7 +40,7 @@ class SimHash:
         self.d = d_
         self.k = k_
         self.L = L_
-        self.fp = cupyKernel(kernel, "fingerprint")
+        self.fp = cupyKernel(kernel, "fingerprint") if use_cuda and cupyKernel is not None else None
 
 
         if weights is None:
@@ -58,7 +62,7 @@ class SimHash:
         negative = (matrix < 0.0).int()
         result = (positive - negative).float()
         #return result.cpu()
-        return result.to(device)
+        return result.to(weights.device)
     
     def generate(d, k, L, seed):
         print("random generate hash table weight")
@@ -75,13 +79,19 @@ class SimHash:
 
 
     def hash(self, data, transpose=False):
+        """Hash a matrix with CUDA when available, otherwise a PyTorch reference path.
+
+        The CPU/reference path preserves the CUDA kernel's bit layout: each of
+        the L groups contains k sign bits, with bit j representing projection
+        component j. It exists to make the MONGOOSE scheduler and correctness
+        tests usable without CuPy/NVRTC.
+        """
         N, D = data.size()
-        srp = torch.matmul(data.to(device), self.rp)
-        #print("srp", srp)
+        rp = self.rp.to(data.device)
+        srp = torch.matmul(data, rp)
         result = self.fingerprint(srp, N)
-        #print("result", result)
         if transpose:
-            result = torch.t(result) 
+            result = torch.t(result)
         return result
 
     # def hash(self, data, transpose=False):
@@ -96,10 +106,17 @@ class SimHash:
     #     return result
 
     def fingerprint(self, srp, N):
-        result = torch.zeros(N, self.L).long().to(device)
-        self.fp(grid=(N,self.L,1),
-                block=(32,1,1),
-                args=[srp.data_ptr(), self.k, self.L, result.data_ptr()],
-                strm=torch.cuda.current_stream().cuda_stream)
-        return result.int()
+        if srp.is_cuda and self.fp is not None:
+            result = torch.zeros(N, self.L, dtype=torch.long, device=srp.device)
+            self.fp(grid=(N,self.L,1),
+                    block=(32,1,1),
+                    args=[srp.data_ptr(), self.k, self.L, result.data_ptr()],
+                    strm=torch.cuda.current_stream().cuda_stream)
+            return result.int()
+
+        if self.k > 63:
+            raise ValueError("reference SimHash fingerprint supports k <= 63")
+        signs = (srp.reshape(N, self.L, self.k) > 0).to(torch.int64)
+        shifts = (1 << torch.arange(self.k, device=srp.device, dtype=torch.int64)).view(1, 1, -1)
+        return torch.sum(signs * shifts, dim=-1).to(torch.int32)
 

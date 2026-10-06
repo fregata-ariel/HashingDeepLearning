@@ -590,11 +590,11 @@ template <class T, class Tp>
  * distinguish activation storage (T) from master-weight storage (Tp), enabling
  * FP32, BF16-activation/FP32-weight, and BF16-activation/BF16-weight modes.
  *
- * @warning
- * The historical AVX dense-forward loop processes outputs in 128-neuron
- * blocks and has no general tail implementation. Small or non-aligned output
- * dimensions can skip work; see
- * https://github.com/fregata-ariel/HashingDeepLearning/issues/7 .
+ * @par Maintained-port fix
+ * The historical AVX dense-forward loop processed only complete 128-neuron
+ * groups and lacked a general output tail (Issue #7). This maintained copy
+ * preserves the 128-output unrolled kernel for full blocks and uses masked
+ * AVX-512 loads/stores for the remaining lanes.
  *
  * @see https://arxiv.org/abs/2103.10891
  */
@@ -838,25 +838,25 @@ int Layer<T, Tp>::queryActiveNodeandComputeActivationsOpt(
   if (_weightsOrder == WeightsOrder::IO && OC == OCI) {
     constexpr int V = 16;
     constexpr int O = 8;
-    int oc2 = (OCI + V - 1) / V;
-    int O2 = oc2 / O;
-    // TODO: tailing handling
-    // int Or = oc2 % O;
-    // int Vr = OCI % V ? OCI % V : V;
+    constexpr int BLOCK = V * O;
+    int fullBlocks = OCI / BLOCK;
+    int tailStart = fullBlocks * BLOCK;
     __m512 vec_max = _mm512_setzero_ps();
     __m512 vec_zero = _mm512_setzero_ps();
-    for (int o2 = 0; o2 < O2; o2++) {
+
+    // Keep the historical 8x16 unrolled kernel for complete 128-output blocks.
+    for (int o2 = 0; o2 < fullBlocks; o2++) {
       __m512 vec_out[O], vec_wei[O];
       #pragma unroll(O)
       for (int o = 0; o < O; o++) {
-        vec_out[o] = _mm512_load<Tp>(&_bias[o2 * O * V + o * V]);
+        vec_out[o] = _mm512_load<Tp>(&_bias[o2 * BLOCK + o * V]);
       }
 
       for (int ici = 0; ici < ICI; ici++) {
         int ic = in_indices[ici];
         #pragma unroll(O)
         for (int o = 0; o < O; o++) {
-          vec_wei[o] = _mm512_load<Tp>(&_weights[ic * OC + o2 * O * V + o * V]);
+          vec_wei[o] = _mm512_load<Tp>(&_weights[ic * OC + o2 * BLOCK + o * V]);
         }
         float in = in_values[ici];
         __m512 vec_in = _mm512_set1_ps(in);
@@ -878,10 +878,40 @@ int Layer<T, Tp>::queryActiveNodeandComputeActivationsOpt(
       }
       #pragma unroll(O)
       for (int o = 0; o < O; o++) {
-        _mm512_store<T>(&_nodeDataOpt[inputID].values[o2 * O * V + o * V],
+        _mm512_store<T>(&_nodeDataOpt[inputID].values[o2 * BLOCK + o * V],
                         vec_out[o]);
       }
     }
+
+    // Process any remaining outputs with masked vectors. This also handles
+    // OCI < 128, for which the historical loop executed zero iterations.
+    if (tailStart < OCI) {
+      int tailVectors = (OCI - tailStart + V - 1) / V;
+      for (int o = 0; o < tailVectors; o++) {
+        int offset = tailStart + o * V;
+        int lanes = std::min(V, OCI - offset);
+        __mmask16 k = _cvtu32_mask16((1u << lanes) - 1u);
+        __m512 vec_out = _mm512_maskz_load<Tp>(k, &_bias[offset]);
+
+        for (int ici = 0; ici < ICI; ici++) {
+          int ic = in_indices[ici];
+          __m512 vec_wei =
+              _mm512_maskz_load<Tp>(k, &_weights[ic * OC + offset]);
+          __m512 vec_in = _mm512_set1_ps(float(in_values[ici]));
+          vec_out += vec_in * vec_wei;
+        }
+
+        if (_type == NodeType::ReLU) {
+          vec_out = _mm512_max_ps(vec_out, vec_zero);
+        } else if (_type == NodeType::Softmax) {
+          vec_max = _mm512_max_ps(vec_out, vec_max);
+        }
+
+        _mm512_mask_store<T>(&_nodeDataOpt[inputID].values[offset], k,
+                             vec_out);
+      }
+    }
+
     if (_type == NodeType::Softmax)
       maxValue = _mm512_reduce_max_ps(vec_max);
   } else if (_weightsOrder == WeightsOrder::OI && ICI == IC) {

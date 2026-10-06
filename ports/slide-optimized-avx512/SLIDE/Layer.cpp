@@ -68,6 +68,7 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
       _nodeDataOpt[i].indices = (int *)aligned_alloc(64, sizeof(int) * _noOfNodes);
       _nodeDataOpt[i].values = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);
       _nodeDataOpt[i].grads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);
+      std::fill_n(_nodeDataOpt[i].grads, _noOfNodes, T{});
     }
 #endif
 
@@ -90,6 +91,8 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
         }
         _weightGrads =  (T *)aligned_alloc(64, sizeof(T) * _noOfNodes * previousLayerNumOfNodes);
         _biasGrads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);
+        std::fill_n(_weightGrads, _noOfNodes * previousLayerNumOfNodes, T{});
+        std::fill_n(_biasGrads, _noOfNodes, T{});
 #endif
         random_device rd;
         std::mt19937 re(rd());
@@ -127,10 +130,14 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
         {
             _adamAvgMom = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);
             _adamAvgVel = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);
+            std::fill_n(_adamAvgMom, _noOfNodes * previousLayerNumOfNodes, 0.0f);
+            std::fill_n(_adamAvgVel, _noOfNodes * previousLayerNumOfNodes, 0.0f);
 
 #if OPT_IA
             _adamAvgMomBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);
             _adamAvgVelBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);
+            std::fill_n(_adamAvgMomBias, _noOfNodes, 0.0f);
+            std::fill_n(_adamAvgVelBias, _noOfNodes, 0.0f);
 #endif
         }
     }

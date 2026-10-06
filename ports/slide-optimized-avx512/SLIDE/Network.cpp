@@ -371,13 +371,12 @@ template <class T, class Tp>
  * loop operates on SIMD blocks; otherwise the corresponding scalar path is
  * used. Rehash/rebuild maintenance follows the parameter update.
  *
- * @warning
- * Reproduction tests found gradient and Adam-state buffers that are allocated
- * without guaranteed initialization before read/accumulate use; see
- * https://github.com/fregata-ariel/HashingDeepLearning/issues/6 . Strict AVX
- * smoke tests also exposed non-finite parameters on the original tiny fixture;
- * see Issues #5 and #7 before interpreting that result as an AVX arithmetic
- * defect.
+ * @par Maintained-port fix
+ * The archived snapshot allocated gradient and Adam-state buffers without
+ * guaranteed initialization before read/accumulate use (Issue #6). This
+ * maintained copy explicitly zero-initializes those buffers. Strict AVX smoke
+ * tests also exposed non-finite parameters on an early tiny fixture; see
+ * Issues #5 and #7 when interpreting those diagnostics.
  *
  * @see https://arxiv.org/abs/2103.10891
  */

@@ -1,3 +1,4 @@
+#include <cstring>
 #include "srp.h"
 #include <iostream>
 #include <algorithm>

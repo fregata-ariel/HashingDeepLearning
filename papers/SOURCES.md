@@ -9,6 +9,7 @@ Authors: Beidi Chen, Tharun Medini, James Farwell, Sameh Gobriel, Charlie Tai,
 Anshumali Shrivastava.
 
 - Paper: https://arxiv.org/abs/1903.03129
+- Vendored proceedings PDF: `papers/pdf/slide-2020-mlsys.pdf`
 - Upstream code: https://github.com/keroro824/HashingDeepLearning
 - Snapshot: `c9283490ffe34ba97005ec6e11800fdcdf165d79`
 - Local path: `third_party/slide-original/`
@@ -31,6 +32,7 @@ Gobriel, Charlie Tai, Anshumali Shrivastava.
 
 - Paper: https://arxiv.org/abs/2103.10891
 - Proceedings: https://proceedings.mlsys.org/paper_files/paper/2021/hash/de4086ad4276d895be8ef25ec03c964b-Abstract.html
+- Vendored proceedings PDF: `papers/pdf/slide-optimized-2021-mlsys.pdf`
 - Historical canonical repo: https://github.com/IntelLabs/SLIDE_opt_ia
   (currently unavailable)
 - Coauthor Yong Wu's surviving mirror/history:
@@ -71,6 +73,7 @@ Authors: Beidi Chen, Zichang Liu, Binghui Peng, Zhaozhuo Xu, Jonathan Lingjie
 Li, Tri Dao, Zhao Song, Anshumali Shrivastava, Christopher Ré.
 
 - Paper: https://openreview.net/forum?id=wWK7yXkULyh
+- Local PDF: not vendored yet; OpenReview currently rejects non-interactive download from GitHub-hosted Actions runners. Do not substitute slides or reconstructed text for the paper PDF.
 - Upstream code: https://github.com/HazyResearch/mongoose
 - Snapshot: `890043b39b59a93b8e91a30bc79f4b8125febb78`
 - Local path: `third_party/mongoose/`

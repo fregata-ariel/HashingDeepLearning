@@ -1,0 +1,188 @@
+name: Maintained ports smoke tests
+
+on:
+  push:
+    branches:
+      - research/lsh-lineage-vendor
+    paths:
+      - "ports/**"
+      - ".github/workflows/ports-smoke.yml"
+  workflow_dispatch:
+
+jobs:
+  original:
+    name: Original SLIDE port / GCC train + teardown
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        working-directory: ports/slide-original
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel 2
+      - name: Generate tiny dataset
+        working-directory: ports/slide-original
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def row(label, shift):
+              ids=[(shift+i)%32 for i in range(4)]
+              vals=[1.0,0.5,0.25,0.125]
+              return str(label)+" "+" ".join(f"{i}:{v}" for i,v in zip(ids,vals))
+          Path("smoke_train.txt").write_text("\n".join(["2 32 4",row(0,0),row(1,4)])+"\n")
+          Path("smoke_test.txt").write_text("\n".join(["40 32 4"]+[row(i%4,(i*3)%32) for i in range(40)])+"\n")
+          cfg=[
+            "RangePow=6","K=2","L=2","Sparsity=1,1","Batchsize=2",
+            "Rehash=1000","Rebuild=1000","InputDim=32","totRecords=2",
+            "totRecordsTest=40","Lr=0.001","Epoch=1","Stepsize=1000",
+            "sizesOfLayers=4","numLayer=1","trainData=smoke_train.txt",
+            "testData=smoke_test.txt","weight=unused.npz",
+            "savedweight=smoke_weights.npz","logFile=smoke_log.txt"
+          ]
+          Path("smoke.cfg").write_text("\n".join(cfg)+"\n")
+          PY
+      - name: Train, save, and exercise destructors
+        working-directory: ports/slide-original
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          set -o pipefail
+          timeout 90s ./build/runme smoke.cfg 2>&1 | tee smoke.log
+          test -s smoke_weights.npz
+          grep -q "save for layer 0" smoke.log
+          grep -q "over all" smoke.log
+          echo "ORIGINAL_PORT_TRAIN_TEARDOWN_PASS"
+
+  optimized-gcc:
+    name: Optimized SLIDE port / GCC scalar train + teardown
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build maintained port
+        working-directory: ports/slide-optimized-avx512
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
+            -DOPT_IA=ON -DOPT_AVX512=OFF -DOPT_AVX512_BF16=OFF
+          cmake --build build --parallel 2
+      - name: Generate tiny dataset with whitespace-only config line
+        working-directory: ports/slide-optimized-avx512
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def row(label, shift):
+              ids=[(shift+i)%32 for i in range(4)]
+              vals=[1.0,0.5,0.25,0.125]
+              return str(label)+" "+" ".join(f"{i}:{v}" for i,v in zip(ids,vals))
+          Path("smoke_train.txt").write_text("\n".join(["2 32 4",row(0,0),row(1,4)])+"\n")
+          Path("smoke_test.txt").write_text("\n".join(["40 32 4"]+[row(i%4,(i*3)%32) for i in range(40)])+"\n")
+          cfg=[
+            "RangePow=6","K=2","L=2","Sparsity=1,1","Batchsize=2",
+            "Rehash=1000","Rebuild=1000","InputDim=32","totRecords=2",
+            "   ",
+            "totRecordsTest=40","Lr=0.001","Epoch=1","Stepsize=1000",
+            "sizesOfLayers=4","numLayer=1","trainData=smoke_train.txt",
+            "testData=smoke_test.txt","weight=unused.npz",
+            "savedweight=smoke_weights.npz","logFile=smoke_log.txt","Bfloat16Opt=0"
+          ]
+          Path("smoke.cfg").write_text("\n".join(cfg)+"\n")
+          PY
+      - name: Train and exit cleanly
+        working-directory: ports/slide-optimized-avx512
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          set -o pipefail
+          timeout 90s ./build/runme smoke.cfg 2>&1 | tee smoke.log
+          test -s smoke_weights.npz
+          grep -q "save for layer 0" smoke.log
+          grep -q "over all" smoke.log
+          echo "OPTIMIZED_PORT_GCC_TRAIN_TEARDOWN_PASS"
+
+  optimized-intel-avx:
+    name: Optimized SLIDE port / Intel AVX tail + BF16
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    container:
+      image: intel/oneapi-hpckit:2023.2-devel-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        shell: bash
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends cmake make
+      - name: Inspect CPU
+        id: cpu
+        shell: bash
+        run: |
+          grep -m1 '^flags' /proc/cpuinfo || true
+          if grep -qw avx512f /proc/cpuinfo; then echo "avx=true" >> "$GITHUB_OUTPUT"; else echo "avx=false" >> "$GITHUB_OUTPUT"; fi
+          if grep -qw avx512_bf16 /proc/cpuinfo; then echo "bf16=true" >> "$GITHUB_OUTPUT"; else echo "bf16=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Build AVX maintained port
+        if: steps.cpu.outputs.avx == 'true'
+        working-directory: ports/slide-optimized-avx512
+        shell: bash
+        run: |
+          source /opt/intel/oneapi/setvars.sh || true
+          cmake -S . -B build-avx -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc \
+            -DOPT_IA=ON -DOPT_AVX512=ON -DOPT_AVX512_BF16=OFF
+          cmake --build build-avx --parallel 2
+      - name: Generate 4-output tail fixture
+        if: steps.cpu.outputs.avx == 'true'
+        working-directory: ports/slide-optimized-avx512
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          def row(label, shift):
+              ids=[(shift+i)%32 for i in range(4)]
+              vals=[1.0,0.5,0.25,0.125]
+              return str(label)+" "+" ".join(f"{i}:{v}" for i,v in zip(ids,vals))
+          Path("smoke_train.txt").write_text("\n".join(["2 32 4",row(0,0),row(1,4)])+"\n")
+          Path("smoke_test.txt").write_text("\n".join(["40 32 4"]+[row(i%4,(i*3)%32) for i in range(40)])+"\n")
+          common=[
+            "RangePow=6","K=2","L=2","Sparsity=1,1","Batchsize=2",
+            "Rehash=1000","Rebuild=1000","InputDim=32","totRecords=2",
+            "totRecordsTest=40","Lr=0.001","Epoch=1","Stepsize=1000",
+            "sizesOfLayers=4","numLayer=1","trainData=smoke_train.txt",
+            "testData=smoke_test.txt","weight=unused.npz",
+            "savedweight=smoke_weights.npz","logFile=smoke_log.txt"
+          ]
+          for mode in (0,1,2):
+              Path(f"smoke_mode{mode}.cfg").write_text("\n".join(common+[f"Bfloat16Opt={mode}"])+"\n")
+          PY
+      - name: Run AVX FP32 on 4-output tail fixture
+        if: steps.cpu.outputs.avx == 'true'
+        working-directory: ports/slide-optimized-avx512
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          set -o pipefail
+          timeout 90s ./build-avx/runme smoke_mode0.cfg 2>&1 | tee avx-tail.log
+          test -s smoke_weights.npz
+          ! grep -Eqi '(^|[^[:alpha:]])nan([^[:alpha:]]|$)' avx-tail.log
+          grep -q "save for layer 0" avx-tail.log
+          echo "OPTIMIZED_PORT_AVX_4_OUTPUT_TAIL_PASS"
+      - name: Build and run BF16 modes
+        if: steps.cpu.outputs.avx == 'true' && steps.cpu.outputs.bf16 == 'true'
+        working-directory: ports/slide-optimized-avx512
+        shell: bash
+        env:
+          OMP_NUM_THREADS: "2"
+        run: |
+          source /opt/intel/oneapi/setvars.sh || true
+          cmake -S . -B build-bf16 -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=icc -DCMAKE_CXX_COMPILER=icpc \
+            -DOPT_IA=ON -DOPT_AVX512=ON -DOPT_AVX512_BF16=ON
+          cmake --build build-bf16 --parallel 2
+          for mode in 1 2; do
+            rm -f smoke_weights.npz smoke_log.txt
+            timeout 90s ./build-bf16/runme "smoke_mode${mode}.cfg" 2>&1 | tee "bf16-tail-${mode}.log"
+            test -s smoke_weights.npz
+            ! grep -Eqi '(^|[^[:alpha:]])nan([^[:alpha:]]|$)' "bf16-tail-${mode}.log"
+            echo "OPTIMIZED_PORT_BF16_MODE_${mode}_4_OUTPUT_TAIL_PASS"
+          done

@@ -14,6 +14,12 @@
 
 using namespace std;
 
+static inline void* alignedAlloc64(size_t bytes) {
+    constexpr size_t alignment = 64;
+    const size_t padded = (bytes + alignment - 1) & ~(alignment - 1);
+    return aligned_alloc(alignment, padded);
+}
+
 
 template <class T, class Tp>
 Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, NodeType type, int batchsize,  int K, int L, int RangePow, float Sparsity, Tp* weights, Tp* bias, float *adamAvgMom, float *adamAvgVel) {
@@ -88,9 +94,9 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
     _nodeDataOpt = new NodeDataOpt[_batchsize];
     for (int i = 0; i < _batchsize; i++) {
       _nodeDataOpt[i].size = _noOfNodes; // assume dense
-      _nodeDataOpt[i].indices = (int *)aligned_alloc(64, sizeof(int) * _noOfNodes);
-      _nodeDataOpt[i].values = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);
-      _nodeDataOpt[i].grads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);
+      _nodeDataOpt[i].indices = (int *)alignedAlloc64(sizeof(int) * _noOfNodes);
+      _nodeDataOpt[i].values = (T *)alignedAlloc64(sizeof(T) * _noOfNodes);
+      _nodeDataOpt[i].grads = (T *)alignedAlloc64(sizeof(T) * _noOfNodes);
       std::fill_n(_nodeDataOpt[i].grads, _noOfNodes, T{});
     }
 #endif
@@ -105,15 +111,15 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
         }
 
     }else{
-        _weights = (Tp *)aligned_alloc(64, sizeof(Tp) * _noOfNodes * previousLayerNumOfNodes);
-        _bias = (Tp *)aligned_alloc(64, sizeof(Tp) * _noOfNodes);
+        _weights = (Tp *)alignedAlloc64(sizeof(Tp) * _noOfNodes * previousLayerNumOfNodes);
+        _bias = (Tp *)alignedAlloc64(sizeof(Tp) * _noOfNodes);
 #if OPT_IA
         if (std::is_same<Tp, bfloat16>::value) {
-            _weightsLo = (uint16_t *)aligned_alloc(64, sizeof(uint16_t) * _noOfNodes * previousLayerNumOfNodes);
-            _biasLo = (uint16_t *)aligned_alloc(64, sizeof(uint16_t) * _noOfNodes);
+            _weightsLo = (uint16_t *)alignedAlloc64(sizeof(uint16_t) * _noOfNodes * previousLayerNumOfNodes);
+            _biasLo = (uint16_t *)alignedAlloc64(sizeof(uint16_t) * _noOfNodes);
         }
-        _weightGrads =  (T *)aligned_alloc(64, sizeof(T) * _noOfNodes * previousLayerNumOfNodes);
-        _biasGrads = (T *)aligned_alloc(64, sizeof(T) * _noOfNodes);
+        _weightGrads =  (T *)alignedAlloc64(sizeof(T) * _noOfNodes * previousLayerNumOfNodes);
+        _biasGrads = (T *)alignedAlloc64(sizeof(T) * _noOfNodes);
         std::fill_n(_weightGrads, _noOfNodes * previousLayerNumOfNodes, T{});
         std::fill_n(_biasGrads, _noOfNodes, T{});
 #endif
@@ -151,14 +157,14 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
 
         if (ADAM)
         {
-            _adamAvgMom = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);
-            _adamAvgVel = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes * previousLayerNumOfNodes);
+            _adamAvgMom = (float *)alignedAlloc64(sizeof(float) * _noOfNodes * previousLayerNumOfNodes);
+            _adamAvgVel = (float *)alignedAlloc64(sizeof(float) * _noOfNodes * previousLayerNumOfNodes);
             std::fill_n(_adamAvgMom, _noOfNodes * previousLayerNumOfNodes, 0.0f);
             std::fill_n(_adamAvgVel, _noOfNodes * previousLayerNumOfNodes, 0.0f);
 
 #if OPT_IA
-            _adamAvgMomBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);
-            _adamAvgVelBias = (float *)aligned_alloc(64, sizeof(float) * _noOfNodes);
+            _adamAvgMomBias = (float *)alignedAlloc64(sizeof(float) * _noOfNodes);
+            _adamAvgVelBias = (float *)alignedAlloc64(sizeof(float) * _noOfNodes);
             std::fill_n(_adamAvgMomBias, _noOfNodes, 0.0f);
             std::fill_n(_adamAvgVelBias, _noOfNodes, 0.0f);
 #endif

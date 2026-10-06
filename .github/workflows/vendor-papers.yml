@@ -31,8 +31,8 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p papers/pdf
-          curl --fail --location --retry 3 --retry-delay 2             https://export.arxiv.org/pdf/1903.03129v2             -o papers/pdf/slide-2020-arxiv-1903.03129v2.pdf
-          curl --fail --location --retry 3 --retry-delay 2             https://export.arxiv.org/pdf/2103.10891v1             -o papers/pdf/slide-optimized-2021-arxiv-2103.10891v1.pdf
+          curl --fail --location --retry 3 --retry-delay 2             https://proceedings.mlsys.org/paper_files/paper/2020/file/ca3480d82599b9b9b7040655483825c1-Paper.pdf             -o papers/pdf/slide-2020-mlsys.pdf
+          curl --fail --location --retry 3 --retry-delay 2             https://proceedings.mlsys.org/paper_files/paper/2021/file/de4086ad4276d895be8ef25ec03c964b-Paper.pdf             -o papers/pdf/slide-optimized-2021-mlsys.pdf
           curl --fail --location --retry 3 --retry-delay 2             https://openreview.net/pdf/fe8456585f1f710b957e2300306b8007044772f0.pdf             -o papers/pdf/mongoose-iclr-2021.pdf
           file papers/pdf/*.pdf
           sha256sum papers/pdf/*.pdf

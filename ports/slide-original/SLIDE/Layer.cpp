@@ -13,6 +13,22 @@ using namespace std;
 
 
 Layer::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, NodeType type, int batchsize,  int K, int L, int RangePow, float Sparsity, float* weights, float* bias, float *adamAvgMom, float *adamAvgVel) {
+    _Nodes = nullptr;
+    _randNode = nullptr;
+    _normalizationConstants = nullptr;
+    _train_array = nullptr;
+    _weights = nullptr;
+    _bias = nullptr;
+    _adamAvgMom = nullptr;
+    _adamAvgVel = nullptr;
+    _hashTables = nullptr;
+    _wtaHasher = nullptr;
+    _MinHasher = nullptr;
+    _srp = nullptr;
+    _dwtaHasher = nullptr;
+    _binids = nullptr;
+    _ownsParameters = !LOADWEIGHT;
+
     _layerID = layerID;
     _noOfNodes = noOfNodes;
     _Nodes = new Node[noOfNodes];
@@ -523,22 +539,24 @@ void Layer::saveWeights(string file)
 
 Layer::~Layer()
 {
-
-    for (size_t i = 0; i < _noOfNodes; i++)
-    {
-        if (_type == NodeType::Softmax)
-        {
-            delete[] _normalizationConstants;
-        }
+    if (_type == NodeType::Softmax) {
+        delete[] _normalizationConstants;
     }
-    delete [] _Nodes;
-    delete [] _weights;
-    delete [] _bias;
 
+    delete[] _Nodes;
+    if (_ownsParameters) {
+        delete[] _weights;
+        delete[] _bias;
+        delete[] _adamAvgMom;
+        delete[] _adamAvgVel;
+    }
+
+    delete _hashTables;
     delete _wtaHasher;
     delete _dwtaHasher;
     delete _srp;
     delete _MinHasher;
-    delete [] _randNode;
+    delete[] _binids;
+    delete[] _randNode;
     delete[] _train_array;
 }

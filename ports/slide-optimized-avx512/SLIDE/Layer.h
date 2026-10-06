@@ -26,6 +26,7 @@ private:
 	float* _normalizationConstants;
   int _K, _L, _RangeRow, _batchsize;
   train<T>* _train_array;
+  bool _ownsParameters;
 
 
 public:

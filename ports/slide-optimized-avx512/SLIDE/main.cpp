@@ -582,8 +582,8 @@ int Execute() {
     delete [] K;
     delete [] L;
     delete [] Sparsity;
+    // Network owns sizesOfLayers and layersTypes.
     delete _mynet;
-    delete sizesOfLayers;
 
     return 0;
 

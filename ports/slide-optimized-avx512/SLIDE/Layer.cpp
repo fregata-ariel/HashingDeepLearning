@@ -17,6 +17,29 @@ using namespace std;
 
 template <class T, class Tp>
 Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, NodeType type, int batchsize,  int K, int L, int RangePow, float Sparsity, Tp* weights, Tp* bias, float *adamAvgMom, float *adamAvgVel) {
+    _Nodes = nullptr;
+    _randNode = nullptr;
+    _normalizationConstants = nullptr;
+    _train_array = nullptr;
+    _weights = nullptr;
+    _weightGrads = nullptr;
+    _adamAvgMom = nullptr;
+    _adamAvgVel = nullptr;
+    _bias = nullptr;
+    _biasGrads = nullptr;
+    _adamAvgMomBias = nullptr;
+    _adamAvgVelBias = nullptr;
+    _weightsLo = nullptr;
+    _biasLo = nullptr;
+    _nodeDataOpt = nullptr;
+    _hashTables = nullptr;
+    _wtaHasher = nullptr;
+    _MinHasher = nullptr;
+    _srp = nullptr;
+    _dwtaHasher = nullptr;
+    _binids = nullptr;
+    _ownsParameters = !LOADWEIGHT;
+
     _layerID = layerID;
     _noOfNodes = noOfNodes;
 #if !OPT_IA
@@ -1258,15 +1281,19 @@ Layer<T, Tp>::~Layer()
     delete[] _nodeDataOpt;
 #endif
 
-    free(_adamAvgMom);
-    free(_adamAvgVel);
-    free(_weights);
-    free(_bias);
+    if (_ownsParameters) {
+      free(_adamAvgMom);
+      free(_adamAvgVel);
+      free(_weights);
+      free(_bias);
+    }
 
+    delete _hashTables;
     delete _wtaHasher;
     delete _dwtaHasher;
     delete _srp;
     delete _MinHasher;
+    delete[] _binids;
     delete [] _randNode;
 #if !OPT_IA
     delete[] _Nodes;

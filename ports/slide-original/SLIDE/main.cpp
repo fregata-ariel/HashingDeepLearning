@@ -492,6 +492,10 @@ int main(int argc, char* argv[])
 
     }
 
+    // Network owns sizesOfLayers and layersTypes; deleting it exercises
+    // the maintained-port teardown path (Issue #3).
+    delete _mynet;
+
     delete [] RangePow;
     delete [] K;
     delete [] L;

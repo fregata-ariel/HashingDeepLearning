@@ -18,10 +18,10 @@ template <class T>
  * cache-line loading and prefetching. indices_/values_ are the packed payload;
  * offsets_/lengths_ and labelOffsets_/labelLengths_ locate each record.
  *
- * @warning
- * The archived snapshot reserves, but does not resize, several metadata vectors
- * before indexed writes. That is undefined behavior and is tracked as
- * https://github.com/fregata-ariel/HashingDeepLearning/issues/2 .
+ * @par Maintained-port fix
+ * The archived snapshot used reserve() before indexed writes, which leaves the
+ * vector size at zero and makes those writes undefined behavior (Issue #2).
+ * This maintained copy uses resize() so the metadata elements actually exist.
  *
  * @see https://arxiv.org/abs/2103.10891
  */
@@ -33,10 +33,10 @@ void DataLayerOpt<T>::loadData(const std::string &srcFile) {
   std::getline(ifile, line);
   sscanf(line.c_str(), "%ld %ld %ld\n",
          &numRecords_, &numFeatures_, &numLabels_);
-  offsets_.reserve(numRecords_);
-  lengths_.reserve(numRecords_);
-  labelOffsets_.reserve(numRecords_);
-  labelLengths_.reserve(numRecords_);
+  offsets_.resize(numRecords_);
+  lengths_.resize(numRecords_);
+  labelOffsets_.resize(numRecords_);
+  labelLengths_.resize(numRecords_);
 
 #if DEBUG_DATA_LAYER
   printf("numPoints=%ld, numFeatures=%ld, numLabels=%ld\n",

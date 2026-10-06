@@ -1,18 +1,7 @@
-# Code ↔ paper map
+# Paper-to-code map
 
-This file is the source-of-truth for the future Doxygen/docstring annotation
-pass. The source trees under `third_party/` remain archival snapshots and should
-not be edited merely to add commentary. If annotated/maintained variants are
-needed, create them as explicit ports or patch layers.
-
-The comments we eventually add should distinguish:
-
-1. **paper claim** — what the paper explicitly states or measures;
-2. **implementation mapping** — which symbol realizes that mechanism;
-3. **implementation inference** — behavior inferred from source rather than
-   explicitly stated by the paper.
-
----
+This document is the index for the annotations under `ports/`. The raw
+upstream snapshots remain unchanged under `third_party/`.
 
 ## Original SLIDE — MLSys 2020
 
@@ -20,117 +9,19 @@ Paper: *SLIDE: In Defense of Smart Algorithms over Hardware Acceleration for
 Large-Scale Deep Learning Systems*  
 https://arxiv.org/abs/1903.03129
 
-### LSH table construction and lookup
+| Code | Paper mapping | What the code implements |
+| --- | --- | --- |
+| `SLIDE/LSH.cpp::hashesToIndex` | §2 Locality Sensitive Hashing; §2.1 LSH for Estimation and Sampling; Algorithm 2 | Combines K component hashes into one bucket address for each of L tables. |
+| `SLIDE/LSH.cpp::retrieveRaw` | §2.1; Algorithm 2, bucket-query loop | Probes one bucket from every LSH table and exposes the candidates used by the sampler. |
+| `SLIDE/Layer.cpp::addtoHashTable` | §3.1 Initialization; Figure 2; Algorithm 1 initialization | Hashes each neuron's weight vector and inserts its id into the layer's LSH tables. |
+| `SLIDE/Layer.cpp::queryActiveNodeandComputeActivations` | Algorithm 1 sampling/forward steps; §3.1 Sparse Feed-Forward Pass; Figure 3 | Queries the LSH tables, forms an active-neuron set, and computes activations only for that set. |
+| `SLIDE/Network.cpp::ProcessInput` | Algorithm 1 backpropagation; §3.1 Sparse Backpropagation / Gradient Update | Runs sparse forward/backward work and applies parameter updates only through the selected computation path. |
+| rehash/rebuild logic in `Network.cpp` and `main.cpp` | §4.2 Updating Overhead | Implements periodic hash-table maintenance. The snapshot uses fixed configured intervals; the paper additionally describes an exponentially decaying update frequency, so the code should not be described as an exact implementation of that heuristic. |
 
-**Paper anchors**
-
-- §2, *Locality Sensitive Hashing*
-- §2.1, *LSH for Estimation and Sampling*
-- Algorithm 1, *SLIDE Algorithm*
-- Algorithm 2, *Algorithm for LSH Sampling*
-- §3.2, *Details of Hash Functions and Hash Tables*
-
-**Code**
-
-- `third_party/slide-original/SLIDE/LSH.cpp`
-  - `LSH::LSH`
-  - `LSH::hashesToIndex`
-  - `LSH::add`
-  - `LSH::retrieveRaw`
-- `SLIDE/DensifiedWtaHash.cpp`
-- `SLIDE/DensifiedMinhash.cpp`
-- `SLIDE/WtaHash.cpp`
-- `SLIDE/srp.cpp`
-
-**Mapping**
-
-The paper describes an LSH layer as `L` tables, each addressed by a
-concatenation of `K` hash values. The implementation converts the per-table
-hash values into bucket indexes in `hashesToIndex()`, stores neuron IDs with
-`add()`, and retrieves the candidate buckets with `retrieveRaw()`.
-
-§3.2 explicitly lists SimHash, WTA, densified WTA, and MinHash as supported hash
-families. The individual hash implementations should cite the more specific
-hash-function papers as well as SLIDE when we annotate them.
-
-### Sparse forward pass / active-neuron selection
-
-**Paper anchors**
-
-- Algorithm 1
-- Algorithm 2
-- §3.1, overall SLIDE workflow / forward pass
-- Figure 3, sparse forward pass
-- §4.1, *Sampling Overhead*
-
-**Code**
-
-- `SLIDE/Layer.cpp`
-  - `Layer::queryActiveNodeandComputeActivations`
-  - `Layer::queryActiveNodes`
-  - `Layer::computeActivations`
-  - `Layer::computeSoftmax`
-  - `Layer::addtoHashTable`
-
-**Mapping**
-
-For each layer, the input is hashed, buckets are queried, a sparse active set is
-formed, and activations are computed only for that set. Softmax normalization is
-also over the sampled active output set rather than every output neuron.
-
-The paper discusses three candidate-selection policies in §4.1: vanilla
-sampling, Top-K sampling, and hard thresholding. Source comments should identify
-the selected implementation policy without implying that every helper
-implements all three.
-
-### Sparse backpropagation and asynchronous update
-
-**Paper anchors**
-
-- §3.1, *Sparse Backpropagation or Gradient Update*
-- §1.1, contribution describing sparse asynchronous SGD
-- §5.3 for scaling observations
-
-**Code**
-
-- `SLIDE/Network.cpp`
-  - `Network::ProcessInput`
-- `SLIDE/Node.cpp`
-  - first-layer and hidden-layer backpropagation helpers
-
-**Mapping**
-
-Only active neurons participate in backward propagation. The paper connects the
-sparse/random overlap pattern to HOGWILD-style asynchronous updates. Comments
-should describe the code's actual OpenMP/update behavior and separately cite the
-paper's convergence/scaling argument; do not claim lock-free safety merely from
-the presence of OpenMP.
-
-### Hash-table update overhead
-
-**Paper anchors**
-
-- §4.2, *Updating Overhead*
-
-**Code**
-
-- `SLIDE/Network.cpp`
-  - `tmpRehash` / `tmpRebuild`
-  - calls to `_hashTables->clear()`
-  - calls to `Layer::updateTable()`
-  - reinsertion after parameter updates
-- `SLIDE/Layer.cpp`
-  - `Layer::updateTable`
-
-**Mapping**
-
-The paper argues that recomputing/rebuilding hash state after every gradient
-step is too expensive and proposes reducing the update frequency as training
-progresses. Source annotation should state the concrete scheduling behavior in
-this snapshot rather than assuming it exactly matches every formula/heuristic in
-the paper.
-
----
+The paper's main system-level claim is that LSH-selected adaptive sparsity
+avoids computing most neuron activations and enables sparse asynchronous
+updates. Performance numbers belong to the complete system and should not be
+attributed to a single function.
 
 ## Optimized SLIDE — MLSys 2021
 
@@ -138,109 +29,29 @@ Paper: *Accelerating SLIDE Deep Learning on Modern CPUs: Vectorization,
 Quantizations, Memory Optimizations, and More*  
 https://arxiv.org/abs/2103.10891
 
-### Baseline SLIDE workflow
+| Code | Paper mapping | What the code implements |
+| --- | --- | --- |
+| `SLIDE/DataLayerOpt.cpp::loadData` | §4.1 Memory Coalescing and cache utilization; “Removing Data Memory Fragmentation” | Packs sparse indices/values into long contiguous vectors and keeps per-record offsets/lengths. |
+| contiguous layer buffers in `Layer.cpp` | §4.1, “Removing Parameter Memory Fragmentation” | Stores weights and related state in contiguous layer-wide allocations for cache/coalescing behavior. |
+| `SLIDE/DensifiedWtaHash.cpp::getHashEasy` | §4.3.3 Vectorizing Densified-Winner-Takes-All | Uses the precomputed index map plus AVX-512 gather/compare/scatter operations when the vectorized conditions hold. |
+| `Layer.cpp::queryActiveNodeandComputeActivationsOpt` | §4.3.2 Vectorizing Sparse-Dense and Dense-Sparse Operations | Contains the vectorized forward/activation path and its layout-sensitive loops. |
+| `Network.cpp::ProcessInputOpt` | §4.3.1 Parameter Updates with ADAM; §4.3.2 | Runs optimized sparse backpropagation and the scalar/AVX parameter-update paths. |
+| `SLIDE/Bfloat16.h` and BF16 template instantiations | §4.4 BF16 Optimization | Supplies BF16 storage/conversion helpers for activation-only and activation+weight modes. |
 
-**Paper anchors**
+Reported effects must remain separate from mechanism:
 
-- §2, *Background: Sub-Linear Deep Learning Engine (SLIDE)*
+- §5.5 / Table 4 reports AVX-512 reducing average training time by up to about
+  1.2x in the paper's tested configurations, with unchanged accuracy because
+  the computation is intended to be equivalent.
+- §5.6 / Table 3 reports dataset-dependent BF16 effects; BF16 is not uniformly
+  faster on every workload.
+- §5.7 says the new implementation is 2–7x faster than the older SLIDE
+  implementation overall, with AVX+BF16 accounting for roughly 1.7x and memory
+  optimizations providing the remaining improvement.
 
-**Code**
-
-- `third_party/slide-optimized-avx512/SLIDE/Network.cpp`
-- `SLIDE/Layer.cpp`
-- `SLIDE/LSH.cpp`
-
-This section is the conceptual bridge to the original implementation: LSH
-selects active neurons, followed by sparse forward/backward work and hash-table
-maintenance.
-
-### AVX-512 vectorization
-
-**Paper anchors**
-
-- §4.2, *Vectorization with AVX-512*
-- §4.3, *AVX-512 in SLIDE*
-- §4.3.1, *Parameter Updates with ADAM*
-- §4.3.2, *Vectorizing Sparse-Dense and Dense-Sparse Operations in SLIDE*
-- §5.5, *Impact of AVX-512*
-
-**Code**
-
-- `SLIDE/Network.cpp`
-  - AVX-512 branch in `Network<T,Tp>::ProcessInputOpt`
-  - `vecAdamWeights`
-  - `vecAdamBias`
-- `SLIDE/Layer.cpp`
-  - AVX-512 activation, gradient, and sparse/dense kernels
-- `SLIDE/DensifiedWtaHash.cpp`
-  - AVX-512 gather / compare / scatter hashing path
-- `CMakeLists.txt`
-  - `OPT_AVX512`
-
-**Paper-reported effect**
-
-§5.5 reports that enabling AVX-512 reduces average training time per epoch by up
-to about 1.2× relative to the same optimized configuration with AVX-512
-disabled, while performing the same computation.
-
-**Current runtime finding**
-
-Our one-batch smoke test under Intel C++ Classic 2021.10 successfully compiles
-and executes the AVX-512 path, but the strengthened finite-value check currently
-detects NaN parameters after the update. Track this independently from the paper
-claim in Issue #5; do not annotate the source as numerically validated until the
-runtime discrepancy is resolved.
-
-### BF16 representation and arithmetic
-
-**Paper anchors**
-
-- §4.4, *BF16 Optimization*
-- §5.6, *Impact of BF16*
-
-**Code**
-
-- `SLIDE/Bfloat16.h`
-- `SLIDE/Layer.cpp`
-  - `OPT_AVX512_BF16` paths
-  - BF16 dot-product / conversion intrinsics
-- `SLIDE/Network.cpp`
-  - BF16 parameter handling
-- `SLIDE/main.cpp`
-  - `Bfloat16Opt` mode dispatch
-- `CMakeLists.txt`
-  - `OPT_AVX512_BF16`
-
-**Mapping**
-
-§4.4 describes two reduced-precision strategies:
-
-- BF16 activations with FP32 master parameters;
-- BF16 activations and BF16 parameters.
-
-The implementation exposes these as `Bfloat16Opt=1` and `Bfloat16Opt=2`,
-respectively. Comments should keep the compile-time availability
-(`OPT_AVX512_BF16`) separate from the runtime precision mode
-(`Bfloat16Opt`).
-
-### Densified-WTA vectorization
-
-**Paper anchors**
-
-- §4.3, AVX-512 in SLIDE; the paper discusses vectorizing the hashing operation
-  by precomputing the random map and using vector max-style processing.
-
-**Code**
-
-- `SLIDE/DensifiedWtaHash.cpp::getHashEasy`
-
-**Mapping**
-
-The optimized source loads precomputed index/position vectors and uses
-`_mm512_i32gather_ps`, masked comparisons, and masked scatter operations to
-update WTA bins in batches of 16 lanes.
-
----
+These paper results are **not** a claim that the historical snapshot is
+numerically correct on arbitrary modern machines. Our smoke tests found
+separate source/runtime issues tracked in Issues #1–#7.
 
 ## MONGOOSE — ICLR 2021
 
@@ -248,132 +59,27 @@ Paper: *MONGOOSE: A Learnable LSH Framework for Efficient Neural Network
 Training*  
 https://openreview.net/forum?id=wWK7yXkULyh
 
-### Slow-change observation
+| Code | Paper mapping | What the code implements |
+| --- | --- | --- |
+| `mongoose_reformer/reformer_lib/scheduler.py::Scheduler` | §3.1 Slow Change; §3.2 Smart Scheduler | Keeps compact SimHash codes of current parameters and uses code changes as a cheap trigger for expensive LSH-related work. This repository implementation is a simplified practical trigger, not a literal transcription of Algorithm 1's full maintenance data structure. |
+| `mongoose_reformer/reformer_lib/reformer_pytorch.py::LSHSelfAttention.forward` | §3.2 scheduler + §3.3 learnable LSH | Calls the scheduler before deciding whether to collect triplet examples and update learnable rotations. |
+| `TripletLSHAttention.triplet_forward` | §3.3.1 Learnable LSH, Equation 3 / Algorithm 2 | Optimizes parameterized hash rotations using positive and negative examples and a margin-based cosine triplet objective. |
+| `mongoose_slide/slide_lib/triplet_network.py::TripletNet.forward` | §3.3 learnable LSH; implementation-specific SLIDE-side objective | Learns a hash projection from pair labels. This code uses a differentiable pairwise/BCE objective rather than being a literal copy of Equation 3. |
 
-**Paper anchor**
+Section 3 of the paper explicitly separates the two MONGOOSE ideas: §3.2
+schedules LSH updates under the slow-change observation, while §3.3 learns
+parameterized hash functions. Section 4 evaluates those ideas on SLIDE and
+Reformer. The headline speed/accuracy/memory results are framework-level
+measurements and should not be attached to an individual helper function.
 
-- §3.1
+## Annotation conventions
 
-The paper measures weight movement and hash-code movement during training and
-uses their slow-change relationship as the basis for MONGOOSE's scheduler.
-
-### Adaptive LSH-update scheduler
-
-**Paper anchor**
-
-- §3.2, efficient LSH update scheduling
-
-**Code**
-
-- `third_party/mongoose/mongoose_reformer/reformer_lib/scheduler.py`
-  - `Scheduler.__init__`
-  - `Scheduler.detect_change`
-- `mongoose_reformer/reformer_lib/reformer_pytorch.py`
-  - scheduler gate around `calc_triplet`
-- `mongoose_slide/slide_lib/network.py`
-  - `LSHSampledLayer.rebuild`
-
-**Mapping**
-
-The scheduler keeps a compact hash-based view of parameters and compares it with
-the updated parameter state. A sufficiently large change triggers an expensive
-LSH/hash-function refresh. Comments must distinguish this implementation's
-specific hash-code threshold from the paper's general theoretical scheduler.
-
-### Learnable LSH functions
-
-**Paper anchor**
-
-- §3.3, learning parameterized LSH hash functions
-
-**Code**
-
-- `mongoose_slide/slide_lib/triplet_network.py`
-  - `TripletNet`
-- `mongoose_slide/slide_lib/simHash.py`
-  - `SimHash.generate_from_weight`
-- `mongoose_reformer/reformer_lib/reformer_pytorch.py`
-  - `TripletLSHAttention`
-  - `triplet_forward`
-  - collection of positive/negative examples during attention
-
-**Mapping**
-
-The paper proposes tuning parameterized LSH (such as SimHash) using training
-signals gathered with little additional overhead. In the Reformer
-implementation, attention produces positive/negative examples and trains the
-rotation/hash parameters with a triplet-style objective. The SLIDE-side
-`TripletNet` provides another learnable-hash implementation.
-
-The current CI verifies a genuine `TripletNet` forward/backward/optimizer step
-and checks that the learned hash weights change.
-
-### End-to-end integration / evaluation
-
-**Paper anchor**
-
-- §4, MONGOOSE applications to SLIDE and Reformer
-
-**Code**
-
-- `mongoose_reformer/train_reformer.py`
-- `mongoose_reformer/reformer_lib/reformer_pytorch.py`
-- `mongoose_slide/slide_lib/network.py`
-- `lsh_lib/`
-
-The archived Reformer training script is tied to its historical CUDA/APEX
-environment. This portability limitation is tracked as Issue #4 and should be
-documented as an implementation/environment constraint rather than a limitation
-claimed by the paper.
-
----
-
-## Annotation style to use in maintained/annotated code
-
-### C / C++
-
-Use Doxygen immediately above the narrowest symbol that implements a paper
-mechanism:
-
-```cpp
-/**
- * @brief ...
- *
- * Paper mapping:
- * - <paper>, Sec. X.Y, Fig./Alg./Table Z.
- *
- * Implementation:
- * ...
- *
- * Reported effect:
- * ...
- *
- * @note <implementation inference, if any>
- */
-```
-
-### Python
-
-Use concise docstrings:
-
-```python
-def symbol(...):
-    """...
-
-    Paper mapping:
-        <paper>, Sec. X.Y.
-
-    Implementation:
-        ...
-
-    Reported effect:
-        ...
-
-    Notes:
-        ...
-    """
-```
-
-Do not copy paper paragraphs into source. Prefer section identifiers and short
-paraphrases, and place benchmark numbers only where the code has a clear causal
-relationship to the measured feature.
+1. C/C++ functions use Doxygen `/** ... */` blocks with `@par Paper mapping`,
+   `@par Implementation note`, and, only when appropriate,
+   `@par Reported effect`.
+2. Python classes/functions use docstrings with the same three concepts.
+3. Comments paraphrase papers; they do not paste long passages.
+4. If code only approximately realizes a paper algorithm, the annotation says
+   so explicitly.
+5. Known defects and reproduction findings point to GitHub Issues instead of
+   silently rewriting the historical behavior.

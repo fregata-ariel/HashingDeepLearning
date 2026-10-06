@@ -13,14 +13,15 @@ not embedded.
 - `papers/slide-2020-existing-notes/` — pre-existing SLIDE paper notes/images,
   relocated unchanged from this repository
 - `SOURCE_MANIFEST.tsv` — machine-readable source manifest
+- `ports/` — maintained/annotated working copies; raw snapshots remain untouched
+- `papers/CODE_PAPER_MAP.md` — paper section → implementation index
 
 The previous root layout is intentionally replaced on this branch so that this
 workspace can later be transplanted into a separate repository.
 
-## Intended next pass
+## Annotation and maintenance policy
 
-Map paper sections to implementation units and annotate the code. Use Doxygen
-blocks for C/C++ and Python docstrings for Python. Each annotation should keep
-three things separate: the algorithmic role, the concrete implementation
-mechanism, and any speed/memory/accuracy effect actually reported by the paper.
-Code-derived inference should be labeled as inference rather than a paper claim.
+`third_party/` remains the immutable provenance snapshot. Paper annotations and
+future compatibility fixes live in `ports/`, with the mapping indexed from
+`papers/CODE_PAPER_MAP.md`. Doxygen/docstring annotations keep paper claims,
+code-level interpretation, and measured effects separate.

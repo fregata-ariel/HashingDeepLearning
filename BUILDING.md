@@ -17,17 +17,17 @@ can also be launched manually.
 | Component | Test | Result |
 | --- | --- | --- |
 | Original SLIDE | Ubuntu 22.04 / GCC / CMake build | **PASS** |
-| Original SLIDE | tiny synthetic 1-batch training, eval, weight save, process exit | **PASS** |
+| Original SLIDE | tiny synthetic 1-batch training + verified parameter update | **PASS — L1 weight delta 0.0319997** |
 | MONGOOSE | Python 3.10 `compileall` | **PASS** |
 | MONGOOSE | Cython/C++ `lsh_lib` build + `import clsh` | **PASS** |
 | MONGOOSE | learnable-hash `TripletNet`: forward, backward, SGD step, verified parameter change | **PASS** |
 | Optimized SLIDE | untouched historical snapshot / modern GCC | **FAIL (known source regressions)** |
 | Optimized SLIDE | CI compatibility fixes / generic GCC / 1-batch train + cleanup | **PASS** |
-| Optimized SLIDE | Intel Classic 2021.10 / generic FP32 / 1-batch train + cleanup | **PASS** |
+| Optimized SLIDE | Intel Classic 2021.10 / generic FP32 / 1-batch train + cleanup + parameter update | **PASS — L1 weight delta 0.0319998** |
 | Optimized SLIDE | Intel Classic 2021.10 / AVX-512 compile | **PASS** |
-| Optimized SLIDE | Intel Classic 2021.10 / AVX-512 actual 1-batch train + cleanup | **PASS** |
+| Optimized SLIDE | Intel Classic 2021.10 / AVX-512 strict finite-parameter smoke | **FAIL on 4-class fixture; NaN update, and fixture violates the kernel's 128-output block assumption (#5, #7)** |
 | Optimized SLIDE | Intel Classic 2021.10 / AVX-512 BF16 compile | **PASS** |
-| Optimized SLIDE | AVX-512 BF16 runtime training | **NOT YET RUN** |
+| Optimized SLIDE | AVX-512 BF16 runtime training | **PROBED on BF16-capable runners; not yet passing strict finite-parameter checks** |
 | MONGOOSE Reformer | full historical CUDA/APEX training entrypoint | **BLOCKED; see Issue #4** |
 
 These are smoke tests, not reproduction of the paper's accuracy/performance
@@ -253,16 +253,25 @@ separately in Issue #4.
 - Issue #4 — full MONGOOSE/Reformer entrypoint hard-requires historical
   CUDA/APEX stack:
   https://github.com/fregata-ariel/HashingDeepLearning/issues/4
+- Issue #5 — AVX-512 one-step smoke produces non-finite parameters under the
+  original tiny fixture:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/5
+- Issue #6 — optimized SLIDE allocates gradient/Adam-state buffers without
+  explicit initialization:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/6
+- Issue #7 — AVX dense-forward kernel has no output-tail handling below or
+  beyond 128-output blocks:
+  https://github.com/fregata-ariel/HashingDeepLearning/issues/7
 
 ## What remains
 
 The next useful runtime checks are:
 
-1. verify an actual parameter delta in the C++ SLIDE smoke tests, not only
-   successful traversal of the training/update code;
-2. execute the BF16 binary on hardware exposing AVX-512 BF16;
-3. add sanitizer-backed cleanup tests for the maintained compatibility port;
+1. repair the aligned-output AVX diagnostic fixture and compare AVX/scalar
+   updates on a shape the historical vector kernel actually supports;
+2. isolate BF16 non-finite behavior after the AVX shape and initialization
+   issues are controlled;
+3. add sanitizer-backed cleanup tests in `ports/` as compatibility fixes land;
 4. build a CPU/reference backend for MONGOOSE scheduler hashing, or reproduce
    the historical CUDA environment, then run a complete Reformer batch;
-5. only after those smoke tests are stable, move on to paper-level performance
-   and accuracy reproduction.
+5. keep paper-level performance reproduction separate from smoke correctness.

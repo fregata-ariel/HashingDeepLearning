@@ -27,26 +27,31 @@ jobs:
           echo "GITHUB_SHA=$GITHUB_SHA"
           git rev-parse HEAD
 
-      - name: Download primary-source PDFs
+      - name: Download SLIDE 2020 from MLSys
         run: |
-          set -euxo pipefail
           mkdir -p papers/pdf
-          curl --fail --location --retry 3 --retry-delay 2             https://proceedings.mlsys.org/paper_files/paper/2020/file/ca3480d82599b9b9b7040655483825c1-Paper.pdf             -o papers/pdf/slide-2020-mlsys.pdf
-          curl --fail --location --retry 3 --retry-delay 2             https://proceedings.mlsys.org/paper_files/paper/2021/file/de4086ad4276d895be8ef25ec03c964b-Paper.pdf             -o papers/pdf/slide-optimized-2021-mlsys.pdf
-          curl --fail --location --retry 3 --retry-delay 2             https://openreview.net/pdf/fe8456585f1f710b957e2300306b8007044772f0.pdf             -o papers/pdf/mongoose-iclr-2021.pdf
+          curl --fail --location --retry 3 --retry-delay 2 "https://proceedings.mlsys.org/paper_files/paper/2020/file/ca3480d82599b9b9b7040655483825c1-Paper.pdf" -o papers/pdf/slide-2020-mlsys.pdf
+
+      - name: Download Optimized SLIDE 2021 from MLSys
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://proceedings.mlsys.org/paper_files/paper/2021/file/de4086ad4276d895be8ef25ec03c964b-Paper.pdf" -o papers/pdf/slide-optimized-2021-mlsys.pdf
+
+      - name: Download MONGOOSE 2021 from OpenReview
+        run: |
+          curl --fail --location --retry 3 --retry-delay 2 "https://openreview.net/pdf?id=wWK7yXkULyh" -o papers/pdf/mongoose-iclr-2021.pdf
+
+      - name: Verify PDF files and print hashes
+        run: |
           file papers/pdf/*.pdf
           sha256sum papers/pdf/*.pdf
-
-      - name: Verify PDF identity
-        run: |
           python3 - <<'PY'
           from pathlib import Path
-          checks = {
-              "papers/pdf/slide-2020-arxiv-1903.03129v2.pdf": b"SLIDE",
-              "papers/pdf/slide-optimized-2021-arxiv-2103.10891v1.pdf": b"SLIDE",
-              "papers/pdf/mongoose-iclr-2021.pdf": b"MONGOOSE",
-          }
-          for name, marker in checks.items():
+          names = [
+              "papers/pdf/slide-2020-mlsys.pdf",
+              "papers/pdf/slide-optimized-2021-mlsys.pdf",
+              "papers/pdf/mongoose-iclr-2021.pdf",
+          ]
+          for name in names:
               data = Path(name).read_bytes()
               assert data.startswith(b"%PDF-"), name
               assert len(data) > 100_000, (name, len(data))
@@ -60,8 +65,10 @@ jobs:
           from pathlib import Path
           path = Path("papers/traceability.json")
           data = json.loads(path.read_text())
-          data["papers"]["slide-2020"]["local_file"] = "papers/pdf/slide-2020-arxiv-1903.03129v2.pdf"
-          data["papers"]["slide-optimized-2021"]["local_file"] = "papers/pdf/slide-optimized-2021-arxiv-2103.10891v1.pdf"
+          data["papers"]["slide-2020"]["version"] = "MLSys 2020 proceedings"
+          data["papers"]["slide-2020"]["local_file"] = "papers/pdf/slide-2020-mlsys.pdf"
+          data["papers"]["slide-optimized-2021"]["version"] = "MLSys 2021 proceedings"
+          data["papers"]["slide-optimized-2021"]["local_file"] = "papers/pdf/slide-optimized-2021-mlsys.pdf"
           data["papers"]["mongoose-2021"]["local_file"] = "papers/pdf/mongoose-iclr-2021.pdf"
           path.write_text(json.dumps(data, indent=2) + "\n")
           PY

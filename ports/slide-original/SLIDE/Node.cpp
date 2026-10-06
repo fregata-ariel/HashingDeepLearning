@@ -230,8 +230,8 @@ Node::~Node()
 
 	if (ADAM)
 	{
-		delete[] _adamAvgMom;
-		delete[] _adamAvgVel;
+		// _adamAvgMom/_adamAvgVel are borrowed slices of Layer-owned arrays.
+		// Deleting them here frees interior pointers and corrupts teardown (#3).
 		delete[] _t;
 	}
 }

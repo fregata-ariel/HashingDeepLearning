@@ -1,7 +1,7 @@
 import re
 from torch import nn
-from reformer_lib.reformer_pytorch import ReformerLM
-from reformer_lib.generative_tools import TrainingWrapper
+from .reformer_pytorch import ReformerLM
+from .generative_tools import TrainingWrapper
 
 ENC_PREFIX = 'enc_'
 DEC_PREFIX = 'dec_'

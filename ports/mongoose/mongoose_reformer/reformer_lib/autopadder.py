@@ -3,7 +3,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-from reformer_lib.reformer_pytorch import Reformer, ReformerLM, LSHSelfAttention,ReformerLM_tune,Reformer_tune
+from .reformer_pytorch import Reformer, ReformerLM, LSHSelfAttention,ReformerLM_tune,Reformer_tune
 
 def pad_to_multiple(tensor, seqlen, multiple, dim=-1):
     m = seqlen / multiple

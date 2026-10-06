@@ -1,5 +1,5 @@
 from torch import nn
-from reformer_lib import LSHAttention, LSHSelfAttention
+from .reformer_pytorch import LSHAttention, LSHSelfAttention
 from collections import defaultdict
 
 class Recorder(nn.Module):

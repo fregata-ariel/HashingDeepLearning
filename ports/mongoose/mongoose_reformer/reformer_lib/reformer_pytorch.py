@@ -11,8 +11,8 @@ from operator import mul
 from local_attention import LocalAttention
 from axial_positional_embedding import AxialPositionalEmbedding
 from product_key_memory import PKM
-from reformer_lib.reversible import ReversibleSequence
-from reformer_lib.scheduler import Scheduler
+from .reversible import ReversibleSequence
+from .scheduler import Scheduler
 
 from torch.nn.init import xavier_uniform_
 from torch.nn.init import constant_

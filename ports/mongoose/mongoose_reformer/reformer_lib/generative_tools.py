@@ -3,8 +3,8 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
-from reformer_lib.reformer_pytorch import ReformerLM,ReformerLM_tune
-from reformer_lib.autopadder import Autopadder
+from .reformer_pytorch import ReformerLM,ReformerLM_tune
+from .autopadder import Autopadder
 
 def top_p(logits, thres = 0.9):
     sorted_logits, sorted_indices = torch.sort(logits, descending=True)

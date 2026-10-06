@@ -36,17 +36,9 @@ jobs:
         run: |
           curl --fail --location --retry 3 --retry-delay 2 "https://proceedings.mlsys.org/paper_files/paper/2021/file/de4086ad4276d895be8ef25ec03c964b-Paper.pdf" -o papers/pdf/slide-optimized-2021-mlsys.pdf
 
-      - name: Download MONGOOSE 2021 from OpenReview
+      - name: Download MONGOOSE 2021 from OpenReview API
         run: |
-          for url in \
-  "https://openreview.net/attachment?id=wWK7yXkULyh&name=original_pdf" \
-  "https://openreview.net/attachment?id=wWK7yXkULyh&name=pdf" \
-  "https://openreview.net/pdf/fe8456585f1f710b957e2300306b8007044772f0.pdf"; do
-  if curl --fail --location --user-agent "Mozilla/5.0" "$url" -o papers/pdf/mongoose-iclr-2021.pdf; then
-    break
-  fi
-done
-test -s papers/pdf/mongoose-iclr-2021.pdf
+          curl --fail --location --retry 3 --retry-delay 2 "https://api2.openreview.net/pdf?id=wWK7yXkULyh" -o papers/pdf/mongoose-iclr-2021.pdf
 
       - name: Verify PDF files and print hashes
         run: |

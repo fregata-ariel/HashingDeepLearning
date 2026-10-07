@@ -55,6 +55,33 @@ DensifiedWtaHash::DensifiedWtaHash(int numHashes, int noOfBitsToHash)
 }
 
 
+void DensifiedWtaHash::updateMappedWinners(
+    int* hashes, float* values, int numHashes,
+    const int* mappedBins, const int* mappedPositions,
+    const int* featureIndices, const float* data, int dataLen)
+{
+    for (int i = 0; i < dataLen; ++i) {
+        const int feature = featureIndices ? featureIndices[i] : i;
+        const int bin = mappedBins[feature];
+        if (bin >= 0 && bin < numHashes && values[bin] < data[i]) {
+            values[bin] = data[i];
+            hashes[bin] = mappedPositions[feature];
+        }
+    }
+}
+
+int DensifiedWtaHash::resolveEmptyBin(
+    const int* hashes, int numHashes, const int* probes, int probeCount)
+{
+    for (int i = 0; i < probeCount; ++i) {
+        const int probe = probes[i];
+        if (probe >= 0 && probe < numHashes && hashes[probe] != INT_MIN)
+            return hashes[probe];
+    }
+    return INT_MIN;
+}
+
+
 int * DensifiedWtaHash::getHashEasy(float* data, int dataLen, int topk)
 {
     // binsize is the number of times the range is larger than the total number of hashes we need.
@@ -69,17 +96,11 @@ int * DensifiedWtaHash::getHashEasy(float* data, int dataLen, int topk)
         values[i] = INT_MIN;
     }
 
-    for (int p=0; p< _permute; p++) {
-        int bin_index = p * _rangePow;
-        for (int i = 0; i < dataLen; i++) {
-            int inner_index = bin_index + i;
-            int binid = _indices[inner_index];
-            float loc_data = data[i];
-            if(binid < _numhashes && values[binid] < loc_data) {
-                values[binid] = loc_data;
-                hashes[binid] = _pos[inner_index];
-            }
-        }
+    for (int p = 0; p < _permute; ++p) {
+        updateMappedWinners(
+            hashes, values, _numhashes,
+            &_indices[p * _rangePow], &_pos[p * _rangePow],
+            nullptr, data, dataLen);
     }
 
     for (int i = 0; i < _numhashes; i++)
@@ -123,16 +144,11 @@ int* DensifiedWtaHash::getHash(int* indices, float* data, int dataLen)
     }
 
     //
-    for (int p = 0; p < _permute; p++) {
-        for (int i = 0; i < dataLen; i++) {
-            int binid = _indices[p * _rangePow + indices[i]];
-            if(binid < _numhashes) {
-                if (values[binid] < data[i]) {
-                    values[binid] = data[i];
-                    hashes[binid] = _pos[p * _rangePow + indices[i]];
-                }
-            }
-        }
+    for (int p = 0; p < _permute; ++p) {
+        updateMappedWinners(
+            hashes, values, _numhashes,
+            &_indices[p * _rangePow], &_pos[p * _rangePow],
+            indices, data, dataLen);
     }
 
     for (int i = 0; i < _numhashes; i++)
@@ -167,7 +183,9 @@ int* DensifiedWtaHash::getHash(int* indices, float* data, int dataLen)
 
 int DensifiedWtaHash::getRandDoubleHash(int binid, int count) {
     unsigned int tohash = ((binid + 1) << 6) + count;
-    return (_randHash[0] * tohash << 3) >> (32 - _lognumhash); // _lognumhash needs to be ceiled.
+    const unsigned int raw =
+        (_randHash[0] * tohash << 3) >> (32 - _lognumhash);
+    return static_cast<int>(raw % static_cast<unsigned int>(_numhashes));
 }
 
 
@@ -175,4 +193,5 @@ DensifiedWtaHash::~DensifiedWtaHash()
 {
     delete[] _randHash;
     delete[] _indices;
+    delete[] _pos;
 }

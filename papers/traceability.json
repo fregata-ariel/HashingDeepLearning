@@ -497,6 +497,27 @@
         "oracle": "bit-exact split round trip; real Layer forward semantics; explicit scalar Adam formula"
       },
       "note": "Mode 2 compute uses the BF16 high word, while scalar optimizer updates reconstruct and rewrite the full FP32 master value. This test also protects against treating bfloat16-to-uint16 conversion as raw-bit extraction."
+    },
+    {
+      "id": "OPT2021-BF16-NATIVE-DOT",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Section 4.4 BF16 Optimization",
+      "mechanism": "Use native AVX-512 BF16 conversion and dot-product instructions and compare their result with an explicit scalar BF16-RNE reference.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Layer.cpp",
+        "symbol": "_mm512_dpbf16_ps"
+      },
+      "test": {
+        "file": "tests/traceability/test_bfloat16_native.cpp",
+        "id": "OPT2021-BF16-NATIVE-DOT"
+      },
+      "conditions": {
+        "hardware": "AVX-512F + AVX-512 BF16",
+        "oracle": "scalar RNE conversion of 32 FP32 operands followed by BF16-rounded dot product",
+        "execution": "hardware-gated; CPU information emitted before execution"
+      },
+      "note": "The test is skipped only when the GitHub-hosted runner does not expose AVX-512 BF16."
     }
   ]
 }

@@ -36,9 +36,19 @@ using float_raw = union float_raw;
  * Optimized SLIDE (MLSys 2021), Section 4.4 "BF16 Optimization".
  *
  * @par Implementation note
- * The optimized code uses this type both for BF16 activations with FP32 master
- * weights and for BF16 activations plus BF16 weights. AVX-512 helper functions
- * later in this header convert, load, and store packed BF16 values.
+ * Mode 1 uses BF16 activations with ordinary FP32 weight/bias storage.
+ * Mode 2 uses BF16 activations and a BF16 high word for weight/bias computation,
+ * while a parallel uint16_t low-word array preserves the remaining FP32 master
+ * bits used by the optimizer. Thus "BF16 weights" describes the compute/storage
+ * word seen by forward/backward kernels, not a loss of the optimizer's full
+ * FP32 master state. Adam first/second moments remain separate FP32 arrays.
+ *
+ * The scalar helpers below reconstruct/store the mode-2 high+low master value;
+ * AVX-512 paths perform the same bitwise reconstruction in vector registers.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: OPT2021-BF16-CONVERSION.
+ * TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
  *
  * @par Reported effect
  * Section 5.6 / Table 3 reports workload-dependent BF16 results: BF16 helps

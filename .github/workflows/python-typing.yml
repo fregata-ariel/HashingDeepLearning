@@ -17,6 +17,8 @@ on:
       - "tools/check_reformer_attention_types.py"
       - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
       - "ports/mongoose/mongoose_slide/slide_lib/triplet_network.py"
+      - "ports/mongoose/mongoose_slide/slide_lib/lsh.py"
+      - "ports/mongoose/mongoose_slide/slide_lib/lsh_softmax.py"
       - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi"
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - ".github/workflows/python-typing.yml"
@@ -45,6 +47,8 @@ jobs:
             ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py \
             ports/mongoose/mongoose_slide/slide_lib/simHash.py \
             ports/mongoose/mongoose_slide/slide_lib/triplet_network.py \
+            ports/mongoose/mongoose_slide/slide_lib/lsh.py \
+            ports/mongoose/mongoose_slide/slide_lib/lsh_softmax.py \
             ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi \
             ports/mongoose/lsh_lib/clsh.pyi
 

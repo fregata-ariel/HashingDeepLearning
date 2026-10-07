@@ -114,8 +114,8 @@ class TrainingWrapper(nn.Module):
         )
 
         if not return_loss:
-            tokens = x if isinstance(x, torch.Tensor) else pad(x)
-            return self.net(tokens, **kwargs)
+            tokens = x if isinstance(x, torch.Tensor) else pad(list(x))
+            return cast(torch.Tensor, self.net(tokens, **kwargs))
 
         if isinstance(x, torch.Tensor):
             xi = x[:, :-1]

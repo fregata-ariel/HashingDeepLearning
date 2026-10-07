@@ -80,6 +80,22 @@ void LSH::add(const int key, const int idx, const int item_id)
 	table[key].push_back(item_id);
 }
 
+/**
+ * @brief Query one fingerprint across all L native hash tables.
+ *
+ * @param fp Borrowed pointer to at least L integer fingerprint components.
+ *        The pointer is read only during this call and is never retained.
+ * @return Union of matching item ids with removal tombstone -1 filtered out.
+ *
+ * @par Ownership / side effects
+ * Returned ids are copied into a new STL set owned by the caller. The method
+ * does not mutate table contents.
+ *
+ * @par Traceability relation
+ * Support. This native set store backs the released MONGOOSE-SLIDE path; it is
+ * not the learnable-hash objective or scheduler proposed by MONGOOSE.
+ * TRACE_TEST_ID: MONGOOSE-NATIVE-LSH-SET.
+ */
 std::unordered_set<int> LSH::query(const int* fp)
 {
 	std::unordered_set<int> result;

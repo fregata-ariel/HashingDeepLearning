@@ -242,6 +242,57 @@
         "oracle": "scalar weight/input gradient formulas for a complete 128-input block"
       },
       "note": "The historical unrolled path dropped non-128 input tails. The maintained port now selects that path only for complete 128-input blocks."
+    },
+    {
+      "id": "SLIDE2020-SPARSE-NODE-MATH",
+      "paper": "slide-2020",
+      "paper_location": "Section 3.1; Algorithm 1 sparse feed-forward and backpropagation",
+      "mechanism": "Compute an active neuron's affine/ReLU value from sparse input indices and accumulate first-layer gradients only for those active input coordinates.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Node.cpp",
+        "symbol": "Node::backPropagateFirstLayer"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_sparse_node_math.cpp",
+        "id": "SLIDE2020-SPARSE-NODE-MATH"
+      },
+      "conditions": {
+        "node_type": "ReLU",
+        "active_inputs": [
+          0,
+          2
+        ],
+        "oracle": "explicit w*x+b and delta*x formulas",
+        "optimizer": "ADAM gradient accumulator before optimizer step"
+      },
+      "note": "Separates sparse arithmetic from LSH candidate selection. The test covers gradient accumulation, not Network::ProcessInput's later full-array Adam state update."
+    },
+    {
+      "id": "OPT2021-WEIGHT-LAYOUT-ORACLE",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Section 4.1 Memory Layout Optimizations; Section 4.3 vectorized computation",
+      "mechanism": "Represent the same weight matrix in output-input (OI) or input-output (IO) order without changing sparse forward or gradient semantics.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Layer.h",
+        "symbol": "WeightsOrder"
+      },
+      "test": {
+        "file": "tests/traceability/test_optimized_weight_layout.cpp",
+        "id": "OPT2021-WEIGHT-LAYOUT-ORACLE"
+      },
+      "conditions": {
+        "OC": 3,
+        "IC": 4,
+        "active_inputs": [
+          0,
+          2,
+          3
+        ],
+        "oracle": "same logical dense matrix encoded in both layouts"
+      },
+      "note": "Arithmetic/layout oracle independent of AVX hardware; full maintained Layer paths remain covered by scalar and AVX smoke jobs."
     }
   ]
 }

@@ -43,6 +43,8 @@ jobs:
           python ../../tests/traceability/test_mongoose_triplet_loss.py
           python ../../tests/traceability/test_mongoose_config_propagation.py
           python ../../tests/traceability/test_mongoose_scheduler_gate.py
+          python ../../tests/traceability/test_mongoose_triplet_mining.py
+          python ../../tests/traceability/test_mongoose_slide_pairwise_loss.py
 
       - name: Run one train/eval batch through the maintained entrypoint
         working-directory: ports/mongoose

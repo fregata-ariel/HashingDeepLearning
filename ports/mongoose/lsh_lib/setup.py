@@ -1,13 +1,27 @@
-from setuptools import setup
-from setuptools.extension import Extension
-from Cython.Build import cythonize
-import numpy
+from __future__ import annotations
 
-setup(name="clsh",
-      ext_modules=cythonize(Extension(
-          "clsh",  # the extension name
-          sources=["clsh.pyx", "LSH.cpp"],  # the Cython source and additional C++ source files
-          language="c++",  # generate and compile C++ code
-          include_dirs=[numpy.get_include()],
-          extra_compile_args=["-std=c++11"]
-      )))
+import numpy as np
+from Cython.Build import cythonize
+from setuptools import Extension, setup
+
+
+def build_extension() -> Extension:
+    """Return the native clsh extension definition used by CI/runtime builds."""
+    return Extension(
+        "clsh",
+        sources=["clsh.pyx", "LSH.cpp"],
+        language="c++",
+        include_dirs=[np.get_include()],
+        extra_compile_args=["-std=c++11"],
+    )
+
+
+def main() -> None:
+    setup(
+        name="clsh",
+        ext_modules=cythonize(build_extension()),
+    )
+
+
+if __name__ == "__main__":
+    main()

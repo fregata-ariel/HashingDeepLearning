@@ -467,7 +467,7 @@ class LSHAttention(nn.Module):
             bucket_range = torch.reshape(bucket_range, (1, -1))
             bucket_range = bucket_range.expand_as(rotated_vecs)
 
-            _, buckets = sort_key_val(rotated_vecs, bucket_range, dim=-1)
+            _, buckets, _ = sort_key_val(rotated_vecs, bucket_range, dim=-1)
             buckets = buckets[:, -self.n_hashes:]
 
             h, *_ = buckets.shape
@@ -817,22 +817,20 @@ class TripletLSHAttention(LSHAttention):
         query_len: int | None = None,
         input_mask: torch.Tensor | None = None,
         input_attn_mask: torch.Tensor | None = None,
-        printgrad: bool = False,
+        rotations: torch.Tensor | None = None,
         triplet_examples: bool = False,
         **kwargs: object,
     ) -> AttentionResult:
-        batch_size, seqlen, dim = qk.shape
-        n_buckets = self.seq_len // self.bucket_size
-        rotations = self.extract_rotations(batch_size)
-        # self.rotations.reset_parameters()
+        batch_size, _seqlen, _dim = qk.shape
+        del rotations
+        learned_rotations = self.extract_rotations(batch_size)
         out, attn, buckets, emb_x, pos, neg = super().forward(
             qk,
             v,
             query_len=query_len,
             input_mask=input_mask,
             input_attn_mask=input_attn_mask,
-            rotations=rotations,
-            printgrad=printgrad,
+            rotations=learned_rotations,
             triplet_examples=triplet_examples,
             **kwargs,
         )
@@ -1099,11 +1097,6 @@ class LSHSelfAttention(nn.Module):
             input_attn_mask = merge_batch_and_heads(expand_dim(1, lsh_h, input_attn_mask))
             masks['input_attn_mask'] = input_attn_mask
 
-        if use_full_attn:
-            base_attn_fn = self.full_attn.forward
-        else:
-            base_attn_fn = self.lsh_attn.forward
-
         if calc_triplet:
             calc_triplet = (
                 self.scheduler is not None
@@ -1114,15 +1107,26 @@ class LSHSelfAttention(nn.Module):
             and calc_triplet
             and not use_full_attn
         )
-        partial_attn_fn = cast(
-            AttentionChunkFn,
-            partial(
-                base_attn_fn,
-                query_len=t,
-                input_mask=input_mask,
-                triplet_examples=return_triplet_examples,
-            ),
-        )
+        if use_full_attn:
+            partial_attn_fn = cast(
+                AttentionChunkFn,
+                partial(
+                    self.full_attn.forward,
+                    query_len=t,
+                    input_mask=input_mask,
+                    triplet_examples=return_triplet_examples,
+                ),
+            )
+        else:
+            partial_attn_fn = cast(
+                AttentionChunkFn,
+                partial(
+                    self.lsh_attn.forward,
+                    query_len=t,
+                    input_mask=input_mask,
+                    triplet_examples=return_triplet_examples,
+                ),
+            )
 
         attn_fn_in_chunks = process_inputs_chunk(
             partial_attn_fn, chunks=self.attn_chunks
@@ -1185,7 +1189,7 @@ class LSHSelfAttention(nn.Module):
         self.attn = out.detach()
 
         out = self.to_out(out)
-        return self.post_attn_dropout(out)
+        return cast(torch.Tensor, self.post_attn_dropout(out))
 
 
 # feed forward

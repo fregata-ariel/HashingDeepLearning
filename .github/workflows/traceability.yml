@@ -43,6 +43,10 @@ jobs:
         run: |
           g++ -std=c++11 -O0             tests/traceability/test_slide_lsh_packing.cpp             ports/slide-original/SLIDE/LSH.cpp             ports/slide-original/SLIDE/Bucket.cpp             -Iports/slide-original/SLIDE             -o /tmp/test_slide_lsh_packing
           /tmp/test_slide_lsh_packing
+          g++ -std=c++11 -O0 tests/traceability/test_slide_lsh_table.cpp ports/slide-original/SLIDE/LSH.cpp ports/slide-original/SLIDE/Bucket.cpp -Iports/slide-original/SLIDE -o /tmp/test_slide_lsh_table
+          /tmp/test_slide_lsh_table
+          g++ -std=c++11 -O0 tests/traceability/test_slide_bucket_fifo.cpp ports/slide-original/SLIDE/Bucket.cpp -Iports/slide-original/SLIDE -o /tmp/test_slide_bucket_fifo
+          /tmp/test_slide_bucket_fifo
 
       - name: Optimized SLIDE BF16 conversion characterization
         run: |

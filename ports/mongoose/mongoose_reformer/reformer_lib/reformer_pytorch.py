@@ -7,6 +7,7 @@ from torch.autograd import Function
 from functools import partial, reduce, wraps
 from itertools import chain
 from operator import mul
+from typing import Callable, Protocol, TypeAlias, TypeVar, cast
 
 from local_attention import LocalAttention
 from axial_positional_embedding import AxialPositionalEmbedding
@@ -21,18 +22,54 @@ from torch.nn.init import xavier_normal_
 # constants
 TOKEN_SELF_ATTN_VALUE = -5e4  # carefully set for half precision to work
 
+_DefaultT = TypeVar("_DefaultT")
+AttentionResult: TypeAlias = tuple[
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor,
+    torch.Tensor | None,
+    torch.Tensor | None,
+    torch.Tensor | None,
+]
+
+
+class AttentionChunkFn(Protocol):
+    def __call__(
+        self,
+        *args: torch.Tensor,
+        **kwargs: torch.Tensor,
+    ) -> AttentionResult: ...
+
+
+class _LocalAttentionCallable(Protocol):
+    def __call__(
+        self,
+        q: torch.Tensor,
+        k: torch.Tensor,
+        v: torch.Tensor,
+        *,
+        input_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor: ...
+
+
 
 # helper fns
 
-def sort_key_val(t1, t2, dim=-1):
+def sort_key_val(
+    t1: torch.Tensor, t2: torch.Tensor, dim: int = -1
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     values, indices = t1.sort(dim=dim)
-    t2 = t2.expand_as(t1)
-    return values, t2.gather(dim, indices), indices
+    expanded = t2.expand_as(t1)
+    return values, expanded.gather(dim, indices), indices
 
 
-def batched_index_select(values, indices):
+def batched_index_select(
+    values: torch.Tensor, indices: torch.Tensor
+) -> torch.Tensor:
     last_dim = values.shape[-1]
-    return values.gather(1, indices[:, :, None].expand(-1, -1, last_dim))
+    return values.gather(
+        1, indices[:, :, None].expand(-1, -1, last_dim)
+    )
 
 
 def mine_triplet_examples(
@@ -67,34 +104,71 @@ def mine_triplet_examples(
     return positive_vectors, negative_vectors
 
 
-def process_inputs_chunk(fn, chunks=1, dim=0):
-    def inner_fn(*args, **kwargs):
-        keys, values, len_args = kwargs.keys(), kwargs.values(), len(args)
-        chunked_args = list(zip(*map(lambda x: x.chunk(chunks, dim=dim), list(args) + list(values))))
-        all_args = map(lambda x: (x[:len_args], dict(zip(keys, x[len_args:]))), chunked_args)
-        outputs = [fn(*c_args, **c_kwargs) for c_args, c_kwargs in all_args]
+def process_inputs_chunk(
+    fn: AttentionChunkFn, chunks: int = 1, dim: int = 0
+) -> AttentionChunkFn:
+    """Chunk tensor arguments, execute one attention callable, and concatenate.
 
-        # return tuple(map(lambda x: torch.cat(x, dim=dim), zip(*outputs)))
+    The callable must return the six-tensor/optional-tensor AttentionResult
+    contract shared by LSHAttention and FullQKAttention.
+    """
 
-        def cat_fn(x):
-            if x[0] is not None:
-                return torch.cat(x, dim=dim)
-            else:
+    def inner_fn(
+        *args: torch.Tensor, **kwargs: torch.Tensor
+    ) -> AttentionResult:
+        keys = tuple(kwargs.keys())
+        values = tuple(kwargs.values())
+        len_args = len(args)
+        chunked_args = list(
+            zip(
+                *(
+                    tensor.chunk(chunks, dim=dim)
+                    for tensor in (*args, *values)
+                )
+            )
+        )
+        call_args = [
+            (
+                chunk[:len_args],
+                dict(zip(keys, chunk[len_args:])),
+            )
+            for chunk in chunked_args
+        ]
+        outputs = [
+            fn(*positional, **keyword)
+            for positional, keyword in call_args
+        ]
+
+        def cat_fn(
+            pieces: tuple[torch.Tensor | None, ...],
+        ) -> torch.Tensor | None:
+            if pieces[0] is None:
                 return None
+            tensors = [piece for piece in pieces if piece is not None]
+            return torch.cat(tensors, dim=dim)
 
-        return tuple(map(cat_fn, zip(*outputs)))
+        columns = list(zip(*outputs))
+        merged = tuple(cat_fn(tuple(column)) for column in columns)
+        return cast(AttentionResult, merged)
 
     return inner_fn
 
 
-def chunked_sum(tensor, chunks=1):
+def chunked_sum(
+    tensor: torch.Tensor, chunks: int = 1
+) -> torch.Tensor:
     *orig_size, last_dim = tensor.shape
-    tensor = tensor.reshape(-1, last_dim)
-    summed_tensors = [c.sum(dim=-1) for c in tensor.chunk(chunks, dim=0)]
+    flattened = tensor.reshape(-1, last_dim)
+    summed_tensors = [
+        chunk.sum(dim=-1)
+        for chunk in flattened.chunk(chunks, dim=0)
+    ]
     return torch.cat(summed_tensors, dim=0).reshape(orig_size)
 
 
-def default(val, default_val):
+def default(
+    val: _DefaultT | None, default_val: _DefaultT
+) -> _DefaultT:
     return default_val if val is None else val
 
 
@@ -102,7 +176,7 @@ def cast_tuple(x):
     return x if isinstance(x, tuple) else (x,)
 
 
-def max_neg_value(tensor):
+def max_neg_value(tensor: torch.Tensor) -> float:
     return -torch.finfo(tensor.dtype).max
 
 
@@ -164,25 +238,31 @@ def cache_method_decorator(cache_attr, cache_namespace, reexecute=False):
     return inner_fn
 
 
-def expand_dim(dim, k, t):
-    t = t.unsqueeze(dim)
-    expand_shape = [-1] * len(t.shape)
+def expand_dim(
+    dim: int, k: int, tensor: torch.Tensor
+) -> torch.Tensor:
+    expanded = tensor.unsqueeze(dim)
+    expand_shape = [-1] * len(expanded.shape)
     expand_shape[dim] = k
-    return t.expand(*expand_shape)
+    return expanded.expand(*expand_shape)
 
 
-def merge_dims(ind_from, ind_to, tensor):
+def merge_dims(
+    ind_from: int, ind_to: int, tensor: torch.Tensor
+) -> torch.Tensor:
     shape = list(tensor.shape)
     arr_slice = slice(ind_from, ind_to + 1)
     shape[arr_slice] = [reduce(mul, shape[arr_slice])]
     return tensor.reshape(*shape)
 
 
-def split_at_index(dim, index, t):
+def split_at_index(
+    dim: int, index: int, tensor: torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor]:
     pre_slices = (slice(None),) * dim
-    l = (*pre_slices, slice(None, index))
-    r = (*pre_slices, slice(index, None))
-    return t[l], t[r]
+    left = (*pre_slices, slice(None, index))
+    right = (*pre_slices, slice(index, None))
+    return tensor[left], tensor[right]
 
 
 # helper classes

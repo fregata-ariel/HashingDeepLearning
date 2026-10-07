@@ -4,6 +4,19 @@
 
 namespace slide {
 
+/**
+ * @brief Aggregate one-based bucket ids into zero-based candidate collision counts.
+ *
+ * @param buckets Borrowed L-element array. Each non-null inner pointer is
+ *        borrowed Bucket storage terminated by -1 before BUCKETSIZE when not full.
+ * @param labels Borrowed zero-based label ids; may be null when labelCount is 0.
+ *
+ * @par Traceability relation
+ * Variant. This is the maintained Mode 4 candidate policy, including explicit
+ * label insertion, rather than a literal restatement of the paper's sampling
+ * distribution.
+ * TRACE_TEST_ID: SLIDE2020-SAMPLING-POLICY.
+ */
 std::map<int, std::size_t> collectSamplingCandidates(
     int** buckets, int tableCount, const int* labels, int labelCount,
     bool includeLabels) {

@@ -6,6 +6,7 @@ on:
       - research/lsh-lineage-vendor
     paths:
       - "ports/**"
+      - "tests/traceability/test_slide_layer_sampling.cpp"
       - ".github/workflows/ports-smoke.yml"
   workflow_dispatch:
 
@@ -21,6 +22,16 @@ jobs:
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
           cmake --build build --parallel 2
+      - name: Run Layer sampling integration oracle
+        working-directory: ports/slide-original
+        run: |
+          g++ -std=c++11 -O0 -fopenmp \
+            ../../tests/traceability/test_slide_layer_sampling.cpp \
+            -I./SLIDE -I./build/ep/include \
+            ./build/libSLIDE_LIB.a ./build/ep/lib/libcnpy.a ./build/ep/lib/libz.a \
+            -o /tmp/test_slide_layer_sampling
+          /tmp/test_slide_layer_sampling
+
       - name: Generate tiny dataset
         working-directory: ports/slide-original
         run: |

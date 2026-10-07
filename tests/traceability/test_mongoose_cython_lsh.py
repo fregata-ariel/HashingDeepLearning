@@ -61,6 +61,16 @@ def test_cython_lsh_dtype_shape_and_contiguity_contract() -> None:
     assert probs[0, sample_list.index(0)] == 1.0
     assert probs[1, sample_list.index(1)] == 1.0
 
+    dense_samples = np.array(
+        [[1, 0, 1], [0, 1, 1]], dtype=np.int64, order="C"
+    )
+    nonunion_ids, nonunion_probs = lsh.multi_label_nonunion(
+        labels, dense_samples
+    )
+    assert nonunion_ids.dtype == np.int64
+    assert nonunion_probs.dtype == np.float32
+    assert nonunion_ids.shape == nonunion_probs.shape
+
 
 if __name__ == "__main__":
     test_cython_lsh_dtype_shape_and_contiguity_contract()

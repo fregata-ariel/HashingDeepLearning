@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 
 from mongoose_slide.slide_lib.simHash import SimHash
-from mongoose_reformer.reformer_lib.reformer_pytorch import TripletLSHAttention
+from mongoose_reformer.reformer_lib.reformer_pytorch import LSHAttention, TripletLSHAttention
 
 # TRACE_TEST_ID: MONGOOSE-REFORMER-HASH-SHAPES
 
@@ -53,6 +53,22 @@ def test_simhash_and_reformer_hash_shapes() -> None:
     assert buckets.dtype == torch.int64
     assert torch.all(buckets >= 0)
     assert torch.all(buckets < 2 * n_buckets)
+
+    # Reformer also supports selecting multiple buckets from one rotation
+    # rather than rehashing independently each round. The output contract is
+    # still one packed row per merged batch/head.
+    shared_rotation = LSHAttention(
+        bucket_size=2,
+        n_hashes=2,
+        rehash_each_round=False,
+        allow_duplicate_attention=True,
+        dropout=0.0,
+    )
+    shared_buckets = shared_rotation.hash_vectors(n_buckets, qk)
+    assert shared_buckets.shape == (2, 2 * 8)
+    assert shared_buckets.dtype == torch.int64
+    assert torch.all(shared_buckets >= 0)
+    assert torch.all(shared_buckets < n_buckets)
 
 
 if __name__ == "__main__":

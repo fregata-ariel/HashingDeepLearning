@@ -17,6 +17,9 @@ namespace slide {
  * state is non-zero. Sparse gradient accumulation therefore does not imply
  * that the subsequent Adam parameter/state traversal is sparse.
  *
+ * @par Traceability relation
+ * Support. Adam is optimizer infrastructure used by the released training
+ * implementation, not a SLIDE algorithmic contribution.
  * TRACE_TEST_ID: SLIDE2020-ADAM-STATE-UPDATE.
  */
 inline void applyAdamUpdate(

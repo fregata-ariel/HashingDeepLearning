@@ -55,6 +55,26 @@ DensifiedWtaHash::DensifiedWtaHash(int numHashes, int noOfBitsToHash)
 }
 
 
+/**
+ * @brief Update per-bin strict maxima for a fixed feature-to-bin mapping.
+ *
+ * @param hashes Caller-owned output positions, length numHashes, updated in place.
+ * @param values Caller-owned current maxima, length numHashes, updated in place.
+ * @param mappedBins Borrowed feature->bin map.
+ * @param mappedPositions Borrowed feature->bin-local-position map.
+ * @param featureIndices Optional borrowed sparse feature ids; null means dense
+ *        feature ids 0..dataLen-1.
+ * @param data Borrowed dense values or sparse values aligned with featureIndices.
+ *
+ * @par Preconditions
+ * Every referenced feature id indexes mappedBins/mappedPositions. Hash values
+ * written here are bin-local winner positions in [0, binsize).
+ *
+ * @par Traceability relation
+ * Support. Densified WTA is an LSH-family prerequisite used by the released
+ * SLIDE implementation, not an algorithm introduced by the SLIDE systems paper.
+ * TRACE_TEST_ID: SLIDE2020-WTA-DWTA-PRIMITIVES.
+ */
 void DensifiedWtaHash::updateMappedWinners(
     int* hashes, float* values, int numHashes,
     const int* mappedBins, const int* mappedPositions,

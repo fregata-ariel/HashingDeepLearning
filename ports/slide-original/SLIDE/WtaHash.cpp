@@ -35,37 +35,34 @@ WtaHash::WtaHash(int numHashes, int noOfBitsToHash)
 }
 
 
+int WtaHash::selectWinnerPosition(
+    const float* data, const int* featureIndices, int count)
+{
+    int winner = 0;
+    float best = data[featureIndices[0]];
+    for (int j = 1; j < count; ++j) {
+        const float candidate = data[featureIndices[j]];
+        if (candidate > best) {
+            best = candidate;
+            winner = j;
+        }
+    }
+    return winner;
+}
+
+
 int * WtaHash::getHash(float* data)
 {
-
-    // binsize is the number of times the range is larger than the total number of hashes we need.
-
     int *hashes = new int[_numhashes];
-    float *values = new float[_numhashes];
-
-    for (int i = 0; i < _numhashes; i++)
-    {
-        hashes[i] = INT_MIN;
-        values[i] = INT_MIN;
+    for (int i = 0; i < _numhashes; ++i) {
+        hashes[i] = selectWinnerPosition(
+            data, &_indices[i * binsize], binsize);
     }
-
-
-    for (int i = 0; i < _numhashes; i++)
-    {
-        for (int j=0; j< binsize; j++){
-            if (values[i] < data[_indices[i*binsize+j]]) {
-                values[i] = data[i*binsize+j];
-                hashes[i] = _indices[i*binsize+j];
-            }
-        }
-
-    }
-
-    delete[] values;
     return hashes;
 }
 
 
 WtaHash::~WtaHash()
 {
+    delete[] _indices;
 }

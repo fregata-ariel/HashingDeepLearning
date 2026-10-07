@@ -17,6 +17,9 @@ class TripletNet(nn.Module):
 	    a literal implementation of the margin-based triplet Equation 3 used by
 	    the Reformer-side TripletLSHAttention implementation.
 
+	Traceability:
+	    MONGOOSE-SLIDE-PAIRWISE-LOSS.
+
 	Paper:
 	    https://openreview.net/forum?id=wWK7yXkULyh
 	"""
@@ -44,6 +47,9 @@ class TripletNet(nn.Module):
 		labels. This realizes the paper's Section 3.3 idea of learning hash
 		functions from training signals, but with this repository's own pairwise
 		objective.
+
+		Traceability:
+		    MONGOOSE-SLIDE-PAIRWISE-LOSS.
 		"""
 
 		emb_arc = self.dense1(arc)

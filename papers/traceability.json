@@ -167,6 +167,34 @@
         "oracle": "AST of ReformerLM_tune call"
       },
       "note": "Integration contract ensuring experiments actually use the scheduler settings requested on the command line."
+    },
+    {
+      "id": "OPT2021-AVX-FORWARD-ORACLE",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Section 4.3.2 Vectorizing Sparse-Dense and Dense-Sparse Operations",
+      "mechanism": "Compute dense OI forward dot products with AVX-512 while preserving bias and handling vector tails.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Layer.cpp",
+        "symbol": "queryActiveNodeandComputeActivationsOpt"
+      },
+      "test": {
+        "file": "tests/traceability/test_optimized_avx_forward.cpp",
+        "id": "OPT2021-AVX-FORWARD-ORACLE"
+      },
+      "conditions": {
+        "hardware": "AVX-512F",
+        "sizes": [
+          15,
+          16,
+          17,
+          127,
+          128,
+          129
+        ],
+        "oracle": "scalar FP32 dot product plus non-zero bias"
+      },
+      "note": "The focused kernel oracle covers the arithmetic contract and boundary sizes; the maintained full Layer path is separately exercised by the AVX smoke workflow."
     }
   ]
 }

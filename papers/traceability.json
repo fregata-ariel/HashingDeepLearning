@@ -316,6 +316,28 @@
         "oracle": "all nodes are filled because node_count < target; ReLU values match explicit sparse w*x+b"
       },
       "note": "This runtime integration fixture verifies that Layer uses the extracted sampling helper without replacing the historical time-seeded fill start. Because the fixture has four nodes, the final active set is deterministic regardless of the selected start offset."
+    },
+    {
+      "id": "SLIDE2020-WTA-DWTA-PRIMITIVES",
+      "paper": "slide-2020",
+      "paper_location": "Section 2 LSH background and the hash-family choices used by the released SLIDE implementation",
+      "mechanism": "Select winner positions inside WTA/DWTA bins, preserve deterministic tie behavior, densify empty bins from valid probes, and keep hash components in the bin-value domain consumed by (K,L) packing.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/DensifiedWtaHash.cpp",
+        "symbol": "DensifiedWtaHash::updateMappedWinners"
+      },
+      "test": {
+        "file": "tests/traceability/test_wta_dwta_primitives.cpp",
+        "id": "SLIDE2020-WTA-DWTA-PRIMITIVES"
+      },
+      "conditions": {
+        "wta_domain": "0 <= hash < binsize",
+        "tie_rule": "first maximum wins because replacement uses strict greater-than",
+        "dwta_empty_bin": "resolved from a fixed probe sequence",
+        "probe_range": "0 <= probe < numHashes for non-power-of-two numHashes"
+      },
+      "note": "WTA/DWTA are prerequisite LSH families used by the released implementation. This test does not treat their standalone algorithmic details as a new SLIDE paper contribution."
     }
   ]
 }

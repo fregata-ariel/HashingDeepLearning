@@ -1,0 +1,40 @@
+name: Strict Python typing
+
+on:
+  push:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "mypy.ini"
+      - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
+      - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
+      - "ports/mongoose/mongoose_slide/slide_lib/triplet_network.py"
+      - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi"
+      - "ports/mongoose/lsh_lib/clsh.pyi"
+      - ".github/workflows/python-typing.yml"
+  workflow_dispatch:
+
+jobs:
+  strict-core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install type-check dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install mypy numpy torch
+
+      - name: Run strict mypy on verified contracts
+        env:
+          MYPYPATH: ${{ github.workspace }}/ports/mongoose
+        run: |
+          python -m mypy --config-file mypy.ini \
+            ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py \
+            ports/mongoose/mongoose_slide/slide_lib/simHash.py \
+            ports/mongoose/mongoose_slide/slide_lib/triplet_network.py \
+            ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi \
+            ports/mongoose/lsh_lib/clsh.pyi

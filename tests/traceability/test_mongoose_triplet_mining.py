@@ -13,11 +13,9 @@ def test_triplet_example_indices_and_detach() -> None:
         [[[10.0, 0.0], [20.0, 1.0], [30.0, 2.0], [40.0, 3.0]]],
         requires_grad=True,
     )
+    # Production bkv_t is 3D: (batch, chunk, candidate).
     candidate_indices = torch.tensor(
-        [[
-            [[0, 1, 2, 3], [1, 0, 3, 2]],
-            [[2, 3, 0, 1], [3, 2, 1, 0]],
-        ]],
+        [[[0, 1, 2, 3], [2, 3, 0, 1]]],
         dtype=torch.long,
     )
     attention_probs = torch.tensor(
@@ -39,8 +37,8 @@ def test_triplet_example_indices_and_detach() -> None:
         negative_samples,
     )
 
-    expected_pos_indices = torch.tensor([[2, 1, 1, 2]], dtype=torch.long)
-    expected_neg_indices = torch.tensor([[1, 2, 2, 1]], dtype=torch.long)
+    expected_pos_indices = torch.tensor([[2, 0, 1, 3]], dtype=torch.long)
+    expected_neg_indices = torch.tensor([[1, 3, 2, 0]], dtype=torch.long)
     expected_pos = qk.detach().gather(
         1, expected_pos_indices[:, :, None].expand(-1, -1, qk.shape[-1])
     )

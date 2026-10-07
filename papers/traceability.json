@@ -476,6 +476,27 @@
         "oracle": "explicit logical W*x+b, dW=dy*x, db=dy, dx=dy*W with ReLU gate"
       },
       "note": "This closes the gap between layout-only arithmetic oracles and the maintained Layer implementation; AVX-specific arithmetic remains covered separately by hardware-gated tests."
+    },
+    {
+      "id": "OPT2021-BF16-MODE-STATE",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Section 4.4 BF16 Optimization",
+      "mechanism": "Distinguish mode 1 FP32 weight storage from mode 2 BF16 compute-word plus low-word FP32 master storage, and apply scalar Adam in FP32 master precision.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Bfloat16.h",
+        "symbol": "apply_storage_adam"
+      },
+      "test": {
+        "file": "tests/traceability/test_bfloat16_mode_state.cpp",
+        "id": "OPT2021-BF16-MODE-STATE"
+      },
+      "conditions": {
+        "mode1": "BF16 activations with FP32 weights",
+        "mode2": "BF16 activations/compute weights with split high+low FP32 optimizer state",
+        "oracle": "bit-exact split round trip; real Layer forward semantics; explicit scalar Adam formula"
+      },
+      "note": "Mode 2 compute uses the BF16 high word, while scalar optimizer updates reconstruct and rewrite the full FP32 master value. This test also protects against treating bfloat16-to-uint16 conversion as raw-bit extraction."
     }
   ]
 }

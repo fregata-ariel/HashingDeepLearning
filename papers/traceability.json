@@ -643,6 +643,29 @@
         "buckets": "(batch*heads, n_hashes*seq_len) with round-offset ids"
       },
       "note": "This is a shape/domain prerequisite for the learnable-LSH control flow rather than a separate paper claim."
+    },
+    {
+      "id": "MONGOOSE-SLIDE-LSH-WRAPPER",
+      "paper": "mongoose-2021",
+      "paper_location": "Released MONGOOSE-SLIDE integration support around the LSH-based sampled output path",
+      "mechanism": "Normalize SimHash fingerprints to the native int32/C-contiguous buffer contract, exercise native insert/query/multi-label/mask operations through the Python LSH wrapper, and verify LSHSoftmax training/evaluation return contracts.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_slide/slide_lib/lsh.py",
+        "symbol": "class LSH"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_slide_lsh_wrapper.py",
+        "id": "MONGOOSE-SLIDE-LSH-WRAPPER"
+      },
+      "conditions": {
+        "hash": "CPU SimHash",
+        "fingerprint": "C-contiguous np.int32",
+        "labels": "torch.int64 -> native np.int64",
+        "mask": "native np.float32 -> torch.float32",
+        "softmax": "training 5-tuple; evaluation dense logits"
+      },
+      "note": "This is integration/support coverage for the released MONGOOSE-SLIDE code path rather than a separate algorithmic claim of the paper."
     }
   ]
 }

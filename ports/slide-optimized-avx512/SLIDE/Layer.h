@@ -51,6 +51,10 @@ public:
   T* _biasGrads;
   float* _adamAvgMomBias;
   float* _adamAvgVelBias;
+  // Mode-2 only: low 16 bits of the FP32 master weight/bias state.
+  // _weights/_bias hold the BF16 high word used by compute kernels.
+  // Adam moment/velocity buffers remain FP32 and are stored separately.
+  // TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
   uint16_t* _weightsLo;
   uint16_t* _biasLo;
   WeightsOrder _weightsOrder = WeightsOrder::OI;

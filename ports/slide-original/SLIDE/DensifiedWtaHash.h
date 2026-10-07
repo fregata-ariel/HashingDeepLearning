@@ -12,6 +12,18 @@
 *  Algorithm from the paper Densified Winner Take All (WTA) Hashing for Sparse Datasets. Beidi Chen, Anshumali Shrivastava
 */
 using namespace std;
+/**
+ * @brief Densified WTA hash prerequisite used by the default SLIDE snapshot.
+ *
+ * Features are mapped to bins; each bin stores the position of its strict
+ * maximum. Empty bins borrow a value through the probe sequence. Returned
+ * component values remain bin-local positions in [0, binsize).
+ *
+ * Densified WTA is an underlying hash-family algorithm rather than a new
+ * contribution of the SLIDE systems paper.
+ *
+ * TRACE_TEST_ID: SLIDE2020-WTA-DWTA-PRIMITIVES.
+ */
 class DensifiedWtaHash
 {
 private:

@@ -195,6 +195,53 @@
         "oracle": "scalar FP32 dot product plus non-zero bias"
       },
       "note": "The focused kernel oracle covers the arithmetic contract and boundary sizes; the maintained full Layer path is separately exercised by the AVX smoke workflow."
+    },
+    {
+      "id": "SLIDE2020-SAMPLING-POLICY",
+      "paper": "slide-2020",
+      "paper_location": "Section 3.1; Algorithm 1 sampling/forward steps",
+      "mechanism": "Union candidates from L queried buckets, guarantee softmax labels are present, and fill a small candidate set from the layer random-node order.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/SamplingPolicy.cpp",
+        "symbol": "collectSamplingCandidates"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_sampling_policy.cpp",
+        "id": "SLIDE2020-SAMPLING-POLICY"
+      },
+      "conditions": {
+        "oracle": "fixed bucket contents, labels, random-node order, and fill start",
+        "fill_target": 1000,
+        "fill_trigger": "candidate count < 1500"
+      },
+      "note": "The helper preserves the maintained Mode=4 policy while separating deterministic candidate semantics from hash computation and the time-seeded choice of fill start."
+    },
+    {
+      "id": "OPT2021-AVX-BACKWARD-ORACLE",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Section 4.3.2 Vectorizing Sparse-Dense and Dense-Sparse Operations",
+      "mechanism": "Vectorize OI backward gradients in complete 128-input blocks and use the scalar path when an input tail is present.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Layer.cpp",
+        "symbol": "ICI % 128 == 0"
+      },
+      "test": {
+        "file": "tests/traceability/test_optimized_avx_backward.cpp",
+        "id": "OPT2021-AVX-BACKWARD-ORACLE"
+      },
+      "conditions": {
+        "hardware": "AVX-512F",
+        "vector_block": 128,
+        "dispatch_sizes": [
+          127,
+          128,
+          129
+        ],
+        "oracle": "scalar weight/input gradient formulas for a complete 128-input block"
+      },
+      "note": "The historical unrolled path dropped non-128 input tails. The maintained port now selects that path only for complete 128-input blocks."
     }
   ]
 }

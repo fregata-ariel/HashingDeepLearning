@@ -62,16 +62,22 @@ jobs:
             -Iports/slide-original/SLIDE -o /tmp/test_wta_dwta_primitives
           /tmp/test_wta_dwta_primitives
 
-      - name: Original SLIDE Softmax backward and Adam oracles
+      - name: Original SLIDE Softmax oracle
         run: |
           g++ -std=c++11 -O0 tests/traceability/test_slide_softmax_math.cpp \
             ports/slide-original/SLIDE/Node.cpp -Iports/slide-original/SLIDE \
             -o /tmp/test_slide_softmax_math
           /tmp/test_slide_softmax_math
+
+      - name: Original SLIDE two-layer backward oracle
+        run: |
           g++ -std=c++11 -O0 tests/traceability/test_slide_two_layer_backward.cpp \
             ports/slide-original/SLIDE/Node.cpp -Iports/slide-original/SLIDE \
             -o /tmp/test_slide_two_layer_backward
           /tmp/test_slide_two_layer_backward
+
+      - name: Original SLIDE Adam state oracle
+        run: |
           g++ -std=c++11 -O0 tests/traceability/test_slide_adam_state.cpp \
             -Iports/slide-original/SLIDE -o /tmp/test_slide_adam_state
           /tmp/test_slide_adam_state

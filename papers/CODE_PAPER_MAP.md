@@ -18,6 +18,11 @@ https://arxiv.org/abs/1903.03129
 | `SLIDE/Network.cpp::ProcessInput` | Algorithm 1 backpropagation; §3.1 Sparse Backpropagation / Gradient Update | Runs sparse forward/backward work and applies parameter updates only through the selected computation path. |
 | rehash/rebuild logic in `Network.cpp` and `main.cpp` | §4.2 Updating Overhead | Implements periodic hash-table maintenance. The snapshot uses fixed configured intervals; the paper additionally describes an exponentially decaying update frequency, so the code should not be described as an exact implementation of that heuristic. |
 
+| `SLIDE/WtaHash.cpp` | LSH prerequisite used by released experiments; WTA itself predates SLIDE | Selects the winner position inside each permuted bin. The maintained port returns the bin-local position expected by the downstream (K,L) packing rather than a raw feature id. |
+| `SLIDE/DensifiedWtaHash.cpp` | LSH prerequisite / released hash-family choice; densified WTA itself predates SLIDE | Maps features into WTA bins, keeps per-bin maxima, and densifies empty bins. `SLIDE2020-WTA-DWTA-PRIMITIVES` covers winner, tie, empty-bin, and output-domain behavior. |
+| `SLIDE/DensifiedMinhash.cpp` | Released alternative hash mode, not a standalone SLIDE contribution | Implements the top-k/densified-MinHash experimental option selected by `HashFunction==3`. It should be cited as an implementation alternative, not as an algorithm introduced by SLIDE. |
+| `SLIDE/srp.cpp` | Released alternative SimHash/sparse-random-projection mode, not a standalone SLIDE contribution | Implements the `HashFunction==4` projection/sign hash path used as an alternative LSH family. |
+
 The paper's main system-level claim is that LSH-selected adaptive sparsity
 avoids computing most neuron activations and enables sparse asynchronous
 updates. Performance numbers belong to the complete system and should not be

@@ -518,6 +518,27 @@
         "execution": "hardware-gated; CPU information emitted before execution"
       },
       "note": "The test is skipped only when the GitHub-hosted runner does not expose AVX-512 BF16."
+    },
+    {
+      "id": "MONGOOSE-SCHEDULER-GATE",
+      "paper": "mongoose-2021",
+      "paper_location": "Sections 3.1-3.2 scheduler gating before learnable-LSH work",
+      "mechanism": "Use the scheduler decision to suppress or enable triplet example mining and the learnable-hash loss computation in LSHSelfAttention.forward.",
+      "relation": "approximation",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py",
+        "symbol": "return_triplet_examples"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_scheduler_gate.py",
+        "id": "MONGOOSE-SCHEDULER-GATE"
+      },
+      "conditions": {
+        "oracle": "stub attention records triplet_examples and triplet_forward call count",
+        "gate_false": "no example mining and no triplet loss",
+        "gate_true": "example mining enabled and triplet loss evaluated once"
+      },
+      "note": "The control-flow goal matches the paper's scheduler idea, while the repository Scheduler remains a simplified hash-code change detector rather than the full maintenance algorithm."
     }
   ]
 }

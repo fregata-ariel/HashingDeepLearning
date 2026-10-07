@@ -11,7 +11,11 @@ device = torch.device("cuda:0" if use_cuda else "cpu")
 class TripletNet(nn.Module):
     """Learn the SLIDE-side pairwise hash projection.
 
-    This is the released pairwise/BCE objective, not Equation 3.
+    This is the released pairwise/BCE objective, not Equation 3. arc and pair
+    are floating tensors shaped (batch, layer_size); label is a floating
+    binary target vector whose batch dimension is repeated across L tables.
+    forward() returns one scalar BCE loss tensor.
+
     TRACE_TEST_ID: MONGOOSE-SLIDE-PAIRWISE-LOSS.
     """
 

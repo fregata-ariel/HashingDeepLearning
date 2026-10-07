@@ -19,6 +19,7 @@
 
 #include <immintrin.h>
 #include <cmath>
+#include <cstdint>
 #include <iostream>  // required for std::ostream o.w. can give compile error
 
 union float_raw { // helper data type
@@ -175,6 +176,43 @@ struct bfloat16 {
   constexpr bfloat16 (const bfloat16& other): bits_{other.bits_} {}
   ~bfloat16()                     = default;
 };
+
+/**
+ * @brief Reconstruct the FP32 master value used by optimized SLIDE mode 2.
+ *
+ * Mode 2 stores the high 16 bits in the bfloat16 weight/bias object and the
+ * low 16 bits in a parallel uint16_t array. Computation uses the BF16 high
+ * word, while the optimizer reconstructs the full FP32 value before updating.
+ *
+ * TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
+ */
+inline float load_split_fp32(const bfloat16& high, uint16_t low) {
+  float_raw raw;
+  raw.iraw = (static_cast<uint32_t>(high.bits_) << 16) |
+             static_cast<uint32_t>(low);
+  return raw.fraw;
+}
+
+/** FP32-storage overload used by mode 1 / ordinary FP32 weights. */
+inline float load_split_fp32(const float& value, uint16_t) {
+  return value;
+}
+
+/**
+ * @brief Store an FP32 master value as mode-2 high/low words without numeric
+ *        conversion of the raw high word.
+ */
+inline void store_split_fp32(float value, bfloat16& high, uint16_t& low) {
+  float_raw raw;
+  raw.fraw = value;
+  high.bits_ = static_cast<uint16_t>(raw.iraw >> 16);
+  low = static_cast<uint16_t>(raw.iraw & 0xFFFFu);
+}
+
+/** FP32-storage overload used by mode 1 / ordinary FP32 weights. */
+inline void store_split_fp32(float value, float& full, uint16_t&) {
+  full = value;
+}
 
 
 // Arithmetic operators

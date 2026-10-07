@@ -7,6 +7,7 @@ on:
     paths:
       - "ports/**"
       - "tests/traceability/test_slide_*.cpp"
+      - "tests/traceability/test_optimized_*.cpp"
       - ".github/workflows/ports-smoke.yml"
   workflow_dispatch:
 
@@ -87,6 +88,17 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
             -DOPT_IA=ON -DOPT_AVX512=OFF -DOPT_AVX512_BF16=OFF
           cmake --build build --parallel 2
+      - name: Run optimized Layer OI IO integration oracle
+        working-directory: ports/slide-optimized-avx512
+        run: |
+          g++ -std=c++14 -O0 -fopenmp \
+            -DOPT_IA=1 -DOPT_AVX512=0 -DOPT_AVX512_BF16=0 \
+            ../../tests/traceability/test_optimized_layer_layout.cpp \
+            -I./SLIDE -I./build/ep/include \
+            ./build/libSLIDE_LIB.a ./build/ep/lib/libcnpy.a ./build/ep/lib/libz.a \
+            -o /tmp/test_optimized_layer_layout
+          /tmp/test_optimized_layer_layout
+
       - name: Generate tiny dataset with whitespace-only config line
         working-directory: ports/slide-optimized-avx512
         run: |
@@ -138,7 +150,11 @@ jobs:
         id: cpu
         shell: bash
         run: |
+          uname -a
+          lscpu || true
           grep -m1 '^flags' /proc/cpuinfo || true
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git rev-parse HEAD
           if grep -qw avx512f /proc/cpuinfo; then echo "avx=true" >> "$GITHUB_OUTPUT"; else echo "avx=false" >> "$GITHUB_OUTPUT"; fi
           if grep -qw avx512_bf16 /proc/cpuinfo; then echo "bf16=true" >> "$GITHUB_OUTPUT"; else echo "bf16=false" >> "$GITHUB_OUTPUT"; fi
       - name: Run AVX arithmetic oracle

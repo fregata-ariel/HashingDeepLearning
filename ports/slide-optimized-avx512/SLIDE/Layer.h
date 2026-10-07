@@ -11,6 +11,16 @@
 
 using namespace std;
 
+/**
+ * @brief Physical layout of the logical output-by-input weight matrix.
+ *
+ * OI stores W[output][input] contiguously; IO stores its transposed physical
+ * order so dense output vectors can be traversed contiguously by optimized
+ * kernels. Both layouts represent the same logical weights.
+ *
+ * Paper mapping: Optimized SLIDE (MLSys 2021), Section 4.1.
+ * TRACE_TEST_ID: OPT2021-WEIGHT-LAYOUT-ORACLE.
+ */
 enum class WeightsOrder {
   OI = 0,
   IO = 1

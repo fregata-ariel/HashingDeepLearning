@@ -143,7 +143,7 @@ cdef class pyLSH:
 
         
         max_padding = max(np.sum(samples,axis=1) + label_count).astype("int")
-        sample_list = np.zeros((M, max_padding)) + num_class
+        sample_list = np.full((M, max_padding), num_class, dtype=np.int64)
 
         label_count = label_count.astype("int")
         result = np.zeros([M, max_padding], dtype=np.float32)

@@ -611,11 +611,12 @@ class TripletLSHAttention(LSHAttention):
         rotations = rotations.unsqueeze(0).expand(batch_size, -1, -1, -1)
         return rotations
 
-    def triplet_forward(self,
-                        x,  # input
-                        p,  # positive example
-                        n,  # negative example
-                        ):
+    def triplet_forward(
+            self,
+            x: torch.Tensor,
+            p: torch.Tensor,
+            n: torch.Tensor,
+    ) -> torch.Tensor:
         """Compute the MONGOOSE learnable-LSH triplet objective.
 
         Paper mapping:
@@ -623,8 +624,7 @@ class TripletLSHAttention(LSHAttention):
             similarity under the learned hash projection than negative
             examples by the configured margin alpha.
 
-        Implementation note:
-            x, p, and n are detached from the main model so this loss updates
+        Traceability test:\n            MONGOOSE-TRIPLET-LOSS.\n\n        Implementation note:\n            x, p, and n are detached from the main model so this loss updates
             the rotation/hash parameters rather than backpropagating through
             the example-mining path.
         """

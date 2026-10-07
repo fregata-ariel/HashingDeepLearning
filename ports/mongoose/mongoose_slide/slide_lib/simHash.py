@@ -59,7 +59,11 @@ def _load_fingerprint_kernel() -> _FingerprintKernel | None:
 class SimHash:
     """Packed sign-random-projection hash used by the MONGOOSE scheduler.
 
-    hash() returns shape (N, L), with one packed k-bit code per table.
+    Input tensors are floating matrices shaped (N, d). hash() returns an
+    int32 tensor shaped (N, L), with one packed k-bit code per table; the LSH
+    wrapper converts it to a C-contiguous NumPy int32 buffer at the native
+    boundary.
+
     TRACE_TEST_ID: MONGOOSE-REFORMER-HASH-SHAPES.
     """
 

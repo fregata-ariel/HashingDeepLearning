@@ -443,6 +443,39 @@
         "rebuild": "generation increments and table is repopulated"
       },
       "note": "The integration fixture checks state consistency after both transitions; rebuild always includes rehash in the maintained port."
+    },
+    {
+      "id": "OPT2021-LAYER-LAYOUT-INTEGRATION",
+      "paper": "slide-optimized-2021",
+      "paper_location": "Sections 4.1 and 4.3.2",
+      "mechanism": "Exercise real optimized Layer objects in OI and IO physical layouts with the same logical weights, sparse inputs, forward activations, and backward gradients.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-optimized-avx512/SLIDE/Layer.cpp",
+        "symbol": "queryActiveNodeandComputeActivationsOpt"
+      },
+      "test": {
+        "file": "tests/traceability/test_optimized_layer_layout.cpp",
+        "id": "OPT2021-LAYER-LAYOUT-INTEGRATION"
+      },
+      "conditions": {
+        "arithmetic": "FP32 scalar optimized path",
+        "layouts": [
+          "OI",
+          "IO"
+        ],
+        "logical_shape": [
+          3,
+          4
+        ],
+        "active_inputs": [
+          0,
+          2,
+          3
+        ],
+        "oracle": "explicit logical W*x+b, dW=dy*x, db=dy, dx=dy*W with ReLU gate"
+      },
+      "note": "This closes the gap between layout-only arithmetic oracles and the maintained Layer implementation; AVX-specific arithmetic remains covered separately by hardware-gated tests."
     }
   ]
 }

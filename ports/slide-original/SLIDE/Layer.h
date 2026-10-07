@@ -20,6 +20,7 @@ private:
     int _K, _L, _RangeRow, _previousLayerNumOfNodes, _batchsize;
     train* _train_array;
     bool _ownsParameters;
+    size_t _hashGeneration;
 
 
 public:
@@ -47,6 +48,8 @@ public:
     int computeSoftmax(int** activenodesperlayer, float** activeValuesperlayer, int* inlenght, int layerID, int inputID,  int* label, int labelsize, float Sparsity, int iter);
 	void saveWeights(string file);
 	void updateTable();
+    void refreshHashIndex(bool rebuildHasher);
+    size_t getHashGeneration() const;
 	void updateRandomNodes();
 
 	~Layer();

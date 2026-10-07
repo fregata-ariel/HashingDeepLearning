@@ -35,7 +35,9 @@ jobs:
 
       - name: Audit all maintained Python annotations
         run: |
-          python tools/audit_python_annotations.py             --root ports             --expected-files 31
+          python tools/audit_python_annotations.py \
+            --root ports \
+            --expected-files 31
 
       - name: Strict-check all MONGOOSE Python sources
         env:
@@ -45,14 +47,18 @@ jobs:
           mapfile -t sources < <(find ports/mongoose -type f -name '*.py' -print | sort)
           echo "MONGOOSE_PYTHON_FILES=${#sources[@]}"
           test "${#sources[@]}" -eq 23
-          python -m mypy --config-file mypy.ini             "${sources[@]}"             ports/mongoose/lsh_lib/clsh.pyi
+          python -m mypy --config-file mypy.ini \
+            "${sources[@]}" \
+            ports/mongoose/lsh_lib/clsh.pyi
 
       - name: Audit Reformer attention section
         env:
           MYPYPATH: ${{ github.workspace }}/ports/mongoose:${{ github.workspace }}/typings
         run: |
-          python tools/check_reformer_attention_types.py             --output /tmp/reformer_attention_core.py
-          python -m mypy --config-file mypy.ini             /tmp/reformer_attention_core.py
+          python tools/check_reformer_attention_types.py \
+            --output /tmp/reformer_attention_core.py
+          python -m mypy --config-file mypy.ini \
+            /tmp/reformer_attention_core.py
 
       - name: Strict-check Original SLIDE Python examples
         shell: bash
@@ -60,7 +66,8 @@ jobs:
           mapfile -t sources < <(find ports/slide-original/python_examples -type f -name '*.py' -print | sort)
           echo "ORIGINAL_SLIDE_PYTHON_FILES=${#sources[@]}"
           test "${#sources[@]}" -eq 4
-          MYPYPATH="${{ github.workspace }}/ports/slide-original/python_examples:${{ github.workspace }}/typings"           python -m mypy --config-file mypy.ini "${sources[@]}"
+          MYPYPATH="${{ github.workspace }}/ports/slide-original/python_examples:${{ github.workspace }}/typings" \
+            python -m mypy --config-file mypy.ini "${sources[@]}"
 
       - name: Strict-check Optimized SLIDE Python examples
         shell: bash
@@ -68,7 +75,8 @@ jobs:
           mapfile -t sources < <(find ports/slide-optimized-avx512/python_examples -type f -name '*.py' -print | sort)
           echo "OPTIMIZED_SLIDE_PYTHON_FILES=${#sources[@]}"
           test "${#sources[@]}" -eq 4
-          MYPYPATH="${{ github.workspace }}/ports/slide-optimized-avx512/python_examples:${{ github.workspace }}/typings"           python -m mypy --config-file mypy.ini "${sources[@]}"
+          MYPYPATH="${{ github.workspace }}/ports/slide-optimized-avx512/python_examples:${{ github.workspace }}/typings" \
+            python -m mypy --config-file mypy.ini "${sources[@]}"
 
       - name: Run SLIDE Python example contract checks
         run: |
@@ -76,5 +84,6 @@ jobs:
 
       - name: Validate traceability and native documentation
         run: |
-          python tools/validate_traceability.py             --emit-dir /tmp/final-traceability
+          python tools/validate_traceability.py \
+            --emit-dir /tmp/final-traceability
           python tools/audit_traceability_docs.py

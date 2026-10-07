@@ -17,7 +17,7 @@ answer has been converted into a maintained regression test.
 
 ## 1. Permanent workflows
 
-The intended permanent set is seven workflows.
+The permanent set after cleanup is seven workflows.
 
 | Workflow | Responsibility | Notes |
 | --- | --- | --- |
@@ -79,6 +79,13 @@ Examples:
 
 Avoid `push` with no path filter unless the workflow truly protects the entire
 repository.
+
+The current seven workflows use path-filtered pushes to
+`research/lsh-lineage-vendor` plus `workflow_dispatch`; they do not currently
+declare `pull_request` triggers. When this work is moved to another branch
+or repository, update branch filters and decide which checks must run on PRs.
+Preserving a workflow file without updating those filters does not establish
+CI coverage for the new destination.
 
 ## 4. Traceability artifacts
 

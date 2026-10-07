@@ -32,11 +32,11 @@ code-level interpretation, and measured effects separate.
 
 ## Adding another paper or reference implementation
 
-Start with `docs/RESEARCH_INTEGRATION_PLAYBOOK.md`. It captures the process
+Start with [the research integration playbook](docs/RESEARCH_INTEGRATION_PLAYBOOK.md). It captures the process
 used on this branch from provenance recovery through independent-oracle tests,
 traceability, maintained fixes, code contracts, strict typing, and final CI
 cleanup.
 
-Permanent CI is intentionally small. See `docs/CI_ARCHITECTURE.md` before
+Permanent CI is intentionally small. See [the CI architecture guide](docs/CI_ARCHITECTURE.md) before
 adding a new workflow; diagnostics should normally be temporary and removed
 after their findings become maintained regression tests.

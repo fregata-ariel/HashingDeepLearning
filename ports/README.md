@@ -86,7 +86,7 @@ See `BUILDING.md` for run links and details.
 ## Research integration process
 
 For future paper/reference-code additions, follow
-`docs/RESEARCH_INTEGRATION_PLAYBOOK.md`. In particular:
+[the research integration playbook](../docs/RESEARCH_INTEGRATION_PLAYBOOK.md). In particular:
 
 - establish behavior with independent tests before refactoring;
 - add maintenance changes only under `ports/`;
@@ -96,4 +96,5 @@ For future paper/reference-code additions, follow
 - remove temporary diagnostic workflows after a maintained regression replaces
   them.
 
-The permanent CI topology is documented in `docs/CI_ARCHITECTURE.md`.
+The permanent CI topology is documented in
+[the CI architecture guide](../docs/CI_ARCHITECTURE.md).

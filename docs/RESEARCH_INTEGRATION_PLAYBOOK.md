@@ -146,6 +146,14 @@ Use four coverage classes:
 - **support** — FIFO storage, CLI wiring, Cython ownership, parsing, optimizer
   infrastructure, build adapters, etc.
 
+Coverage classes guide the investigation; they are not identical to the
+ledger's `relation` field. The current validator accepts only `direct`,
+`variant`, `approximation`, and `support`. For a prerequisite, identify its
+own primary source and explain the dependency in `mechanism`,
+`paper_location`, and `note`; select the relation that accurately describes
+the code's correspondence to that source. Do not put `prerequisite` in
+`relation` without deliberately extending the schema and validator.
+
 Issues should be organized around conceptual coverage, not files.
 
 For the SLIDE/MONGOOSE pass, this became milestones for provenance,
@@ -189,6 +197,12 @@ The relation and the test result are deliberately separate:
   not be forced into unit-test success.
 
 Use `tools/validate_traceability.py` to catch stale symbols/test IDs.
+
+Validation checks registered paths, literal symbol strings, unique IDs, and
+test markers; it also hashes registered local paper files. It does not run
+the tests or prove that a symbol implements an equation. Keep ledger
+validation, executable oracles, and human paper/code review as separate
+completion requirements.
 
 ## 5. Test design
 
@@ -326,7 +340,48 @@ State:
 Use type hints for Python-level shape-independent contracts and docstrings/tests
 for Tensor shape/dtype/device/gradient ownership.
 
-### 7.3 Do not attach paper speedups to functions
+For example, a new hash helper's docstring can use this template (replace the
+example shapes and IDs with the implementation's tested contract):
+
+```python
+def hash_vectors(vectors: Tensor) -> Tensor:
+    """Compute table fingerprints for a batch of vectors.
+
+    Args:
+        vectors: Floating Tensor of shape (N, D); borrowed and not mutated.
+
+    Returns:
+        A new int32 Tensor of shape (N, L), on the input device.
+
+    Preconditions:
+        D matches the configured projection dimension.
+
+    Paper mapping:
+        Paper/version, Section X, Algorithm Y.
+
+    Implementation note:
+        Describe threshold, padding, device, and gradient behavior here.
+
+    Traceability relation:
+        Direct / Variant / Approximation / Support, with the reason.
+        TRACE_TEST_ID: PAPER-HASH-CONTRACT.
+    """
+    ...
+```
+
+### 7.3 Cython and stub contracts
+
+Place the runtime buffer contract next to the `.pyx` entry point and a matching
+description next to its `.pyi` signature. Spell out array dtype, dimensions,
+C-contiguity, ID ranges, and which buffers are borrowed for the call. For
+returned arrays, state allocation ownership and dtype explicitly. Document
+whether the wrapper owns the native object and when it releases that object.
+
+The Python type signature and the runtime check must agree. A native
+`int32_t*` declaration alone does not document NumPy stride or lifetime
+requirements; a stub alone does not verify the native output dtype.
+
+### 7.4 Do not attach paper speedups to functions
 
 Paper-level throughput or accuracy improvements belong to paper experiments.
 Do not write "this function gives 3x speedup" unless the paper measured that
@@ -350,6 +405,27 @@ Rules used here:
 
 The final gate is `tools/audit_python_annotations.py` plus all-ports mypy in
 `.github/workflows/python-typing.yml`.
+
+File discovery is automatic, while runtime-family enrollment is explicit.
+At the M5 checkpoint the gate expects 31 `.py` files: MONGOOSE 23, Original
+SLIDE 4, and Optimized SLIDE 4. Adding a file intentionally fails the count
+guard until the inventory is reviewed. Adding a new port also requires an
+appropriate mypy invocation and import path; discovery alone does not create
+that invocation. Keep same-named legacy modules such as `config` and `util`
+in separate invocations.
+
+When extending the gate:
+
+1. compare `find ports -type f -name '*.py'` with every mypy source group;
+2. add or extend the group for the new runtime/package and its narrow stubs;
+3. update the total and group counts after checking there are no omissions;
+4. run the annotation audit, each group's strict mypy, and boundary tests;
+5. preserve the traceability/documentation checks at the end of the gate.
+
+An empty `__init__.py` is still part of the discovered inventory. The
+annotation audit checks arguments and returns of nested functions too,
+exempting conventional `self`/`cls` parameters. Its explicit-`Any` check is a
+syntactic guard, not proof that every dependency is fully typed.
 
 ## 9. Native/Cython boundaries
 
@@ -406,6 +482,38 @@ converted into a maintained test, remove it.
 ## 12. Branch evolution: what happened here
 
 This branch is a useful case study, not a template to copy commit-for-commit.
+
+The completed M5 checkpoint `0297e0d70de8019cc37592ea02698887e282089f`
+is 296 commits ahead of the recorded merge base, with no commits behind.
+That count describes this checkpoint, not the moving branch HEAD. To
+reconstruct it from a checkout with both refs available:
+
+```bash
+git merge-base master research/lsh-lineage-vendor
+git log --reverse --oneline 6f8558da001d7f177b51f9917551d7374fcfd39a..research/lsh-lineage-vendor
+git diff --stat 6f8558da001d7f177b51f9917551d7374fcfd39a..research/lsh-lineage-vendor
+git show 0297e0d70de8019cc37592ea02698887e282089f
+```
+
+Use the pinned merge base for historical comparisons if `master` moves.
+
+| Stage | Evidence and artifacts to follow | Completion scope |
+| --- | --- | --- |
+| Source import | `72130805`, `SOURCE_MANIFEST.tsv`, `papers/SOURCES.md` | Three pinned reference lineages and their licenses. |
+| Execution and diagnosis | `af7fff92`, `35eaf96b`, `62692a2b`, `1eb5da25`, first-session handoff | Build/training, hardware discovery, initialization and SIMD hypotheses. |
+| Maintained copies and fixes | `7513e846`, Issues #1–#11, `ports/`, `BUILDING.md` | Separate archival provenance from supported execution and regression fixes. |
+| M1 — provenance/evidence | Issue #12, `59e6a234`, `fe24e8af`, `b5ec6ad5` | Ledger, validator/materialized evidence, available primary PDFs and explicit source limitations. |
+| M2 — Original SLIDE | Issues #13–#16, `tests/traceability/test_slide_*.cpp`, WTA/DWTA tests | LSH/sampling, prerequisites, sparse arithmetic, optimizer and maintenance. |
+| M3 — Optimized SLIDE | Issues #17–#18, layout/AVX/BF16 tests, `a349028f` | Layout equivalence, vector arithmetic, BF16 state and capability-gated native oracles. |
+| M4 — MONGOOSE | Issues #19–#21, scheduler/loss/mining/native/Reformer tests | Learning/scheduling semantics, gradient and native-buffer integration. |
+| M5 — contracts | Parent #22, Issues #23–#31, `d5912e33`, `0297e0d7` | All-port typing/annotation gate and verified native documentation audit. |
+| Process and CI cleanup | `9391e23f`, `4d69b348`, this guide and the CI guide | Reusable procedure and eight retired diagnostics with named successors. |
+
+M5's recorded final run is
+[37609446150](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/37609446150):
+31 maintained Python files, 240 functions/methods, 31 registered experiments,
+and 21 native documentation mappings. These are historical checkpoint
+counts; update enrollment deliberately as new research is added.
 
 ### A. Vendoring and provenance
 

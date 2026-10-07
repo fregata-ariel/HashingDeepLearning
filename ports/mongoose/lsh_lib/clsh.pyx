@@ -149,7 +149,9 @@ cdef class pyLSH:
         result = np.zeros([M, max_padding], dtype=np.float32)
 
         for idx in range(M):
-            content = np.concatenate( [ labels[idx][labels[idx]>=0], np.squeeze(np.argwhere( samples[idx] >0 ))])
+            content = np.concatenate(
+                [labels[idx][labels[idx] >= 0], np.flatnonzero(samples[idx] > 0)]
+            )
             sample_list[idx,0: len(content)]  = content
             result[idx, 0:label_count[idx]] = 1/label_count[idx]
         

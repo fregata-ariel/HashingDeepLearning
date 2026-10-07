@@ -5,6 +5,7 @@
 #include <map>
 #include <climits>
 #include "Config.h"
+#include "SamplingPolicy.h"
 #include <bitset>
 #include <fstream>
 #include <omp.h>
@@ -358,54 +359,17 @@ int Layer::queryActiveNodeandComputeActivations(int** activenodesperlayer, float
             int **actives = _hashTables->retrieveRaw(hashIndices);
             // we now have a sparse array of indices of active nodes
 
-            // Get candidates from hashtable
-            std::map<int, size_t> counts;
-            // Make sure that the true label node is in candidates
-            if (_type == NodeType::Softmax && labelsize > 0) {
-                for (int i = 0; i < labelsize ;i++){
-                    counts[label[i]] = _L;
-                }
-            }
-
-            for (int i = 0; i < _L; i++) {
-                if (actives[i] == NULL) {
-                    continue;
-                } else {
-                    // copy sparse array into (dense) map
-                    for (int j = 0; j < BUCKETSIZE; j++) {
-                        int tempID = actives[i][j] - 1;
-                        if (tempID >= 0) {
-                            counts[tempID] += 1;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-            }
+            // Aggregate candidates independently from the hash computation so
+            // the sampling policy can be tested with fixed bucket fixtures.
+            std::map<int, size_t> counts = slide::collectSamplingCandidates(
+                actives, _L, label, labelsize, _type == NodeType::Softmax);
 
             in = counts.size();
-            if (counts.size()<1500){
+            if (counts.size() < 1500) {
                 srand(time(NULL));
                 size_t start = rand() % _noOfNodes;
-                for (size_t i = start; i < _noOfNodes; i++) {
-                    if (counts.size() >= 1000) {
-                        break;
-                    }
-                    if (counts.count(_randNode[i]) == 0) {
-                        counts[_randNode[i]] = 0;
-                    }
-                }
-
-                if (counts.size() < 1000) {
-                    for (size_t i = 0; i < _noOfNodes; i++) {
-                        if (counts.size() >= 1000) {
-                            break;
-                        }
-                        if (counts.count(_randNode[i]) == 0) {
-                            counts[_randNode[i]] = 0;
-                        }
-                    }
-                }
+                slide::fillSamplingCandidates(
+                    counts, _randNode, _noOfNodes, start, 1000);
             }
 
             len = counts.size();

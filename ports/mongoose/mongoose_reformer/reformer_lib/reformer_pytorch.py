@@ -1137,7 +1137,7 @@ class LSHSelfAttention(nn.Module):
             self.callback(attn.reshape(b, lsh_h, t, -1), buckets.reshape(b, lsh_h, -1))
 
         if return_triplet_examples:
-            assert isinstance(self.lsh_attn, TripletLSHAttention)
+            triplet_attention = cast(TripletLSHAttention, self.lsh_attn)
             assert emb_x is not None and pos is not None and neg is not None
 
             def chunked_loss(
@@ -1164,7 +1164,7 @@ class LSHSelfAttention(nn.Module):
                 return result
 
             triplet_loss = chunked_loss(
-                self.lsh_attn.triplet_forward,
+                triplet_attention.triplet_forward,
                 emb_x,
                 pos,
                 neg,

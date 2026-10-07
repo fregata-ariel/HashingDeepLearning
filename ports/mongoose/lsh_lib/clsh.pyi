@@ -11,6 +11,12 @@ Float32Array: TypeAlias = npt.NDArray[np.float32]
 
 
 class pyLSH:
+    """Typed public contract synchronized with clsh.pyx.
+
+    Fingerprints are C-contiguous int32 arrays, labels/sample matrices are
+    int64, masks/probabilities are float32. The extension owns its C++ LSH
+    instance; input arrays are borrowed only for individual calls.
+    """
     def __init__(self, K: int, L: int, THREADS: int) -> None: ...
     def remove(self, fp: Int32Array, item_id: int) -> None: ...
     def insert(self, fp: Int32Array, item_id: int) -> None: ...

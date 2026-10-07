@@ -6,7 +6,7 @@ on:
       - research/lsh-lineage-vendor
     paths:
       - "ports/mongoose/**"
-      - "tests/traceability/test_mongoose_scheduler.py"
+      - "tests/traceability/test_mongoose_*.py"
       - ".github/workflows/mongoose-reformer-smoke.yml"
   workflow_dispatch:
 
@@ -40,6 +40,8 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}/ports/mongoose
         run: |
           python ../../tests/traceability/test_mongoose_scheduler.py
+          python ../../tests/traceability/test_mongoose_triplet_loss.py
+          python ../../tests/traceability/test_mongoose_config_propagation.py
 
       - name: Run one train/eval batch through the maintained entrypoint
         working-directory: ports/mongoose

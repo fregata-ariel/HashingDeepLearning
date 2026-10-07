@@ -126,7 +126,7 @@ def main() -> None:
                 )
                 tmp_k = 0.0
                 for _ in range(20):
-                    idxs_batch, vals_batch, labels_batch = next(
+                    idxs_batch, vals_batch, test_labels_batch = next(
                         test_data_generator
                     )
                     top_k_classes = sess.run(
@@ -142,12 +142,12 @@ def main() -> None:
                                 len(
                                     np.intersect1d(
                                         top_k_classes[row],
-                                        labels_batch[row],
+                                        test_labels_batch[row],
                                     )
                                 )
                                 / min(
                                     k,
-                                    len(labels_batch[row]),
+                                    len(test_labels_batch[row]),
                                 )
                                 for row in range(
                                     len(top_k_classes)
@@ -165,7 +165,7 @@ def main() -> None:
                 )
                 begin_time = time.time()
 
-            idxs_batch, vals_batch, labels_batch = next(
+            idxs_batch, vals_batch, train_labels_batch = next(
                 training_data_generator
             )
             sess.run(
@@ -173,7 +173,7 @@ def main() -> None:
                 feed_dict={
                     x_idxs: idxs_batch,
                     x_vals: vals_batch,
-                    y: labels_batch,
+                    y: train_labels_batch,
                 },
             )
 
@@ -192,7 +192,7 @@ def main() -> None:
                 num_batches = 0
                 p_at_k = 0.0
                 for _ in range(n_steps_val):
-                    idxs_batch, vals_batch, labels_batch = next(
+                    idxs_batch, vals_batch, test_labels_batch = next(
                         test_data_generator
                     )
                     top_k_classes = sess.run(
@@ -208,12 +208,12 @@ def main() -> None:
                                 len(
                                     np.intersect1d(
                                         top_k_classes[row],
-                                        labels_batch[row],
+                                        test_labels_batch[row],
                                     )
                                 )
                                 / min(
                                     k,
-                                    len(labels_batch[row]),
+                                    len(test_labels_batch[row]),
                                 )
                                 for row in range(
                                     len(top_k_classes)

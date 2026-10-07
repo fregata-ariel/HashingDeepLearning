@@ -35,6 +35,38 @@ def batched_index_select(values, indices):
     return values.gather(1, indices[:, :, None].expand(-1, -1, last_dim))
 
 
+def mine_triplet_examples(
+        qk: torch.Tensor,
+        attention_probs: torch.Tensor,
+        candidate_indices: torch.Tensor,
+        sorted_query_indices: torch.Tensor,
+        negative_samples: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Select released-code positive/negative examples for learnable LSH.
+
+    Positive examples use the largest post-mask/post-softmax attention
+    probability. Negative indices are supplied from the raw pre-mask dot-product
+    argmin computed earlier in LSHAttention.forward.
+
+    This is the released Reformer-side mining rule associated with MONGOOSE
+    Section 3.3; it is an implementation choice around the paper's
+    positive/negative training examples.
+
+    Traceability:
+        MONGOOSE-TRIPLET-MINING.
+    """
+    positive_samples = attention_probs.argmax(dim=-1)
+    positive_indices = torch.gather(
+        candidate_indices, -1, positive_samples
+    ).view_as(sorted_query_indices)
+    negative_indices = torch.gather(
+        candidate_indices, -1, negative_samples
+    ).view_as(sorted_query_indices)
+    positive_vectors = batched_index_select(qk, positive_indices).detach()
+    negative_vectors = batched_index_select(qk, negative_indices).detach()
+    return positive_vectors, negative_vectors
+
+
 def process_inputs_chunk(fn, chunks=1, dim=0):
     def inner_fn(*args, **kwargs):
         keys, values, len_args = kwargs.keys(), kwargs.values(), len(args)
@@ -503,13 +535,9 @@ class LSHAttention(nn.Module):
         # compute pos/neg examples
         if triplet_examples:
             with torch.no_grad():
-                max_samples = dots.argmax(dim=-1)
-
-                max_ind = torch.gather(bkv_t, -1, max_samples).view_as(st)
-                min_ind = torch.gather(bkv_t, -1, min_samples).view_as(st)
-
-                pos_vectors = batched_index_select(qk, max_ind).detach()
-                neg_vectors = batched_index_select(qk, min_ind).detach()
+                pos_vectors, neg_vectors = mine_triplet_examples(
+                    qk, dots, bkv_t, st, min_samples
+                )
         else:
             pos_vectors = None
             neg_vectors = None

@@ -77,6 +77,26 @@ parameterized hash functions. Section 4 evaluates those ideas on SLIDE and
 Reformer. The headline speed/accuracy/memory results are framework-level
 measurements and should not be attached to an individual helper function.
 
+## G-SLIDE — TPDS 2022 (CPU-first milestone)
+
+Paper: https://ieeexplore.ieee.org/document/9635657; mechanism review uses the
+[author-hosted manuscript](https://panzaifeng.github.io/assets/pdf/tpds22gslide.pdf).
+Paths below are relative to `ports/g-slide/`. CPU evidence executes selected
+actual bodies with a serial adapter; parallel GPU behavior remains unverified.
+
+| Code | Paper mapping | Tested contract |
+| --- | --- | --- |
+| `src/lshKnl.cu::init_hash_no_sw_knl`, `get_hash_knl`, `gather_buckets_knl` | §4.3; Fig. 6 | Fixed WTA permutations and candidate lists; natural-log packing is a variant |
+| `src/GPUMultiLinkedHashTable.cu::d_block_reduce_cnt` | §4.3, assistant structures | Serial linked counts, thresholds and label activation |
+| `src/kernel.cu::relu_fwd_slide_in_knl` | §4.2, §4.4 | CSC input/active outputs and column-major forward arithmetic |
+| `src/kernel.cu::softmax_fwd_bp_rowmajor_all_sm_knl` | §4.4, training support | Stable probabilities and label deltas; maintained negative-logit fix |
+| `src/kernel.cu::bp_first_layer_knl` | §4.2, §4.4 | First-layer column-major gradients and biases |
+| `src/kernel.cu::update_weights_knl` | §4.4, optimizer support | Two Adam state updates, reset and tail guard |
+
+The six `GSLIDE-*-CPU` ledger records specify independent oracles and execution
+limits. The [coverage checkpoint](../ports/g-slide/CPU_VALIDATION.md) describes
+the adapter substitutions and pending production/GPU baseline.
+
 ## Annotation conventions
 
 1. C/C++ functions use Doxygen `/** ... */` blocks with `@par Paper mapping`,

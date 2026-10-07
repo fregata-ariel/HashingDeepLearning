@@ -9,7 +9,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "papers" / "traceability.json"
-DOCUMENTED_SUFFIXES = {".cpp", ".h", ".pyx"}
+DOCUMENTED_SUFFIXES = {".cpp", ".h", ".pyx", ".cu", ".cuh"}
 
 
 def _load() -> dict[str, Any]:

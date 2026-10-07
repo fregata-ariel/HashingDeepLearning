@@ -255,6 +255,16 @@ Never make a test silently redefine the paper.
 
 ### 5.4 Hardware-dependent tests
 
+For CUDA-only research code without routine GPU access, use a CPU-first
+milestone like [G-SLIDE](../ports/g-slide/CPU_VALIDATION.md): freeze sources,
+extract selected actual bodies into a restricted serial adapter, compare
+independent expected values, and run host sanitizers. Record substitutions
+(atomics, barriers, warp reductions, allocation, math intrinsics) and untested
+launch paths. This advances mechanism coverage; it does not satisfy Phase B's
+full production build/train/save/teardown baseline. Keep that milestone pending
+until real hardware is available. Infrequent GPU sessions should validate
+accumulated changes against saved CPU oracles and archive reproducible logs.
+
 Do not pretend GitHub-hosted runner hardware is fixed.
 
 Instead:

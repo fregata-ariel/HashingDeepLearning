@@ -18,6 +18,14 @@
       "version": "ICLR 2021 OpenReview wWK7yXkULyh",
       "source_url": "https://openreview.net/forum?id=wWK7yXkULyh",
       "local_file": null
+    },
+    "g-slide-2022": {
+      "title": "G-SLIDE: A GPU-Based Sub-Linear Deep Learning Engine via LSH Sparsification",
+      "version": "TPDS 33(11), 3015-3027 (2022); mechanism review uses author-hosted manuscript",
+      "source_url": "https://ieeexplore.ieee.org/document/9635657",
+      "author_pdf_url": "https://panzaifeng.github.io/assets/pdf/tpds22gslide.pdf",
+      "doi": "10.1109/TPDS.2021.3132493",
+      "local_file": null
     }
   },
   "experiments": [
@@ -709,6 +717,144 @@
         "cython": "multi_label_nonunion sample ids are np.int64; probabilities are np.float32"
       },
       "note": "These helpers are support/native integration code and are not treated as separate MONGOOSE algorithmic contributions."
+    },
+    {
+      "id": "GSLIDE-WTA-LSH-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.3; Figure 6",
+      "mechanism": "WTA bucket insertion, query and gather with fixed permutations.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/g-slide/src/lshKnl.cu",
+        "symbol": "init_hash_no_sw_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_cpu_emulation.cpp",
+        "id": "GSLIDE-WTA-LSH-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Explicit addresses and candidate lists; negative ties and partial table tile.",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "floor(ln(8))=2 aliases (0,4) and (1,0); preserve historical packing rather than claiming paper ceil(log2) concatenation."
+    },
+    {
+      "id": "GSLIDE-CANDIDATE-COUNT-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.3; assistant data structures",
+      "mechanism": "Linked-table candidate counting, threshold crossing and label activation.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/g-slide/src/GPUMultiLinkedHashTable.cu",
+        "symbol": "GPUMultiLinkedHashTable::d_block_reduce_cnt"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_cpu_emulation.cpp",
+        "id": "GSLIDE-CANDIDATE-COUNT-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Explicit key/frequency map, forced single-bucket collisions, empty second sample.",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Serial state correctness only; concurrent lock acquisition, GPU fences, pool exhaustion and Thrust filtering are not tested."
+    },
+    {
+      "id": "GSLIDE-SPARSE-FORWARD-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.2 and 4.4",
+      "mechanism": "Sparse ReLU forward with column-major weights and fixed active IDs.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "relu_fwd_slide_in_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_cpu_emulation.cpp",
+        "id": "GSLIDE-SPARSE-FORWARD-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Hand-computed sparse W*x+b and ReLU with two samples and nonzero biases.",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Shared-memory body runs with one CPU thread per block; GPU parallelism and adaptive dispatch are not tested."
+    },
+    {
+      "id": "GSLIDE-SOFTMAX-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module (training support)",
+      "mechanism": "Active-set Softmax probabilities and batch-averaged multi-label deltas.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "softmax_fwd_bp_rowmajor_all_sm_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_cpu_emulation.cpp",
+        "id": "GSLIDE-SOFTMAX-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Independent stable normalization; common logit shifts 0 and -1000; two samples and multi-label targets.",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Maintained MAX_INIT=-FLT_MAX fixes upstream underflow. Scalar block-reduction adapters bypass CUDA warp helpers; this is not a GPU reduction test."
+    },
+    {
+      "id": "GSLIDE-SPARSE-GRADIENT-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.2 and 4.4",
+      "mechanism": "Sparse first-layer column-major gradient and bias accumulation.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "bp_first_layer_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_cpu_emulation.cpp",
+        "id": "GSLIDE-SPARSE-GRADIENT-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Explicit dense gradient matrix and accumulated bias totals from two sparse samples.",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Serial atomics do not validate GPU contention or floating-point accumulation order; deeper-layer backward kernels remain pending."
+    },
+    {
+      "id": "GSLIDE-ADAM-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; weight update (optimizer support)",
+      "mechanism": "Adam moment/velocity updates, signed parameter change and accumulator reset.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "update_weights_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_cpu_emulation.cpp",
+        "id": "GSLIDE-ADAM-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Hand-computed two-step moments/weights and 35-element tail under a 32-lane serial launch.",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Positive update direction follows label-minus-probability deltas. Host learning-rate correction and complete Network::train are not tested."
     }
   ]
 }

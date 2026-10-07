@@ -21,7 +21,7 @@ The permanent set after cleanup is seven workflows.
 
 | Workflow | Responsibility | Notes |
 | --- | --- | --- |
-| `traceability.yml` | paper/code/test ledger validation, C/C++/Cython documentation audit, small deterministic paper-mechanism oracles, traceability artifact | Source-of-truth evidence workflow. |
+| `traceability.yml` | paper/code/test ledger validation, C/C++/CUDA/Cython documentation audit, small deterministic paper-mechanism oracles, G-SLIDE CPU body emulation with ASan/UBSan and archive hashes, traceability artifact | Source-of-truth evidence workflow; CPU emulation does not validate GPU execution. |
 | `python-typing.yml` | all maintained Python annotation audit, strict mypy, SLIDE Python example contracts, final traceability/doc gate | Auto-discovers all maintained Python files. |
 | `ports-smoke.yml` | Original SLIDE end-to-end maintained smoke; Optimized SLIDE scalar integration; historical Intel AVX/BF16 maintained-port smoke | Real execution/save/teardown. Hardware capability is printed, not assumed. |
 | `ports-sanitizers.yml` | ASan/UBSan on maintained native SLIDE ports | Finds lifetime/indexing issues missed by ordinary smoke. |
@@ -63,6 +63,12 @@ evidence that the implementation passed.
 
 Keep an independent scalar/reference oracle so correctness coverage is not
 lost on a weaker runner.
+
+G-SLIDE uses routine CPU serial emulation in the existing traceability gate.
+No GPU service or GPU workflow is required. Actual CUDA build, parallelism,
+device memory/synchronization and production training remain pending until an
+infrequent user-provided GPU milestone session. See
+[the CPU coverage contract](../ports/g-slide/CPU_VALIDATION.md).
 
 ## 3. Trigger design
 

@@ -60,6 +60,12 @@ not claim reproduction of the historical CUDA/APEX throughput results.
 
 ## Current verification
 
+G-SLIDE now has CPU-first serial emulation of selected actual CUDA bodies,
+independent arithmetic/state oracles, an exact upstream archive check and
+ASan/UBSan checks in traceability CI. Full CUDA compilation, production
+train/save/teardown and parallel GPU execution remain pending. See
+[the coverage checkpoint](g-slide/CPU_VALIDATION.md) for precise boundaries.
+
 - Original port: GCC train/save/teardown PASS.
 - optimized port: GCC scalar train/save/teardown PASS.
 - Original + optimized scalar: ASan/UBSan PASS.

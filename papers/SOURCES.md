@@ -92,6 +92,28 @@ Verified implementation landmarks include:
 - `mongoose_slide/slide_lib/simHash.py`
 - `mongoose_reformer/reformer_lib/reformer_pytorch.py`
 
+## 4. G-SLIDE — TPDS 2022
+
+**Paper:** *G-SLIDE: A GPU-Based Sub-Linear Deep Learning Engine via LSH Sparsification*
+
+- Publisher record: https://ieeexplore.ieee.org/document/9635657
+- DOI: `10.1109/TPDS.2021.3132493`; TPDS 33(11), 3015–3027 (2022).
+- Author-hosted manuscript: https://panzaifeng.github.io/assets/pdf/tpds22gslide.pdf
+  (the version used for mechanism review; not substituted for a publisher PDF).
+- Local PDF: not vendored in this milestone; URL-only provenance, no local hash.
+- Repository: https://github.com/PanZaifeng/G-SLIDE
+- Snapshot: `d93c2f6d0bbf1dd7b96d9c2340ed629c29f4f902`.
+- Tree: `7271376329b09ce2b86e40f3b190b387d8abe376`.
+- Archive: `third_party/g-slide/`; MIT license; 27 exact upstream Git blobs.
+- Pin manifest: `papers/g-slide-source-pin.json`; maintained copy: `ports/g-slide/`.
+
+CPU tests execute ten selected CUDA definitions via a restricted serial
+adapter, without CUDA/Thrust/cuBLAS. They establish selected arithmetic/state
+contracts only. Full CUDA build and GPU behavior remain pending. WTA's natural
+log packing is recorded as a variant; the maintained Softmax maximum identity
+fix has an independent negative-logit regression. See
+`ports/g-slide/CPU_VALIDATION.md` for evidence and remaining milestones.
+
 ## Annotation policy for the next pass
 
 For each relevant function/class:

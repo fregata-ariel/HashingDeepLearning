@@ -7,6 +7,10 @@ on:
       - "papers/**"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
+      - "tools/check_gslide_cpu.py"
+      - "third_party/g-slide/**"
+      - "ports/g-slide/**"
+      - "SOURCE_MANIFEST.tsv"
       - "tests/traceability/**"
       - "ports/slide-original/SLIDE/LSH.*"
       - "ports/slide-original/SLIDE/Bucket.*"
@@ -45,9 +49,14 @@ jobs:
             echo "No local paper PDFs are present in this commit."
           fi
 
-      - name: Audit verified C++ and Cython documentation
+      - name: Audit verified C++, CUDA and Cython documentation
         run: |
           python3 tools/audit_traceability_docs.py
+
+      - name: G-SLIDE CPU serial CUDA-body oracles and sanitizers
+        run: |
+          python3 tools/check_gslide_cpu.py --build-dir traceability-artifact/gslide-cpu/plain
+          python3 tools/check_gslide_cpu.py --sanitize --build-dir traceability-artifact/gslide-cpu/sanitized
 
       - name: Original SLIDE LSH packing characterization
         run: |

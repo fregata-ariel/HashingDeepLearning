@@ -47,6 +47,8 @@ jobs:
           /tmp/test_slide_lsh_table
           g++ -std=c++11 -O0 tests/traceability/test_slide_bucket_fifo.cpp ports/slide-original/SLIDE/Bucket.cpp -Iports/slide-original/SLIDE -o /tmp/test_slide_bucket_fifo
           /tmp/test_slide_bucket_fifo
+          g++ -std=c++11 -O0 tests/traceability/test_slide_sampling_policy.cpp ports/slide-original/SLIDE/SamplingPolicy.cpp -Iports/slide-original/SLIDE -o /tmp/test_slide_sampling_policy
+          /tmp/test_slide_sampling_policy
 
       - name: Optimized SLIDE BF16 conversion characterization
         run: |

@@ -19,6 +19,10 @@ using namespace std;
  * kernels. Both layouts represent the same logical weights.
  *
  * Paper mapping: Optimized SLIDE (MLSys 2021), Section 4.1.
+ *
+ * @par Traceability relation
+ * Direct physical-layout optimization; OI and IO must preserve the same
+ * logical matrix/gradient semantics.
  * TRACE_TEST_ID: OPT2021-WEIGHT-LAYOUT-ORACLE.
  */
 enum class WeightsOrder {
@@ -51,9 +55,10 @@ public:
   T* _biasGrads;
   float* _adamAvgMomBias;
   float* _adamAvgVelBias;
-  // Mode-2 only: low 16 bits of the FP32 master weight/bias state.
-  // _weights/_bias hold the BF16 high word used by compute kernels.
-  // Adam moment/velocity buffers remain FP32 and are stored separately.
+  // Mode-2 only: Layer-owned low 16 bits of the FP32 master weight/bias state.
+  // _weights/_bias own the paired BF16 high words used by compute kernels.
+  // Adam moment/velocity buffers remain separate Layer-owned FP32 arrays.
+  // The high/low arrays have matching parameter cardinality and lifetime.
   // TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
   uint16_t* _weightsLo;
   uint16_t* _biasLo;

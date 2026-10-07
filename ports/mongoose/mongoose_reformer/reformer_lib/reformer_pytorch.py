@@ -206,50 +206,6 @@ def cache_fn(
     return cached_fn
 
 
-def cosine_similarity(x1, x2, dim=1, eps=1e-6):
-    r"""Returns cosine similarity between x1 and x2, computed along dim.
-
-    Args:
-        x1 (Variable): First input.
-        x2 (Variable): Second input (of size matching x1).
-        dim (int, optional): Dimension of vectors. Default: 1
-        eps (float, optional): Small value to avoid division by zero. Default: 1e-8
-
-    Shape:
-        - Input: :math:`(\ast_1, D, \ast_2)` where D is at position `dim`.
-        - Output: :math:`(\ast_1, \ast_2)` where 1 is at position `dim`.
-    """
-    w1 = torch.norm(x1 + eps, 2, dim, keepdim=True)
-    w2 = torch.norm(x2 + eps, 2, dim, keepdim=True)
-    x1 /= w1.clamp(min=eps)
-    x2 /= w2.clamp(min=eps)
-    w12 = torch.sum(x1 * x2, dim)
-    return w12.squeeze()
-
-
-def cache_method_decorator(cache_attr, cache_namespace, reexecute=False):
-    def inner_fn(fn):
-        @wraps(fn)
-        def wrapper(self, *args, key_namespace=None, fetch=False, set_cache=True, **kwargs):
-            namespace_str = str(default(key_namespace, ''))
-            _cache = getattr(self, cache_attr)
-            _keyname = f'{cache_namespace}:{namespace_str}'
-
-            if fetch:
-                val = _cache[_keyname]
-                if reexecute:
-                    fn(self, *args, **kwargs)
-            else:
-                val = fn(self, *args, **kwargs)
-                if set_cache:
-                    setattr(self, cache_attr, {**_cache, **{_keyname: val}})
-            return val
-
-        return wrapper
-
-    return inner_fn
-
-
 def expand_dim(
     dim: int, k: int, tensor: torch.Tensor
 ) -> torch.Tensor:
@@ -430,7 +386,6 @@ class LSHAttention(nn.Module):
         self.mean_dp = 0.0
         self.stat_count = 0
 
-    # @cache_method_decorator('_cache', 'buckets', reexecute=True)
     def hash_vectors(
         self,
         n_buckets: int,

@@ -132,11 +132,8 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
             if (std::is_same<Tp, float>::value)
                 _weights[i] = v;
 #if OPT_IA
-            else { // bf16
-                float_raw r;
-                r.fraw = v;
-                *(uint16_t*)&_weights[i] = r.wraw[1];
-                _weightsLo[i] = r.wraw[0];
+            else { // mode-2 BF16 compute word + FP32 optimizer low word
+                store_split_fp32(v, _weights[i], _weightsLo[i]);
             }
 #endif
         }
@@ -145,11 +142,8 @@ Layer<T, Tp>::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, 
             if (std::is_same<Tp, float>::value)
                 _bias[i] = v;
 #if OPT_IA
-            else { // bf16
-                float_raw r;
-                r.fraw = v;
-                *(uint16_t*)&_bias[i] = r.wraw[1];
-                _biasLo[i] = r.wraw[0];
+            else { // mode-2 BF16 compute word + FP32 optimizer low word
+                store_split_fp32(v, _bias[i], _biasLo[i]);
             }
 #endif
 

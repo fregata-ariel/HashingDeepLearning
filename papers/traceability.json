@@ -84,6 +84,89 @@
         "cache": "advance only when detector fires"
       },
       "note": "The repository detector is a practical proxy for the paper scheduler, not a literal implementation of the full maintenance algorithm."
+    },
+    {
+      "id": "SLIDE2020-LSH-TABLE",
+      "paper": "slide-2020",
+      "paper_location": "Section 2.1; Algorithm 2",
+      "mechanism": "Insert neuron identifiers into one bucket per table and retrieve the candidate buckets for a query.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/LSH.cpp",
+        "symbol": "LSH::retrieveRaw"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_lsh_table.cpp",
+        "id": "SLIDE2020-LSH-TABLE"
+      },
+      "conditions": {
+        "K": 1,
+        "L": 2,
+        "RangePow": 3,
+        "oracle": "explicit bucket indices and identifiers"
+      },
+      "note": "Tests the LSH table contract below Layer sampling so candidate-table behavior is deterministic."
+    },
+    {
+      "id": "SLIDE2020-BUCKET-FIFO",
+      "paper": "slide-2020",
+      "paper_location": "Section 3.1 implementation support for LSH tables",
+      "mechanism": "Bound bucket storage and replace entries in FIFO order after capacity is reached.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Bucket.cpp",
+        "symbol": "Bucket::add"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_bucket_fifo.cpp",
+        "id": "SLIDE2020-BUCKET-FIFO"
+      },
+      "conditions": {
+        "FIFO": 1,
+        "capacity": 128,
+        "oracle": "known insertion order"
+      },
+      "note": "Bucket replacement is implementation support rather than a paper algorithm claim."
+    },
+    {
+      "id": "MONGOOSE-TRIPLET-LOSS",
+      "paper": "mongoose-2021",
+      "paper_location": "Section 3.3.1; Equation 3; Algorithm 2",
+      "mechanism": "Train hash rotations with a margin-based cosine triplet objective.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py",
+        "symbol": "triplet_forward"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_triplet_loss.py",
+        "id": "MONGOOSE-TRIPLET-LOSS"
+      },
+      "conditions": {
+        "rotation": "2x2 identity",
+        "oracle": "explicit per-example cosine hinge mean",
+        "gradient": "examples detached; rotation receives gradient"
+      },
+      "note": "The released implementation applies the hinge per example and then averages, so the ledger records it as a variant of the displayed paper objective."
+    },
+    {
+      "id": "MONGOOSE-CONFIG-PROPAGATION",
+      "paper": "mongoose-2021",
+      "paper_location": "Section 3.2 scheduler configuration",
+      "mechanism": "Propagate scheduler hash count and threshold from the training CLI to ReformerLM_tune.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_reformer/train_reformer.py",
+        "symbol": "scheduler_hashes=args.scheduler_hashes"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_config_propagation.py",
+        "id": "MONGOOSE-CONFIG-PROPAGATION"
+      },
+      "conditions": {
+        "oracle": "AST of ReformerLM_tune call"
+      },
+      "note": "Integration contract ensuring experiments actually use the scheduler settings requested on the command line."
     }
   ]
 }

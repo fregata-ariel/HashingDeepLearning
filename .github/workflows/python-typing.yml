@@ -24,6 +24,9 @@ on:
       - "ports/mongoose/mongoose_slide/slide_lib/lazy_parser.py"
       - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.py"
       - "ports/mongoose/lsh_lib/clsh.pyi"
+      - "ports/mongoose/lsh_lib/matrix_simhash.py"
+      - "ports/mongoose/lsh_lib/query_mul_interface.py"
+      - "ports/mongoose/lsh_lib/setup.py"
       - ".github/workflows/python-typing.yml"
   workflow_dispatch:
 
@@ -56,7 +59,10 @@ jobs:
             ports/mongoose/mongoose_slide/slide_lib/adam_base.py \
             ports/mongoose/mongoose_slide/slide_lib/lazy_parser.py \
             ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.py \
-            ports/mongoose/lsh_lib/clsh.pyi
+            ports/mongoose/lsh_lib/clsh.pyi \
+            ports/mongoose/lsh_lib/matrix_simhash.py \
+            ports/mongoose/lsh_lib/query_mul_interface.py \
+            ports/mongoose/lsh_lib/setup.py
 
       - name: Audit and strict-check Reformer attention core
         env:

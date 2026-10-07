@@ -21,7 +21,7 @@ int main() {
 
     for (int c = 0; c < classes; ++c) {
         nodes[c].Update(2, c, 0, NodeType::Softmax, 1,
-                        weights[c], bias[c], mom[c], vel[c], &states[c]);
+                        weights[c], bias[c], mom[c], vel[c], states);
         nodes[c]._indicesInTables = nullptr;
         nodes[c]._indicesInBuckets = nullptr;
         logits[c] = nodes[c].getActivation(ids, x, 2, 0);

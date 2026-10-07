@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable, Iterable
-from typing import TypedDict, cast
+from typing import TypedDict, cast, overload
 
 import torch
 from torch.optim import Optimizer
@@ -191,6 +191,12 @@ class Adam(Optimizer):
         parameter.data.add_(
             make_sparse(-step_size * numer.div_(denom))
         )
+
+    @overload
+    def step(self, closure: None = None) -> None: ...
+
+    @overload
+    def step(self, closure: Callable[[], float]) -> float: ...
 
     def step(
         self,

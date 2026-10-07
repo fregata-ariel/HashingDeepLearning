@@ -89,6 +89,12 @@ def mine_triplet_examples(
     Section 3.3; it is an implementation choice around the paper's
     positive/negative training examples.
 
+    Shape / dtype contract:
+        qk is floating (batch*heads, sequence, dim_head). attention_probs and
+        candidate_indices describe the same hashed candidate axis; the index
+        tensors are integer-valued. Returned positive/negative vectors preserve
+        qk's leading/indexed dimensions and dim_head and are detached.
+
     Traceability:
         MONGOOSE-TRIPLET-MINING.
     """
@@ -407,7 +413,7 @@ class LSHAttention(nn.Module):
         supplied by MONGOOSE, has shape
         (batch*heads, dim_head, n_hashes, n_buckets/2 before sign expansion).
         The returned int64 tensor has shape
-        (batch*heads, n_hashes*sequence).
+        (batch*heads, n_hashes*sequence). vecs/rotations are floating tensors.
 
         TRACE_TEST_ID: MONGOOSE-REFORMER-HASH-SHAPES.
         """
@@ -488,9 +494,12 @@ class LSHAttention(nn.Module):
     ) -> AttentionResult:
         """Run LSH attention on merged batch/head tensors.
 
-        Boolean input masks are broadcast over the hashed attention blocks.
-        When triplet_examples is true, returned positive/negative tensors are
-        detached mining examples; otherwise those two return slots are None.
+        qk and v are floating tensors shaped
+        (batch*heads, sequence, dim_head). input_mask and input_attn_mask are
+        boolean masks. Boolean masks are broadcast over the hashed attention
+        blocks. When triplet_examples is true, returned positive/negative
+        tensors are detached mining examples; otherwise those two return slots
+        are None.
         """
         batch_size, seqlen, dim, device = *qk.shape, qk.device
 
@@ -856,7 +865,11 @@ class FullQKAttention(nn.Module):
         input_attn_mask: torch.Tensor | None = None,
         **kwargs: object,
     ) -> AttentionResult:
-        """Run dense attention on (batch*heads, sequence, dim_head) tensors."""
+        """Run dense attention on (batch*heads, sequence, dim_head) tensors.
+
+        qk/v are floating tensors; input masks are boolean tensors. The return
+        tuple uses the same six-slot AttentionResult contract as LSHAttention.
+        """
         b, seq_len, dim = qk.shape
         query_len = default(query_len, seq_len)
         t = query_len
@@ -1036,6 +1049,10 @@ class LSHSelfAttention(nn.Module):
         **kwargs: object,
     ) -> torch.Tensor:
         """Run attention and optionally refresh the learnable-LSH training signal.
+
+        x is a floating tensor shaped (batch, sequence, dim). keys, when
+        supplied, is (batch, context, dim). input/context masks are boolean;
+        input_attn_mask is a boolean attention matrix.
 
         If calc_triplet is requested, Scheduler.detect_change() first applies
         the inexpensive change test. Only a positive trigger allows triplet

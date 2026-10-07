@@ -53,6 +53,11 @@ jobs:
           /tmp/test_slide_sparse_node_math
           g++ -std=c++11 -O0 tests/traceability/test_optimized_weight_layout.cpp -o /tmp/test_optimized_weight_layout
           /tmp/test_optimized_weight_layout
+          g++ -std=c++11 -O0 tests/traceability/test_wta_dwta_primitives.cpp \
+            ports/slide-original/SLIDE/WtaHash.cpp \
+            ports/slide-original/SLIDE/DensifiedWtaHash.cpp \
+            -Iports/slide-original/SLIDE -o /tmp/test_wta_dwta_primitives
+          /tmp/test_wta_dwta_primitives
 
       - name: Optimized SLIDE BF16 conversion characterization
         run: |

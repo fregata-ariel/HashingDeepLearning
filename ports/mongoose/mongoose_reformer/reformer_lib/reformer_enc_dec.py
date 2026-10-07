@@ -18,6 +18,23 @@ class _ReformerFactory(Protocol):
     def __call__(self, **kwargs: object) -> ReformerLM: ...
 
 
+class _GenerateWrapper(Protocol):
+    def __call__(
+        self,
+        start_tokens: torch.Tensor,
+        seq_len: int,
+        **kwargs: object,
+    ) -> torch.Tensor: ...
+
+
+class _ForwardWrapper(Protocol):
+    def __call__(
+        self,
+        x: torch.Tensor,
+        **kwargs: object,
+    ) -> torch.Tensor: ...
+
+
 def group_dict_by_key(
     cond: Callable[[str], bool],
     data: Mapping[str, object],
@@ -138,7 +155,10 @@ class ReformerEncDec(nn.Module):
         )
         enc_keys = self.enc(seq_in, **enc_kwargs)
         merged_dec = {**dec_kwargs, **remainder}
-        return self.dec.generate(
+        generate_call = cast(
+            _GenerateWrapper, self.dec.generate
+        )
+        return generate_call(
             seq_out_start,
             seq_len,
             keys=enc_keys,
@@ -156,7 +176,8 @@ class ReformerEncDec(nn.Module):
             kwargs
         )
         enc_keys = self.enc(seq_in, **enc_kwargs)
-        return self.dec(
+        forward_call = cast(_ForwardWrapper, self.dec)
+        return forward_call(
             seq_out,
             return_loss=return_loss,
             keys=enc_keys,

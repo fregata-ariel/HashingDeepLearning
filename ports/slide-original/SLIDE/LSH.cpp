@@ -74,7 +74,16 @@ void LSH::count()
  * The paper's (K, L) construction forms one meta-hash per table from K base
  * hashes. This function is the bucket-address step of that construction. The
  * exact bit shifting / integer mixing below is specific to this snapshot and
- * depends on the selected HashFunction.
+ * depends on the selected HashFunction. WTA and DWTA components are expected
+ * to be bin-local winner positions in [0, binsize). The maintained WTA port
+ * now enforces that domain; DWTA positions are constructed in the same domain.
+ *
+ * @par Known packing variant
+ * For binsize == 8 this snapshot shifts components by floor(log(8)) == 2
+ * rather than the 3 bits required for an injective concatenation, so distinct
+ * component tuples can collide before the table lookup. This behavior is
+ * characterized by TRACE_TEST_ID SLIDE2020-LSH-PACKING rather than presented
+ * as Algorithm 2 itself.
  *
  * @see https://arxiv.org/abs/1903.03129
  */

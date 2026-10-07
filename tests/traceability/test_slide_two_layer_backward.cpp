@@ -17,7 +17,7 @@ int main() {
 
     for (int i = 0; i < 2; ++i) {
         prev[i].Update(1, i, 0, NodeType::ReLU, 1,
-                       prevWeights[i], 0.0f, prevMom[i], prevVel[i], &prevState[i]);
+                       prevWeights[i], 0.0f, prevMom[i], prevVel[i], prevState);
         prev[i]._indicesInTables = nullptr;
         prev[i]._indicesInBuckets = nullptr;
         prev[i].getActivation(inputId, inputVal, 1, 0);

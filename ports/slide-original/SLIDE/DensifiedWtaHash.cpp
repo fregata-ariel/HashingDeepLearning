@@ -82,6 +82,15 @@ int DensifiedWtaHash::resolveEmptyBin(
 }
 
 
+int DensifiedWtaHash::densifyBin(const int* hashes, int binid)
+{
+    int probes[100];
+    for (int count = 1; count <= 100; ++count)
+        probes[count - 1] = getRandDoubleHash(binid, count);
+    return resolveEmptyBin(hashes, _numhashes, probes, 100);
+}
+
+
 int * DensifiedWtaHash::getHashEasy(float* data, int dataLen, int topk)
 {
     // binsize is the number of times the range is larger than the total number of hashes we need.
@@ -111,19 +120,7 @@ int * DensifiedWtaHash::getHashEasy(float* data, int dataLen, int topk)
             hashArray[i] = hashes[i];
             continue;
         }
-        int count = 0;
-        while (next == INT_MIN)
-        {
-            count++;
-            int index = std::min(
-                    getRandDoubleHash(i, count),
-                    _numhashes);
-
-            next = hashes[index]; // Kills GPU.
-            if (count > 100) // Densification failure.
-                break;
-        }
-        hashArray[i] = next;
+        hashArray[i] = densifyBin(hashes, i);
     }
     delete[] hashes;
     delete[] values;
@@ -159,19 +156,7 @@ int* DensifiedWtaHash::getHash(int* indices, float* data, int dataLen)
             hashArray[i] = hashes[i];
             continue;
         }
-        int count = 0;
-        while (next == INT_MIN)
-        {
-            count++;
-            int index = std::min(
-                    getRandDoubleHash(i, count),
-                    _numhashes);
-
-            next = hashes[index]; // Kills GPU.
-            if (count > 100) // Densification failure.
-                break;
-        }
-        hashArray[i] = next;
+        hashArray[i] = densifyBin(hashes, i);
     }
 
     delete[] hashes;

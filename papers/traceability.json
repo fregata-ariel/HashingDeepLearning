@@ -293,6 +293,29 @@
         "oracle": "same logical dense matrix encoded in both layouts"
       },
       "note": "Arithmetic/layout oracle independent of AVX hardware; full maintained Layer paths remain covered by scalar and AVX smoke jobs."
+    },
+    {
+      "id": "SLIDE2020-LAYER-SAMPLING-INTEGRATION",
+      "paper": "slide-2020",
+      "paper_location": "Section 3.1; Algorithm 1 sampling/forward path",
+      "mechanism": "Run the maintained Layer Mode 4 query path through LSH lookup, deterministic candidate helper wiring, filler semantics, and sparse activation evaluation.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Layer.cpp",
+        "symbol": "slide::collectSamplingCandidates"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_layer_sampling.cpp",
+        "id": "SLIDE2020-LAYER-SAMPLING-INTEGRATION"
+      },
+      "conditions": {
+        "mode": 4,
+        "node_count": 4,
+        "input_dim": 32,
+        "sparsity": 0.5,
+        "oracle": "all nodes are filled because node_count < target; ReLU values match explicit sparse w*x+b"
+      },
+      "note": "This runtime integration fixture verifies that Layer uses the extracted sampling helper without replacing the historical time-seeded fill start. Because the fixture has four nodes, the final active set is deterministic regardless of the selected start offset."
     }
   ]
 }

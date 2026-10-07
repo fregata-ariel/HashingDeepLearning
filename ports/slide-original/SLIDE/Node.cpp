@@ -136,6 +136,21 @@ float Node::getActivation(int* indices, float* values, int length, int inputID)
 }
 
 
+/**
+ * @brief Normalize one selected output activation and form its training delta.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 3.1 output-layer work in the sparse training
+ * path. Softmax itself is a neural-network prerequisite rather than a SLIDE
+ * contribution.
+ *
+ * @par Implementation note
+ * The stored delta follows the released update sign convention:
+ * target_probability - predicted_probability, divided by batch size.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: SLIDE2020-SOFTMAX-GRADIENT.
+ */
 void Node::ComputeExtaStatsForSoftMax(float normalizationConstant, int inputID, int* label, int labelsize)
 {
 	assert(("Input Not Active but still called !! BUG", _train[inputID]._ActiveinputIds ==1));
@@ -153,6 +168,20 @@ void Node::ComputeExtaStatsForSoftMax(float normalizationConstant, int inputID, 
 }
 
 
+/**
+ * @brief Backpropagate through the selected previous-layer nodes.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 3.1 sparse backpropagation and Algorithm 1.
+ *
+ * @par Implementation note
+ * Delta propagation is ReLU-gated by the previous node's stored activation.
+ * With ADAM enabled, this routine accumulates selected weight gradients in
+ * _t; the later Network optimizer traversal is layer-wide.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: SLIDE2020-TWO-LAYER-BACKWARD.
+ */
 void Node::backPropagate(Node* previousNodes, int* previousLayerActiveNodeIds, int previousLayerActiveNodeSize, float learningRate, int inputID)
 {
 	assert(("Input Not Active but still called !! BUG", _train[inputID]._ActiveinputIds == 1));

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 from collections.abc import MutableSet
-from typing import TYPE_CHECKING, Protocol, TypeAlias, cast
+from typing import Protocol, TypeAlias, cast
 
 import numpy as np
 import numpy.typing as npt
 import torch
 
-if TYPE_CHECKING:
-    from lsh_lib.clsh import pyLSH
-else:
-    from clsh import pyLSH
+from clsh import pyLSH
 
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")

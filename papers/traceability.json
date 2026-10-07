@@ -400,6 +400,49 @@
         "oracle": "explicit Adam moment/velocity/parameter formula"
       },
       "note": "Shows that a currently zero sparse gradient can still move a parameter through historical momentum; sparse gradient accumulation is not equivalent to sparse optimizer-state traversal."
+    },
+    {
+      "id": "SLIDE2020-MAINTENANCE-SCHEDULE",
+      "paper": "slide-2020",
+      "paper_location": "Section 4.2 Updating Overhead",
+      "mechanism": "Decide fixed record-count rehash/rebuild boundaries independently and make rebuild imply an effective table rehash for sparse layers.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Maintenance.h",
+        "symbol": "maintenanceDue"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_maintenance_schedule.cpp",
+        "id": "SLIDE2020-MAINTENANCE-SCHEDULE"
+      },
+      "conditions": {
+        "batch_size": 128,
+        "rehash_records": 6400,
+        "rebuild_records": 128000,
+        "non_aligned_rebuild_records": 9600
+      },
+      "note": "The maintained driver uses fixed intervals. The paper additionally describes increasing the interval over training, so this schedule is tracked as an implementation variant rather than a literal reproduction of that heuristic."
+    },
+    {
+      "id": "SLIDE2020-MAINTENANCE-STATE",
+      "paper": "slide-2020",
+      "paper_location": "Section 4.2 Updating Overhead",
+      "mechanism": "Clear and repopulate the LSH table after parameter updates, optionally regenerating the hash function first, while keeping each Node's stored table/bucket positions consistent.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Layer.cpp",
+        "symbol": "Layer::refreshHashIndex"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_maintenance_state.cpp",
+        "id": "SLIDE2020-MAINTENANCE-STATE"
+      },
+      "conditions": {
+        "hash_function": "default DWTA",
+        "rehash_only": "generation unchanged",
+        "rebuild": "generation increments and table is repopulated"
+      },
+      "note": "The integration fixture checks state consistency after both transitions; rebuild always includes rehash in the maintained port."
     }
   ]
 }

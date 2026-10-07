@@ -45,7 +45,7 @@ cdef class pyLSH:
         int64 sample-id matrices paired with float32 probabilities/count data.
 
     Traceability:
-        MONGOOSE-CYTHON-LSH-BOUNDARY.
+        TRACE_TEST_ID: MONGOOSE-CYTHON-LSH-BOUNDARY.
     """
     cdef LSH* c_lsh
 

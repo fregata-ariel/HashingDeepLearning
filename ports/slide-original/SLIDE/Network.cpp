@@ -129,10 +129,18 @@ int Network::predictClass(int **inputIndices, float **inputValues, int *length, 
  * Overhead".
  *
  * @par Implementation note
- * Each sample records only the active computation path, backpropagates through
- * that path, accumulates sparse gradients, and then applies the layer updates.
- * The rehash/rebuild flags cause hash tables or hash functions to be refreshed
- * after the parameter step.
+ * Each sample records only the active computation path and accumulates
+ * gradients through that path. With ADAM enabled, the subsequent optimizer
+ * loop traverses every parameter in each layer; historical moment state can
+ * therefore move a parameter even when its current accumulated gradient is
+ * zero. Sparse gradient accumulation must not be conflated with sparse Adam
+ * state/parameter traversal. The rehash/rebuild flags cause hash tables or
+ * hash functions to be refreshed after the parameter step.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: SLIDE2020-SPARSE-NODE-MATH.
+ * TRACE_TEST_ID: SLIDE2020-TWO-LAYER-BACKWARD.
+ * TRACE_TEST_ID: SLIDE2020-ADAM-STATE-UPDATE.
  *
  * @par Paper/code distinction
  * Section 4.2 describes an exponentially decaying hash-table update frequency.

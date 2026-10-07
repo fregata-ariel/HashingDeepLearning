@@ -584,17 +584,30 @@ template <class T, class Tp>
  * Dense-Sparse Operations in SLIDE"; BF16-specialized instantiations also map
  * to Section 4.4 "BF16 Optimization".
  *
+ * @par Ownership / preconditions
+ * in_indices/in_values and labels are borrowed for the duration of the call.
+ * Results are written into Layer-owned _nodeDataOpt[inputID] storage; callers
+ * must not free those buffers. inputID must index the Layer batch storage.
+ * AVX-512 branches are compiled only when OPT_IA && OPT_AVX512; BF16 native
+ * instructions additionally require OPT_AVX512_BF16 and capable hardware.
+ *
  * @par Implementation note
  * The routine keeps the SLIDE active-neuron semantics while arranging dense
  * portions of the computation for wide SIMD loads/stores. Template parameters
- * distinguish activation storage (T) from master-weight storage (Tp), enabling
- * FP32, BF16-activation/FP32-weight, and BF16-activation/BF16-weight modes.
+ * distinguish activation storage (T) from parameter storage (Tp). In mode 2,
+ * the BF16 object is the compute high word while the Layer-owned _weightsLo /
+ * _biasLo arrays preserve the low 16 bits of the FP32 optimizer master state.
  *
- * @par Maintained-port fix
- * The historical AVX dense-forward loop processed only complete 128-neuron
- * groups and lacked a general output tail (Issue #7). This maintained copy
- * preserves the 128-output unrolled kernel for full blocks and uses masked
- * AVX-512 loads/stores for the remaining lanes.
+ * @par Maintained-port fixes
+ * The maintained copy preserves the unrolled fast paths but handles output
+ * tails with masks and preserves non-zero bias in OI AVX forward arithmetic.
+ * Scalar code remains the fallback for unsupported layout/shape combinations.
+ *
+ * @par Traceability relation
+ * Direct arithmetic/layout implementation of the optimized paper sections.
+ * TRACE_TEST_ID: OPT2021-AVX-FORWARD-ORACLE.
+ * TRACE_TEST_ID: OPT2021-LAYER-LAYOUT-INTEGRATION.
+ * TRACE_TEST_ID: OPT2021-BF16-NATIVE-DOT.
  *
  * @see https://arxiv.org/abs/2103.10891
  */
@@ -1129,10 +1142,19 @@ void Layer<T, Tp>::backPropagateFirstLayerOpt(DataLayerOpt<T> &dataLayerOpt,
  * Optimized SLIDE (MLSys 2021), Section 4.3 vectorized sparse/dense
  * computation. Weight indexing follows WeightsOrder.
  *
+ * @par Ownership / side effects
+ * prev_layer is borrowed and remains owned by the Network. This function
+ * accumulates into Layer-owned _weightGrads/_biasGrads and into the borrowed
+ * previous Layer's _nodeDataOpt[inputID].grads; it does not update parameters.
+ *
  * @par Maintained-port boundary
  * The AVX-512 OI kernel is an 8x16 = 128-input unrolled kernel. It is selected
  * only when the active input is dense and its size is a multiple of 128;
  * otherwise the scalar path handles the tail without dropping gradients.
+ *
+ * @par Traceability relation
+ * Direct optimized arithmetic with a maintained scalar fallback for shapes the
+ * historical unrolled kernel could not cover safely.
  *
  * @par Traceability
  * TRACE_TEST_ID: OPT2021-AVX-BACKWARD-ORACLE.

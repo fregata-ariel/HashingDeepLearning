@@ -23,7 +23,6 @@ on:
       - "ports/mongoose/mongoose_slide/slide_lib/adam_base.py"
       - "ports/mongoose/mongoose_slide/slide_lib/lazy_parser.py"
       - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi"
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - ".github/workflows/python-typing.yml"
   workflow_dispatch:
@@ -57,7 +56,6 @@ jobs:
             ports/mongoose/mongoose_slide/slide_lib/adam_base.py \
             ports/mongoose/mongoose_slide/slide_lib/lazy_parser.py \
             ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.py \
-            ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi \
             ports/mongoose/lsh_lib/clsh.pyi
 
       - name: Audit and strict-check Reformer attention core

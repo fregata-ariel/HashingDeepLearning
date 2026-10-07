@@ -1139,14 +1139,14 @@ void Layer<T, Tp>::backPropagateOpt(Layer<T, Tp> *prev_layer, int inputID, float
   T *prevGrads = prev_layer->_nodeDataOpt[inputID].grads;
 
 #if OPT_IA && OPT_AVX512
-  if (isOIWeights && ICI == IC && ADAM) {
+  if (isOIWeights && ICI == IC && ICI % 128 == 0 && ADAM) {
     constexpr int V = 16;
     constexpr int I = 8;
     int ic2 = (ICI + V - 1) / V;
     int I2 = ic2 / I;
-    // TODO: tailing handling
-    // int Ir = ic2 % I;
-    //int Vr = ICI % V ? ICI % V : V;
+    // This unrolled kernel consumes complete 8x16 = 128-input blocks.
+    // Non-multiple input sizes use the scalar path below so no gradient tail
+    // is silently dropped.
 
     __m512 vec_zero = _mm512_setzero_ps();
     for (int i2 = 0; i2 < I2; i2++) {

@@ -6,6 +6,8 @@ on:
     paths:
       - "mypy.ini"
       - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
+      - "ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py"
+      - "tools/check_reformer_attention_types.py"
       - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
       - "ports/mongoose/mongoose_slide/slide_lib/triplet_network.py"
       - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi"
@@ -38,3 +40,12 @@ jobs:
             ports/mongoose/mongoose_slide/slide_lib/triplet_network.py \
             ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.pyi \
             ports/mongoose/lsh_lib/clsh.pyi
+
+      - name: Audit and strict-check Reformer attention core
+        env:
+          MYPYPATH: ${{ github.workspace }}/ports/mongoose
+        run: |
+          python tools/check_reformer_attention_types.py \
+            --output /tmp/reformer_attention_core.py
+          python -m mypy --config-file mypy.ini \
+            /tmp/reformer_attention_core.py

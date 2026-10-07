@@ -46,6 +46,16 @@ using float_raw = union float_raw;
  * The scalar helpers below reconstruct/store the mode-2 high+low master value;
  * AVX-512 paths perform the same bitwise reconstruction in vector registers.
  *
+ * @par Ownership / storage
+ * bfloat16 owns only its 16-bit value. Mode-2 low words are not owned by this
+ * type; they live in Layer::_weightsLo/_biasLo and must remain paired with the
+ * corresponding high word for optimizer reconstruction.
+ *
+ * @par Traceability relation
+ * Direct implementation support for the paper's BF16 optimization. The tests
+ * intentionally distinguish this snapshot's RNE float constructor from its
+ * truncating templated assignment operator.
+ *
  * @par Traceability
  * TRACE_TEST_ID: OPT2021-BF16-CONVERSION.
  * TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
@@ -247,6 +257,13 @@ inline void apply_storage_adam(
  * Arithmetic reconstructs the full FP32 value from the BF16 high word and
  * the parallel low word, updates it in FP32, then writes both words back.
  *
+ * @param low Borrowed non-null pointer to the Layer-owned low 16-bit word
+ *        paired with high. The pointed value is updated in place.
+ * @param moment Layer-owned FP32 Adam first moment, updated in place.
+ * @param velocity Layer-owned FP32 Adam second moment, updated in place.
+ *
+ * @par Traceability relation
+ * Direct mode-2 optimizer/master-state contract.
  * TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
  */
 inline void apply_storage_adam(

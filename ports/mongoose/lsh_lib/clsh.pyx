@@ -20,6 +20,24 @@ cdef extern from "LSH.h":
         vector[int] print_stats()
 
 cdef class pyLSH:
+    """Owning Python wrapper around the native C++ LSH instance.
+
+    Lifetime / ownership:
+        pyLSH allocates c_lsh in __cinit__ and deletes it in __dealloc__.
+        NumPy buffers passed to methods are borrowed only for the duration of
+        the native call; the C++ table stores copied integer keys/item ids, not
+        pointers into those arrays.
+
+    Buffer contract:
+        fingerprints: C-contiguous np.int32
+        masks: C-contiguous np.float32
+        multi-label arrays: C-contiguous np.int64
+
+    The matching clsh.pyi exposes the same contract for static typing.
+
+    Traceability:
+        MONGOOSE-CYTHON-LSH-BOUNDARY.
+    """
     cdef LSH* c_lsh
 
     def __cinit__(self, int K, int L, int THREADS):

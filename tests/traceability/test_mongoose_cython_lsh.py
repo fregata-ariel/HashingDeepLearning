@@ -1,6 +1,8 @@
 """Cython buffer-contract oracle for the MONGOOSE native LSH wrapper."""
 from __future__ import annotations
 
+from collections.abc import Callable
+
 import numpy as np
 
 from clsh import pyLSH
@@ -8,9 +10,9 @@ from clsh import pyLSH
 # TRACE_TEST_ID: MONGOOSE-CYTHON-LSH-BOUNDARY
 
 
-def _must_reject(callable_obj: object) -> None:
+def _must_reject(callable_obj: Callable[[], object]) -> None:
     try:
-        callable_obj()  # type: ignore[operator]
+        callable_obj()
     except (TypeError, ValueError):
         return
     raise AssertionError("invalid NumPy buffer was unexpectedly accepted")

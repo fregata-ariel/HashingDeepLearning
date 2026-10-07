@@ -27,6 +27,9 @@ on:
       - "ports/mongoose/lsh_lib/matrix_simhash.py"
       - "ports/mongoose/lsh_lib/query_mul_interface.py"
       - "ports/mongoose/lsh_lib/setup.py"
+      - "ports/slide-original/python_examples/*.py"
+      - "ports/slide-optimized-avx512/python_examples/*.py"
+      - "tests/traceability/test_slide_python_examples.py"
       - ".github/workflows/python-typing.yml"
   workflow_dispatch:
 
@@ -85,3 +88,25 @@ jobs:
             ports/mongoose/mongoose_reformer/reformer_lib/generative_tools.py \
             ports/mongoose/mongoose_reformer/reformer_lib/reformer_enc_dec.py \
             ports/mongoose/mongoose_reformer/train_reformer.py
+
+      - name: Strict-check Original SLIDE Python examples
+        run: |
+          MYPYPATH="${{ github.workspace }}/ports/slide-original/python_examples:${{ github.workspace }}/typings" \
+          python -m mypy --config-file mypy.ini \
+            ports/slide-original/python_examples/config.py \
+            ports/slide-original/python_examples/util.py \
+            ports/slide-original/python_examples/example_full_softmax.py \
+            ports/slide-original/python_examples/example_sampled_softmax.py
+
+      - name: Strict-check Optimized SLIDE Python examples
+        run: |
+          MYPYPATH="${{ github.workspace }}/ports/slide-optimized-avx512/python_examples:${{ github.workspace }}/typings" \
+          python -m mypy --config-file mypy.ini \
+            ports/slide-optimized-avx512/python_examples/config.py \
+            ports/slide-optimized-avx512/python_examples/util.py \
+            ports/slide-optimized-avx512/python_examples/example_full_softmax.py \
+            ports/slide-optimized-avx512/python_examples/example_sampled_softmax.py
+
+      - name: Run SLIDE Python example contract checks
+        run: |
+          python tests/traceability/test_slide_python_examples.py

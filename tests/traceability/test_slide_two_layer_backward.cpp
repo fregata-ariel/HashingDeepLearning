@@ -31,7 +31,7 @@ int main() {
     train outState[1] = {};
     Node out;
     out.Update(2, 0, 1, NodeType::Softmax, 1,
-               outWeights, 0.0f, outMom, outVel, &outState);
+               outWeights, 0.0f, outMom, outVel, outState);
     out._indicesInTables = nullptr;
     out._indicesInBuckets = nullptr;
 

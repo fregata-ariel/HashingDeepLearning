@@ -214,6 +214,43 @@ inline void store_split_fp32(float value, float& full, uint16_t&) {
   full = value;
 }
 
+/**
+ * @brief Apply one scalar Adam step to ordinary FP32 parameter storage.
+ *
+ * @param low Unused for FP32 storage; accepted so the optimized Network can
+ *        call the same storage-aware helper for mode 1 and mode 2.
+ */
+inline void apply_storage_adam(
+    float gradient, float stepSize,
+    float beta1, float beta2, float eps,
+    float& value, uint16_t* low,
+    float& moment, float& velocity) {
+  (void)low;
+  moment = beta1 * moment + (1.0f - beta1) * gradient;
+  velocity = beta2 * velocity + (1.0f - beta2) * gradient * gradient;
+  value += stepSize * moment / (std::sqrt(velocity) + eps);
+}
+
+/**
+ * @brief Apply one scalar Adam step to mode-2 split FP32 master storage.
+ *
+ * Arithmetic reconstructs the full FP32 value from the BF16 high word and
+ * the parallel low word, updates it in FP32, then writes both words back.
+ *
+ * TRACE_TEST_ID: OPT2021-BF16-MODE-STATE.
+ */
+inline void apply_storage_adam(
+    float gradient, float stepSize,
+    float beta1, float beta2, float eps,
+    bfloat16& high, uint16_t* low,
+    float& moment, float& velocity) {
+  float value = load_split_fp32(high, *low);
+  moment = beta1 * moment + (1.0f - beta1) * gradient;
+  velocity = beta2 * velocity + (1.0f - beta2) * gradient * gradient;
+  value += stepSize * moment / (std::sqrt(velocity) + eps);
+  store_split_fp32(value, high, *low);
+}
+
 
 // Arithmetic operators
 inline bfloat16 operator+(const bfloat16& x, const bfloat16& y) { return bfloat16(static_cast<float>(x) + static_cast<float>(y));  }

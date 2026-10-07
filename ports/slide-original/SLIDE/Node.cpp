@@ -92,6 +92,11 @@ bool Node::getActiveInputs(void)
  * SLIDE (MLSys 2020), Section 3.1 sparse feed-forward pass and Algorithm 1.
  * Only the supplied active input coordinates participate in the dot product.
  *
+ * @par Preconditions / side effects
+ * indices/values are borrowed arrays of length 'length'; every index must be
+ * within this Node's weight dimension. The function marks inputID active and
+ * mutates the Layer-owned train record referenced by _train.
+ *
  * @par Traceability
  * TRACE_TEST_ID: SLIDE2020-SPARSE-NODE-MATH.
  */
@@ -176,8 +181,10 @@ void Node::ComputeExtaStatsForSoftMax(float normalizationConstant, int inputID, 
  *
  * @par Implementation note
  * Delta propagation is ReLU-gated by the previous node's stored activation.
- * With ADAM enabled, this routine accumulates selected weight gradients in
- * _t; the later Network optimizer traversal is layer-wide.
+ * previousNodes and previousLayerActiveNodeIds are borrowed; this Node does
+ * not acquire ownership. With ADAM enabled, this routine accumulates selected
+ * weight gradients in _t; the later Network optimizer traversal is layer-wide.
+ * The active input state is consumed/reset as a side effect.
  *
  * @par Traceability
  * TRACE_TEST_ID: SLIDE2020-TWO-LAYER-BACKWARD.
@@ -229,10 +236,11 @@ void Node::backPropagate(Node* previousNodes, int* previousLayerActiveNodeIds, i
  * SLIDE (MLSys 2020), Section 3.1 sparse backpropagation / gradient update.
  *
  * @par Implementation note
- * With ADAM enabled this routine accumulates d*x in _t and d in _tbias.
+ * nnzindices/nnzvalues are borrowed arrays of length nnzSize. With ADAM
+ * enabled this routine accumulates d*x in _t and d in _tbias.
  * Network::ProcessInput subsequently applies Adam over the layer arrays, so
  * sparse gradient accumulation must not be described as a sparse optimizer
- * state update.
+ * state update. The input's active state is consumed/reset.
  *
  * @par Traceability
  * TRACE_TEST_ID: SLIDE2020-SPARSE-NODE-MATH.

@@ -43,6 +43,7 @@ jobs:
           /tmp/test_mongoose_native_lsh
           python setup.py build_ext --inplace
           PYTHONPATH=. python ../../../tests/traceability/test_mongoose_cython_lsh.py
+          PYTHONPATH=.:.. python ../../../tests/traceability/test_mongoose_slide_lsh_wrapper.py
 
       - name: Characterize scheduler threshold and cache semantics
         working-directory: ports/mongoose

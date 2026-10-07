@@ -338,6 +338,68 @@
         "probe_range": "0 <= probe < numHashes for non-power-of-two numHashes"
       },
       "note": "WTA/DWTA are prerequisite LSH families used by the released implementation. This test does not treat their standalone algorithmic details as a new SLIDE paper contribution."
+    },
+    {
+      "id": "SLIDE2020-SOFTMAX-GRADIENT",
+      "paper": "slide-2020",
+      "paper_location": "Section 3.1 sparse output layer / Algorithm 1",
+      "mechanism": "Normalize selected output activations with Softmax and form target-minus-probability deltas on the selected class set.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Node.cpp",
+        "symbol": "Node::ComputeExtaStatsForSoftMax"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_softmax_math.cpp",
+        "id": "SLIDE2020-SOFTMAX-GRADIENT"
+      },
+      "conditions": {
+        "batch_size": 1,
+        "label_count": 1,
+        "oracle": "explicit exp(logit-max)/sum and target-minus-probability"
+      },
+      "note": "The implementation stores the sign convention used by the released update path; the test validates that convention rather than relabeling it as a generic loss-gradient sign."
+    },
+    {
+      "id": "SLIDE2020-TWO-LAYER-BACKWARD",
+      "paper": "slide-2020",
+      "paper_location": "Section 3.1 sparse backpropagation / Algorithm 1",
+      "mechanism": "Propagate an output delta through only the active previous-layer nodes, respecting the previous ReLU gate while accumulating selected weight and bias gradients.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Node.cpp",
+        "symbol": "Node::backPropagate"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_two_layer_backward.cpp",
+        "id": "SLIDE2020-TWO-LAYER-BACKWARD"
+      },
+      "conditions": {
+        "active_previous_nodes": 2,
+        "oracle": "delta*w through positive ReLU activation and delta*a for selected weights"
+      },
+      "note": "Separates active-path backpropagation from the later layer-wide optimizer traversal."
+    },
+    {
+      "id": "SLIDE2020-ADAM-STATE-UPDATE",
+      "paper": "slide-2020",
+      "paper_location": "Optimizer prerequisite used by the released training implementation",
+      "mechanism": "Update Adam first/second moments and a parameter using the current gradient and historical optimizer state.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/slide-original/SLIDE/Adam.h",
+        "symbol": "applyAdamUpdate"
+      },
+      "test": {
+        "file": "tests/traceability/test_slide_adam_state.cpp",
+        "id": "SLIDE2020-ADAM-STATE-UPDATE"
+      },
+      "conditions": {
+        "current_gradient": 0,
+        "historical_moment": "non-zero",
+        "oracle": "explicit Adam moment/velocity/parameter formula"
+      },
+      "note": "Shows that a currently zero sparse gradient can still move a parameter through historical momentum; sparse gradient accumulation is not equivalent to sparse optimizer-state traversal."
     }
   ]
 }

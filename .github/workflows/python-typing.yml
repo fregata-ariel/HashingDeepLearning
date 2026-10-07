@@ -5,40 +5,25 @@ on:
     branches: [research/lsh-lineage-vendor]
     paths:
       - "mypy.ini"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/reversible.py"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/autopadder.py"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/recorder.py"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/generative_tools.py"
-      - "ports/mongoose/mongoose_reformer/reformer_lib/reformer_enc_dec.py"
-      - "ports/mongoose/mongoose_reformer/train_reformer.py"
-      - "typings/**"
-      - "tools/check_reformer_attention_types.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/triplet_network.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/lsh.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/lsh_softmax.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/network.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/adam_base.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/lazy_parser.py"
-      - "ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.py"
+      - "ports/**/*.py"
       - "ports/mongoose/lsh_lib/clsh.pyi"
-      - "ports/mongoose/lsh_lib/matrix_simhash.py"
-      - "ports/mongoose/lsh_lib/query_mul_interface.py"
-      - "ports/mongoose/lsh_lib/setup.py"
-      - "ports/slide-original/python_examples/*.py"
-      - "ports/slide-optimized-avx512/python_examples/*.py"
+      - "typings/**"
+      - "papers/traceability.json"
+      - "tools/audit_python_annotations.py"
+      - "tools/check_reformer_attention_types.py"
+      - "tools/validate_traceability.py"
+      - "tools/audit_traceability_docs.py"
       - "tests/traceability/test_slide_python_examples.py"
       - ".github/workflows/python-typing.yml"
   workflow_dispatch:
 
 jobs:
-  strict-core:
+  strict-all-ports:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -48,65 +33,48 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install mypy numpy torch tensorboard
 
-      - name: Run strict mypy on verified contracts
-        env:
-          MYPYPATH: ${{ github.workspace }}/ports/mongoose:${{ github.workspace }}/typings
+      - name: Audit all maintained Python annotations
         run: |
-          python -m mypy --config-file mypy.ini \
-            ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py \
-            ports/mongoose/mongoose_slide/slide_lib/simHash.py \
-            ports/mongoose/mongoose_slide/slide_lib/triplet_network.py \
-            ports/mongoose/mongoose_slide/slide_lib/lsh.py \
-            ports/mongoose/mongoose_slide/slide_lib/lsh_softmax.py \
-            ports/mongoose/mongoose_slide/slide_lib/network.py \
-            ports/mongoose/mongoose_slide/slide_lib/adam_base.py \
-            ports/mongoose/mongoose_slide/slide_lib/lazy_parser.py \
-            ports/mongoose/mongoose_slide/slide_lib/cupy_kernel.py \
-            ports/mongoose/lsh_lib/clsh.pyi \
-            ports/mongoose/lsh_lib/matrix_simhash.py \
-            ports/mongoose/lsh_lib/query_mul_interface.py \
-            ports/mongoose/lsh_lib/setup.py
+          python tools/audit_python_annotations.py             --root ports             --expected-files 31
 
-      - name: Audit and strict-check Reformer attention core
+      - name: Strict-check all MONGOOSE Python sources
         env:
           MYPYPATH: ${{ github.workspace }}/ports/mongoose:${{ github.workspace }}/typings
+        shell: bash
         run: |
-          python tools/check_reformer_attention_types.py \
-            --output /tmp/reformer_attention_core.py
-          python -m mypy --config-file mypy.ini \
-            /tmp/reformer_attention_core.py
+          mapfile -t sources < <(find ports/mongoose -type f -name '*.py' -print | sort)
+          echo "MONGOOSE_PYTHON_FILES=${#sources[@]}"
+          test "${#sources[@]}" -eq 23
+          python -m mypy --config-file mypy.ini             "${sources[@]}"             ports/mongoose/lsh_lib/clsh.pyi
 
-      - name: Strict-check Reformer wrappers and training entrypoint
+      - name: Audit Reformer attention section
         env:
           MYPYPATH: ${{ github.workspace }}/ports/mongoose:${{ github.workspace }}/typings
         run: |
-          python -m mypy --config-file mypy.ini \
-            ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py \
-            ports/mongoose/mongoose_reformer/reformer_lib/reversible.py \
-            ports/mongoose/mongoose_reformer/reformer_lib/autopadder.py \
-            ports/mongoose/mongoose_reformer/reformer_lib/recorder.py \
-            ports/mongoose/mongoose_reformer/reformer_lib/generative_tools.py \
-            ports/mongoose/mongoose_reformer/reformer_lib/reformer_enc_dec.py \
-            ports/mongoose/mongoose_reformer/train_reformer.py
+          python tools/check_reformer_attention_types.py             --output /tmp/reformer_attention_core.py
+          python -m mypy --config-file mypy.ini             /tmp/reformer_attention_core.py
 
       - name: Strict-check Original SLIDE Python examples
+        shell: bash
         run: |
-          MYPYPATH="${{ github.workspace }}/ports/slide-original/python_examples:${{ github.workspace }}/typings" \
-          python -m mypy --config-file mypy.ini \
-            ports/slide-original/python_examples/config.py \
-            ports/slide-original/python_examples/util.py \
-            ports/slide-original/python_examples/example_full_softmax.py \
-            ports/slide-original/python_examples/example_sampled_softmax.py
+          mapfile -t sources < <(find ports/slide-original/python_examples -type f -name '*.py' -print | sort)
+          echo "ORIGINAL_SLIDE_PYTHON_FILES=${#sources[@]}"
+          test "${#sources[@]}" -eq 4
+          MYPYPATH="${{ github.workspace }}/ports/slide-original/python_examples:${{ github.workspace }}/typings"           python -m mypy --config-file mypy.ini "${sources[@]}"
 
       - name: Strict-check Optimized SLIDE Python examples
+        shell: bash
         run: |
-          MYPYPATH="${{ github.workspace }}/ports/slide-optimized-avx512/python_examples:${{ github.workspace }}/typings" \
-          python -m mypy --config-file mypy.ini \
-            ports/slide-optimized-avx512/python_examples/config.py \
-            ports/slide-optimized-avx512/python_examples/util.py \
-            ports/slide-optimized-avx512/python_examples/example_full_softmax.py \
-            ports/slide-optimized-avx512/python_examples/example_sampled_softmax.py
+          mapfile -t sources < <(find ports/slide-optimized-avx512/python_examples -type f -name '*.py' -print | sort)
+          echo "OPTIMIZED_SLIDE_PYTHON_FILES=${#sources[@]}"
+          test "${#sources[@]}" -eq 4
+          MYPYPATH="${{ github.workspace }}/ports/slide-optimized-avx512/python_examples:${{ github.workspace }}/typings"           python -m mypy --config-file mypy.ini "${sources[@]}"
 
       - name: Run SLIDE Python example contract checks
         run: |
           python tests/traceability/test_slide_python_examples.py
+
+      - name: Validate traceability and native documentation
+        run: |
+          python tools/validate_traceability.py             --emit-dir /tmp/final-traceability
+          python tools/audit_traceability_docs.py

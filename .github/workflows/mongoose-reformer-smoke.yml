@@ -45,6 +45,7 @@ jobs:
           PYTHONPATH=. python ../../../tests/traceability/test_mongoose_cython_lsh.py
           PYTHONPATH=.:.. python ../../../tests/traceability/test_mongoose_slide_lsh_wrapper.py
           PYTHONPATH=.:.. python ../../../tests/traceability/test_mongoose_slide_support.py
+          PYTHONPATH=.. python ../../../tests/traceability/test_mongoose_native_python_helpers.py
 
       - name: Characterize scheduler threshold and cache semantics
         working-directory: ports/mongoose

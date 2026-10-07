@@ -17,8 +17,8 @@ from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.optim import Optimizer
 from torch.utils.tensorboard import SummaryWriter
 
-from reformer_lib.generative_tools import TrainingWrapper
-from reformer_lib.reformer_pytorch import ReformerLM_tune
+from mongoose_reformer.reformer_lib.generative_tools import TrainingWrapper
+from mongoose_reformer.reformer_lib.reformer_pytorch import ReformerLM_tune
 
 
 class TrainArgs(Protocol):
@@ -340,7 +340,7 @@ def train(
                 tunable = _tunable_model(base_model)
                 tri_loss = tunable.get_triplet_loss()
                 if isinstance(tri_loss, torch.Tensor):
-                    tri_loss.backward()
+                    torch.autograd.backward(tri_loss)
                     tunable.clear_triplet_loss()
             else:
                 loss = cast(
@@ -352,7 +352,7 @@ def train(
                         calc_triplet=False,
                     ),
                 )
-            loss.backward()
+            torch.autograd.backward(loss)
 
         torch.nn.utils.clip_grad_norm_(
             model.parameters(), 0.5

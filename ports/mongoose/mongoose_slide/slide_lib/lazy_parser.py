@@ -1,91 +1,89 @@
-import os
-import sys
-import numpy as np
+from __future__ import annotations
+
+from typing import TypeAlias
+
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
-class MultiLabelDataset(Dataset):
-    def __init__(self, filename):
+DatasetItem: TypeAlias = tuple[torch.Tensor, torch.Tensor]
+
+
+class _BaseSparseDataset(Dataset[DatasetItem]):
+    def __init__(self, filename: str, fraction: float = 1.0) -> None:
+        super().__init__()
+        self.N = 0
+        self.D = 0
+        self.L = 0
+        self.max_L = 0
+        self.max_D = 0
+        self.data: list[DatasetItem] = []
+        self._fraction = fraction
         self.build(filename)
 
-    def build(self, filename):
-        with open(filename) as f:
-            metadata = f.readline().split()
-            self.N = int(metadata[0])
+    def build(self, filename: str) -> None:
+        """Parse label,id:value records; feature values are intentionally ignored."""
+        with open(filename, encoding="utf-8") as handle:
+            metadata = handle.readline().split()
+            total = int(metadata[0])
+            self.N = int(total * self._fraction)
             self.D = int(metadata[1])
             self.L = int(metadata[2])
-            self.max_L = 0
-            self.max_D = 0
-            
-            self.data = list()
-            for idx in range(self.N):
-                items = f.readline().split()
-                labels = [int(x) for x in items[0].split(",")]
+
+            for index in range(self.N):
+                items = handle.readline().split()
+                if not items:
+                    raise ValueError(
+                        f"unexpected end of dataset at record {index}"
+                    )
+                labels = [
+                    int(value)
+                    for value in items[0].split(",")
+                ]
                 self.max_L = max(self.max_L, len(labels))
-                
-                ids = list()
-                for fdx in range(1, len(items), 1):
-                    fid, fv = items[fdx].split(":")
-                    ids.append( int(fid) )
+                ids = [
+                    int(item.split(":", 1)[0])
+                    for item in items[1:]
+                ]
                 self.max_D = max(self.max_D, len(ids))
-                self.data.append( [torch.from_numpy(np.asarray(x)) for x in [labels, ids]] )
+                self.data.append(
+                    (
+                        torch.tensor(labels, dtype=torch.long),
+                        torch.tensor(ids, dtype=torch.long),
+                    )
+                )
+                if index % 100000 == 0:
+                    print(index)
 
-                if idx % 100000 == 0:
-                    print(idx)
-
-    def pad(self, item, width, value):
-        result = torch.zeros(width).long()
-        result.fill_(value)
-        result[:len(item)] = item
+    @staticmethod
+    def pad(
+        item: torch.Tensor, width: int, value: int
+    ) -> torch.Tensor:
+        result = torch.full(
+            (width,), value, dtype=torch.long
+        )
+        result[: len(item)] = item
         return result
 
-    def __len__(self):
+    def __len__(self) -> int:
         return self.N
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> DatasetItem:
         labels, data = self.data[idx]
-        return self.pad(labels, self.max_L, -1), self.pad(data, self.max_D, self.D)
+        return (
+            self.pad(labels, self.max_L, -1),
+            self.pad(data, self.max_D, self.D),
+        )
 
-class ValidDataset(Dataset):
-    def __init__(self, filename):
-        self.build(filename)
 
-    def build(self, filename):
-        with open(filename) as f:
-            metadata = f.readline().split()
-            self.N = int(int(metadata[0]) * 0.025)
-            #self.N = int(metadata[0])
-            self.D = int(metadata[1])
-            self.L = int(metadata[2])
-            self.max_L = 0
-            self.max_D = 0
-            
-            self.data = list()
+class MultiLabelDataset(_BaseSparseDataset):
+    """Full sparse multi-label dataset."""
 
-            for idx in range(self.N):
-                items = f.readline().split()
-                labels = [int(x) for x in items[0].split(",")]
-                self.max_L = max(self.max_L, len(labels))
-                
-                ids = list()
-                for fdx in range(1, len(items), 1):
-                    fid, fv = items[fdx].split(":")
-                    ids.append( int(fid) )
-                self.max_D = max(self.max_D, len(ids))
-                self.data.append( [torch.from_numpy(np.asarray(x)) for x in [labels, ids]] )
+    def __init__(self, filename: str) -> None:
+        super().__init__(filename, fraction=1.0)
 
-                if idx % 100000 == 0:
-                    print(idx)
 
-    def pad(self, item, width, value):
-        result = torch.zeros(width).long()
-        result.fill_(value)
-        result[:len(item)] = item
-        return result
+class ValidDataset(_BaseSparseDataset):
+    """Historical validation subset using the first 2.5% of records."""
 
-    def __len__(self):
-        return self.N
-
-    def __getitem__(self, idx):
-        labels, data = self.data[idx]
-        return self.pad(labels, self.max_L, -1), self.pad(data, self.max_D, self.D)
+    def __init__(self, filename: str) -> None:
+        super().__init__(filename, fraction=0.025)

@@ -53,11 +53,17 @@ jobs:
           /tmp/test_slide_sparse_node_math
           g++ -std=c++11 -O0 tests/traceability/test_optimized_weight_layout.cpp -o /tmp/test_optimized_weight_layout
           /tmp/test_optimized_weight_layout
+
+      - name: WTA and DWTA prerequisite oracles
+        run: |
           g++ -std=c++11 -O0 tests/traceability/test_wta_dwta_primitives.cpp \
             ports/slide-original/SLIDE/WtaHash.cpp \
             ports/slide-original/SLIDE/DensifiedWtaHash.cpp \
             -Iports/slide-original/SLIDE -o /tmp/test_wta_dwta_primitives
           /tmp/test_wta_dwta_primitives
+
+      - name: Original SLIDE Softmax backward and Adam oracles
+        run: |
           g++ -std=c++11 -O0 tests/traceability/test_slide_softmax_math.cpp \
             ports/slide-original/SLIDE/Node.cpp -Iports/slide-original/SLIDE \
             -o /tmp/test_slide_softmax_math

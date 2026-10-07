@@ -38,7 +38,7 @@ DensifiedWtaHash::DensifiedWtaHash(int numHashes, int noOfBitsToHash)
     }
     delete [] n_array;
 
-    _lognumhash = log2(numHashes);
+    _lognumhash = static_cast<int>(ceil(log2(numHashes)));
     std::uniform_int_distribution<> dis(1, INT_MAX);
 
     _randa = dis(gen);

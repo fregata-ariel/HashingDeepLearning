@@ -21,12 +21,12 @@ class Scheduler:
         https://openreview.net/forum?id=wWK7yXkULyh
     """
 
-    def __init__(self, data, D, k=1, l=10, thresh=0.01):
+    def __init__(self, data: torch.Tensor, D: int, k: int = 1, l: int = 10, thresh: float = 0.01) -> None:
         self.thresh_hash = SimHash(D, k, l)
         self.hash_codes = self.thresh_hash.hash(data)
         self.thresh = thresh
 
-    def detect_change(self, updated_data):
+    def detect_change(self, updated_data: torch.Tensor) -> bool:
         """Return True when the cached SimHash signature changes enough.
 
         The threshold is applied to the absolute difference between current
@@ -34,7 +34,7 @@ class Scheduler:
         signature. In the Reformer integration this return value gates whether
         triplet examples / learnable-hash updates are computed.
 
-        This is a code-level approximation of MONGOOSE Section 3.2's goal:
+        Traceability test: MONGOOSE-SCHEDULER-CHANGE.\n\n        This is a code-level approximation of MONGOOSE Section 3.2's goal:
         avoid LSH maintenance when model parameters have changed too little to
         justify the update.
         """

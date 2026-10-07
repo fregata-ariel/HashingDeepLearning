@@ -11,8 +11,15 @@
  * writes tombstones that query paths erase before exposing results.
  *
  * Ownership: the table copies integer keys and item ids into STL containers;
- * pointers supplied by the Cython boundary are borrowed only during calls.
+ * pointers supplied by the Cython boundary are borrowed only during calls and
+ * are never stored. Query results are value-owned STL containers.
  *
+ * Preconditions: one fingerprint row contains L integer components. Batched
+ * operations receive N consecutive rows. query_multi_mask writes into a
+ * caller-owned M*N float buffer and never retains it.
+ *
+ * Traceability relation: Support. This is native infrastructure for the
+ * released MONGOOSE-SLIDE path, not a separate MONGOOSE algorithmic claim.
  * TRACE_TEST_ID: MONGOOSE-NATIVE-LSH-SET.
  */
 class LSH

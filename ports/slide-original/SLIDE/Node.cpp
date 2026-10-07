@@ -85,6 +85,16 @@ bool Node::getActiveInputs(void)
     return _activeInputs > 0;
 }
 
+/**
+ * @brief Compute one selected neuron's activation from a sparse input vector.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 3.1 sparse feed-forward pass and Algorithm 1.
+ * Only the supplied active input coordinates participate in the dot product.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: SLIDE2020-SPARSE-NODE-MATH.
+ */
 float Node::getActivation(int* indices, float* values, int length, int inputID)
 {
 	assert(("Input ID more than Batch Size", inputID <= _currentBatchsize));
@@ -183,6 +193,21 @@ void Node::backPropagate(Node* previousNodes, int* previousLayerActiveNodeIds, i
 }
 
 
+/**
+ * @brief Accumulate first-layer gradients on the active sparse coordinates.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 3.1 sparse backpropagation / gradient update.
+ *
+ * @par Implementation note
+ * With ADAM enabled this routine accumulates d*x in _t and d in _tbias.
+ * Network::ProcessInput subsequently applies Adam over the layer arrays, so
+ * sparse gradient accumulation must not be described as a sparse optimizer
+ * state update.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: SLIDE2020-SPARSE-NODE-MATH.
+ */
 void Node::backPropagateFirstLayer(int* nnzindices, float* nnzvalues, int nnzSize, float learningRate, int inputID)
 {
 	assert(("Input Not Active but still called !! BUG", _train[inputID]._ActiveinputIds == 1));

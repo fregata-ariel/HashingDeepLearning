@@ -278,7 +278,7 @@ class ScaleNorm(nn.Module):
         n = torch.norm(
             x, dim=-1, keepdim=True
         ).clamp(min=self.eps)
-        return x / n * self.g
+        return cast(torch.Tensor, x / n * self.g)
 
 
 class PreNorm(nn.Module):
@@ -1241,7 +1241,7 @@ class FeedForward(nn.Module):
             x, value = self.w1(x).chunk(2, dim=-1)
             x = cast(torch.Tensor, self.act(x)) * value
         x = self.dropout(x)
-        return self.w2(x)
+        return cast(torch.Tensor, self.w2(x))
 
 
 class AbsolutePositionalEmbedding(nn.Module):
@@ -1253,7 +1253,7 @@ class AbsolutePositionalEmbedding(nn.Module):
         positions = torch.arange(
             x.shape[1], device=x.device
         )
-        return self.emb(positions)
+        return cast(torch.Tensor, self.emb(positions))
 
 
 class FixedPositionalEmbedding(nn.Module):

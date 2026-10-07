@@ -579,6 +579,70 @@
         "oracle": "explicit tanh agreement followed by sigmoid BCE"
       },
       "note": "This objective is separate from the Reformer-side cosine-margin triplet objective and is not a literal implementation of Equation 3."
+    },
+    {
+      "id": "MONGOOSE-NATIVE-LSH-SET",
+      "paper": "mongoose-2021",
+      "paper_location": "Section 4 SLIDE integration support; native LSH data-structure boundary",
+      "mechanism": "Store item ids in L hash tables and expose insert/query/remove/clear, union multi-query, per-query set, and dense mask operations.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/lsh_lib/LSH.cpp",
+        "symbol": "LSH::query"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_native_lsh.cpp",
+        "id": "MONGOOSE-NATIVE-LSH-SET"
+      },
+      "conditions": {
+        "L": 2,
+        "threads": 1,
+        "oracle": "explicit set unions, tombstone removal, per-query sets, dense mask, and clear"
+      },
+      "note": "This native table is implementation support for MONGOOSE's SLIDE path, not the learnable-hash objective itself."
+    },
+    {
+      "id": "MONGOOSE-CYTHON-LSH-BOUNDARY",
+      "paper": "mongoose-2021",
+      "paper_location": "Released SLIDE implementation boundary around native LSH tables",
+      "mechanism": "Enforce Cython/NumPy buffer contracts for C-contiguous int32 fingerprints, float32 masks, and int64 multi-label arrays.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/lsh_lib/clsh.pyx",
+        "symbol": "cdef class pyLSH"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_cython_lsh.py",
+        "id": "MONGOOSE-CYTHON-LSH-BOUNDARY"
+      },
+      "conditions": {
+        "fingerprints": "np.int32, C contiguous",
+        "masks": "np.float32, C contiguous",
+        "labels": "np.int64, C contiguous",
+        "oracle": "valid buffers succeed; wrong dtype/strided buffers are rejected"
+      },
+      "note": "The matching clsh.pyi records the same public buffer/return contracts for static typing."
+    },
+    {
+      "id": "MONGOOSE-REFORMER-HASH-SHAPES",
+      "paper": "mongoose-2021",
+      "paper_location": "Section 3.3 learnable LSH applied to Reformer",
+      "mechanism": "Preserve packed SimHash and trainable-rotation tensor dimensions through Reformer hashing, including hash-round bucket offsets.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py",
+        "symbol": "extract_rotations"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_reformer_hash_shapes.py",
+        "id": "MONGOOSE-REFORMER-HASH-SHAPES"
+      },
+      "conditions": {
+        "simhash": "(N,L) int32 packed codes",
+        "rotations": "(batch*heads, dim_head, n_hashes, n_buckets)",
+        "buckets": "(batch*heads, n_hashes*seq_len) with round-offset ids"
+      },
+      "note": "This is a shape/domain prerequisite for the learnable-LSH control flow rather than a separate paper claim."
     }
   ]
 }

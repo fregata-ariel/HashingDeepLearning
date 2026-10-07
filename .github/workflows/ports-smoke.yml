@@ -99,6 +99,17 @@ jobs:
             -o /tmp/test_optimized_layer_layout
           /tmp/test_optimized_layer_layout
 
+      - name: Run BF16 mode storage and scalar Adam oracle
+        working-directory: ports/slide-optimized-avx512
+        run: |
+          g++ -std=c++14 -O0 -fopenmp -mavx512f \
+            -DOPT_IA=1 -DOPT_AVX512=0 -DOPT_AVX512_BF16=0 \
+            ../../tests/traceability/test_bfloat16_mode_state.cpp \
+            -I./SLIDE -I./build/ep/include \
+            ./build/libSLIDE_LIB.a ./build/ep/lib/libcnpy.a ./build/ep/lib/libz.a \
+            -o /tmp/test_bfloat16_mode_state
+          /tmp/test_bfloat16_mode_state
+
       - name: Generate tiny dataset with whitespace-only config line
         working-directory: ports/slide-optimized-avx512
         run: |

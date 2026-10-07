@@ -956,7 +956,7 @@ int Layer<T, Tp>::queryActiveNodeandComputeActivationsOpt(
           vec_in = _mm512_maskz_loadu_epi16(k, &in_values[i2 * V]);
           vec_out = _mm512_dpbf16_ps(vec_out, vec_in, vec_wei);
         }
-        res = _mm512_reduce_add_ps(vec_out);
+        res += _mm512_reduce_add_ps(vec_out);
         if (_type == NodeType::ReLU) {
           if (res < 0) res = 0;
         } else if (_type == NodeType::Softmax) {

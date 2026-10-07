@@ -126,6 +126,8 @@ jobs:
         run: |
           g++ -std=c++17 -O2 -mavx512f -mfma tests/traceability/test_optimized_avx_forward.cpp -o /tmp/test_optimized_avx_forward
           /tmp/test_optimized_avx_forward
+          g++ -std=c++17 -O2 -mavx512f -mfma tests/traceability/test_optimized_avx_backward.cpp -o /tmp/test_optimized_avx_backward
+          /tmp/test_optimized_avx_backward
 
       - name: Build AVX maintained port
         if: steps.cpu.outputs.avx == 'true'

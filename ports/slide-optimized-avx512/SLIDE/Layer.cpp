@@ -1128,6 +1128,22 @@ void Layer<T, Tp>::backPropagateFirstLayerOpt(DataLayerOpt<T> &dataLayerOpt,
   }
 }
 
+/**
+ * @brief Backpropagate through a selected optimized layer and accumulate gradients.
+ *
+ * @par Paper mapping
+ * Optimized SLIDE (MLSys 2021), Section 4.3 vectorized sparse/dense
+ * computation. Weight indexing follows WeightsOrder.
+ *
+ * @par Maintained-port boundary
+ * The AVX-512 OI kernel is an 8x16 = 128-input unrolled kernel. It is selected
+ * only when the active input is dense and its size is a multiple of 128;
+ * otherwise the scalar path handles the tail without dropping gradients.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: OPT2021-AVX-BACKWARD-ORACLE.
+ * TRACE_TEST_ID: OPT2021-WEIGHT-LAYOUT-ORACLE.
+ */
 template <class T, class Tp>
 void Layer<T, Tp>::backPropagateOpt(Layer<T, Tp> *prev_layer, int inputID, float tmplr) {
   int OCI = _nodeDataOpt[inputID].size;

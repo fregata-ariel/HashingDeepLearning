@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from collections.abc import MutableSet, Sequence
+from collections.abc import MutableSet
+from typing import TypeAlias
 import numpy as np
 import numpy.typing as npt
 
-Int32Array = npt.NDArray[np.int32]
-Int64Array = npt.NDArray[np.int64]
-Float32Array = npt.NDArray[np.float32]
+Int32Array: TypeAlias = npt.NDArray[np.int32]
+Int64Array: TypeAlias = npt.NDArray[np.int64]
+Float32Array: TypeAlias = npt.NDArray[np.float32]
 
 
 class pyLSH:

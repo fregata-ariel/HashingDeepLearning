@@ -688,6 +688,27 @@
         "network": "LSHSampledLayer train/eval with native clsh available"
       },
       "note": "Support coverage for the released MONGOOSE-SLIDE training stack; these utilities are not separate algorithmic claims of the paper."
+    },
+    {
+      "id": "MONGOOSE-NATIVE-PYTHON-HELPERS",
+      "paper": "mongoose-2021",
+      "paper_location": "Released native-LSH helper/support code used around MONGOOSE experiments",
+      "mechanism": "Type and exercise the legacy CUDA matrix-SimHash helper and the autograd bridge for a CSR-constrained native matrix product, while keeping Cython array contracts synchronized with clsh.pyi.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/lsh_lib/query_mul_interface.py",
+        "symbol": "class QueryMulFn"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_native_python_helpers.py",
+        "id": "MONGOOSE-NATIVE-PYTHON-HELPERS"
+      },
+      "conditions": {
+        "matrix_simhash": "GPU-only generation; CPU import/composition remains valid",
+        "query_mul": "forward/backward Tensor contract validated with signature-compatible fake native module",
+        "cython": "multi_label_nonunion sample ids are np.int64; probabilities are np.float32"
+      },
+      "note": "These helpers are support/native integration code and are not treated as separate MONGOOSE algorithmic contributions."
     }
   ]
 }

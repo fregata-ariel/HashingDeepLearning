@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from collections.abc import Callable
 from typing import Protocol, cast
 
 import numpy as np
@@ -48,8 +49,11 @@ def _load_fingerprint_kernel() -> _FingerprintKernel | None:
         )
     except (ImportError, OSError):
         return None
-    kernel_type = cast(type[_FingerprintKernel], getattr(module, "cupyKernel"))
-    return kernel_type(kernel, "fingerprint")
+    kernel_factory = cast(
+        Callable[[str, str], _FingerprintKernel],
+        getattr(module, "cupyKernel"),
+    )
+    return kernel_factory(kernel, "fingerprint")
 
 
 class SimHash:

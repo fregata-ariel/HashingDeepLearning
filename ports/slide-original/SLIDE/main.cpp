@@ -17,6 +17,7 @@
 #include<map>
 #include<string>
 #include "Config.h"
+#include "Maintenance.h"
 
 int *RangePow;
 int *K;
@@ -403,19 +404,12 @@ void ReadDataSVM(size_t numBatches,  Network* _mynet, int epoch){
                 break;
         }
 
-        bool rehash = false;
-        bool rebuild = false;
-        if ((epoch*numBatches+i)%(Rehash/Batchsize) == ((size_t)Rehash/Batchsize-1)){
-            if(Mode==1 || Mode==4) {
-                rehash = true;
-            }
-        }
-
-        if ((epoch*numBatches+i)%(Rebuild/Batchsize) == ((size_t)Rehash/Batchsize-1)){
-            if(Mode==1 || Mode==4) {
-                rebuild = true;
-            }
-        }
+        const size_t batchIndex = epoch * numBatches + i;
+        const bool maintenanceMode = (Mode == 1 || Mode == 4);
+        bool rehash = maintenanceMode &&
+            slide::maintenanceDue(batchIndex, Batchsize, Rehash);
+        bool rebuild = maintenanceMode &&
+            slide::maintenanceDue(batchIndex, Batchsize, Rebuild);
 
         auto t1 = std::chrono::high_resolution_clock::now();
 

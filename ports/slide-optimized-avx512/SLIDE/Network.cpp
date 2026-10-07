@@ -564,10 +564,7 @@ int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchI
         if (std::is_same<Tp, float>::value) {
           w = layer->_weights[idx];
         } else {
-          float_raw f;
-          f.wraw[1] = layer->_weights[idx];
-          f.wraw[0] = layer->_weightsLo[idx];
-          w = f.fraw;
+          w = load_split_fp32(layer->_weights[idx], layer->_weightsLo[idx]);
         }
         T &gw = layer->_weightGrads[idx];
         float &mom = layer->_adamAvgMom[idx];
@@ -580,10 +577,7 @@ int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchI
         if (std::is_same<Tp, float>::value) {
           layer->_weights[idx] = w;
         } else {
-          float_raw f;
-          f.fraw = w;
-          layer->_weights[idx] = f.wraw[1];
-          layer->_weightsLo[idx] = f.wraw[0];
+          store_split_fp32(w, layer->_weights[idx], layer->_weightsLo[idx]);
         }
       };
 
@@ -593,10 +587,7 @@ int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchI
         if (std::is_same<Tp, float>::value) {
           b = layer->_bias[oc];
         } else {
-          float_raw f;
-          f.wraw[1] = layer->_bias[oc];
-          f.wraw[0] = layer->_biasLo[oc];
-          b = f.fraw;
+          b = load_split_fp32(layer->_bias[oc], layer->_biasLo[oc]);
         }
 
         float &bmom = layer->_adamAvgMomBias[oc];
@@ -608,10 +599,7 @@ int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchI
         if (std::is_same<Tp, float>::value) {
           layer->_bias[oc] = b;
         } else {
-          float_raw f;
-          f.fraw = b;
-          layer->_bias[oc] = f.wraw[1];
-          layer->_biasLo[oc] = f.wraw[0];
+          store_split_fp32(b, layer->_bias[oc], layer->_biasLo[oc]);
         }
       };
 #endif

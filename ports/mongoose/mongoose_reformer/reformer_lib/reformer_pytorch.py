@@ -336,18 +336,31 @@ class Chunk(nn.Module):
 
 # +
 class LSHAttention(nn.Module):
-    def __init__(self,
-                 dropout=0.,
-                 bucket_size=64,
-                 n_hashes=8,
-                 causal=False,
-                 allow_duplicate_attention=True,
-                 attend_across_buckets=True,
-                 rehash_each_round=True,
-                 drop_for_hash_rate=0.0,
-                 random_rotations_per_head=False,
-                 return_attn=False,
-                 store_stats=False):
+    """Base Reformer locality-sensitive-hash attention.
+
+    Shape contract:
+        qk, v: (batch*heads, sequence, dim_head)
+        hash_vectors result: (batch*heads, n_hashes*sequence)
+        forward result: output plus attention/bucket/example tensors.
+
+    This is a Reformer prerequisite used by MONGOOSE; learnable rotations are
+    supplied by TripletLSHAttention.
+    """
+
+    def __init__(
+        self,
+        dropout: float = 0.0,
+        bucket_size: int = 64,
+        n_hashes: int = 8,
+        causal: bool = False,
+        allow_duplicate_attention: bool = True,
+        attend_across_buckets: bool = True,
+        rehash_each_round: bool = True,
+        drop_for_hash_rate: float = 0.0,
+        random_rotations_per_head: bool = False,
+        return_attn: bool = False,
+        store_stats: bool = False,
+    ) -> None:
         super().__init__()
         if dropout >= 1.0:
             raise ValueError('Dropout rates must be lower than 1.')
@@ -375,14 +388,29 @@ class LSHAttention(nn.Module):
         self._return_attn = return_attn
 
         # cache buckets for reversible network, reported by authors to make Reformer work at depth
-        self._cache = {}
+        self._cache: dict[str, torch.Tensor] = {}
 
         self.store_stats = store_stats
         self.mean_dp = 0.0
         self.stat_count = 0
 
     # @cache_method_decorator('_cache', 'buckets', reexecute=True)
-    def hash_vectors(self, n_buckets, vecs, rotations=None):
+    def hash_vectors(
+        self,
+        n_buckets: int,
+        vecs: torch.Tensor,
+        rotations: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """Hash vectors into round-offset bucket ids.
+
+        vecs has shape (batch*heads, sequence, dim_head). rotations, when
+        supplied by MONGOOSE, has shape
+        (batch*heads, dim_head, n_hashes, n_buckets/2 before sign expansion).
+        The returned int64 tensor has shape
+        (batch*heads, n_hashes*sequence).
+
+        TRACE_TEST_ID: MONGOOSE-REFORMER-HASH-SHAPES.
+        """
         batch_size = vecs.shape[0]
         device = vecs.device
 
@@ -437,7 +465,7 @@ class LSHAttention(nn.Module):
             rotated_vecs = torch.squeeze(rotated_vecs, 0)
             bucket_range = torch.arange(rotated_vecs.shape[-1], device=device)
             bucket_range = torch.reshape(bucket_range, (1, -1))
-            bucket_range = bucket_range.expand_as(rotated_vecs.shape)
+            bucket_range = bucket_range.expand_as(rotated_vecs)
 
             _, buckets = sort_key_val(rotated_vecs, bucket_range, dim=-1)
             buckets = buckets[:, -self.n_hashes:]
@@ -447,13 +475,28 @@ class LSHAttention(nn.Module):
 
         return buckets
 
-    def forward(self, qk, v, query_len=None, input_mask=None, input_attn_mask=None, rotations=None,
-                triplet_examples=False, **kwargs):
+    def forward(
+        self,
+        qk: torch.Tensor,
+        v: torch.Tensor,
+        query_len: int | None = None,
+        input_mask: torch.Tensor | None = None,
+        input_attn_mask: torch.Tensor | None = None,
+        rotations: torch.Tensor | None = None,
+        triplet_examples: bool = False,
+        **kwargs: object,
+    ) -> AttentionResult:
+        """Run LSH attention on merged batch/head tensors.
+
+        Boolean input masks are broadcast over the hashed attention blocks.
+        When triplet_examples is true, returned positive/negative tensors are
+        detached mining examples; otherwise those two return slots are None.
+        """
         batch_size, seqlen, dim, device = *qk.shape, qk.device
 
         query_len = default(query_len, seqlen)
-        is_reverse = kwargs.pop('_reverse', False)
-        depth = kwargs.pop('_depth', None)
+        kwargs.pop('_reverse', False)
+        kwargs.pop('_depth', None)
 
         assert seqlen % (
                 self.bucket_size * 2) == 0, f'Sequence length ({seqlen}) needs to be divisible by target bucket size  x 2 - {self.bucket_size * 2}'
@@ -505,7 +548,7 @@ class LSHAttention(nn.Module):
         # Allow each chunk to attend within itself, and also one chunk back. Chunk
         # boundaries might occur in the middle of a sequence of items from the
         # same bucket, so this increases the chances of attending to relevant items.
-        def look_one_back(x):
+        def look_one_back(x: torch.Tensor) -> torch.Tensor:
             x_extra = torch.cat([x[:, -1:, ...], x[:, :-1, ...]], dim=1)
             return torch.cat([x, x_extra], dim=2)
 
@@ -666,24 +709,25 @@ class TripletLSHAttention(LSHAttention):
     those neighborhoods can update the hash function during training.
     """
 
-    def __init__(self,
-                 alpha=1.0,  # triplet loss margin
-                 dim=512,  # embedding dimension
-                 seq_len=1024,
-                 heads=8,  # attention heads
-                 dropout=0.,
-                 bucket_size=64,
-                 n_hashes=8,
-                 causal=False,
-                 allow_duplicate_attention=True,
-                 attend_across_buckets=True,
-                 rehash_each_round=True,
-                 drop_for_hash_rate=0.0,
-                 random_rotations_per_head=False,
-                 return_attn=False,
-                 triplet_chunks=None,
-                 store_stats=False
-                 ):
+    def __init__(
+        self,
+        alpha: float = 1.0,
+        dim: int = 512,
+        seq_len: int = 1024,
+        heads: int = 8,
+        dropout: float = 0.0,
+        bucket_size: int = 64,
+        n_hashes: int = 8,
+        causal: bool = False,
+        allow_duplicate_attention: bool = True,
+        attend_across_buckets: bool = True,
+        rehash_each_round: bool = True,
+        drop_for_hash_rate: float = 0.0,
+        random_rotations_per_head: bool = False,
+        return_attn: bool = False,
+        triplet_chunks: int | None = None,
+        store_stats: bool = False,
+    ) -> None:
         super().__init__(dropout=dropout,
                          bucket_size=bucket_size,
                          n_hashes=n_hashes,
@@ -708,10 +752,15 @@ class TripletLSHAttention(LSHAttention):
         # number of chunks to split up computation of pos/neg examples for triplet loss
         self.triplet_chunks = default(triplet_chunks, dim)
 
-    def reset_rotations(self):
+    def reset_rotations(self) -> None:
         self.rotations.reset_parameters()
 
-    def extract_rotations(self, batch_size):
+    def extract_rotations(self, batch_size: int) -> torch.Tensor:
+        """Return detached learned rotations for Reformer hashing.
+
+        Shape: (batch*heads, dim_head, n_hashes, n_buckets).
+        TRACE_TEST_ID: MONGOOSE-REFORMER-HASH-SHAPES.
+        """
         n_buckets = self.seq_len // self.bucket_size
         rotations = self.rotations.weight.t().detach()  # dim x (buckets * n_hashes / 2)
         # rotations = rotations[:, torch.randperm(rotations.size(-1))[:rotations.size(-1) // 2]]
@@ -761,30 +810,55 @@ class TripletLSHAttention(LSHAttention):
 
         return triplet_loss
 
-    def forward(self, qk, v, query_len=None, input_mask=None, printgrad=False,
-                triplet_examples=False, **kwargs):
+    def forward(
+        self,
+        qk: torch.Tensor,
+        v: torch.Tensor,
+        query_len: int | None = None,
+        input_mask: torch.Tensor | None = None,
+        input_attn_mask: torch.Tensor | None = None,
+        printgrad: bool = False,
+        triplet_examples: bool = False,
+        **kwargs: object,
+    ) -> AttentionResult:
         batch_size, seqlen, dim = qk.shape
         n_buckets = self.seq_len // self.bucket_size
         rotations = self.extract_rotations(batch_size)
         # self.rotations.reset_parameters()
-        out, attn, buckets, emb_x, pos, neg = super().forward(qk, v,
-                                                              query_len=query_len,
-                                                              input_mask=input_mask,
-                                                              rotations=rotations,
-                                                              printgrad=printgrad,
-                                                              triplet_examples=triplet_examples)
+        out, attn, buckets, emb_x, pos, neg = super().forward(
+            qk,
+            v,
+            query_len=query_len,
+            input_mask=input_mask,
+            input_attn_mask=input_attn_mask,
+            rotations=rotations,
+            printgrad=printgrad,
+            triplet_examples=triplet_examples,
+            **kwargs,
+        )
         return out, attn, buckets, emb_x, pos, neg
 
 
 # simple full attention
 class FullQKAttention(nn.Module):
-    def __init__(self, causal=False, dropout=0.):
+    """Dense attention fallback sharing the AttentionResult contract."""
+
+    def __init__(self, causal: bool = False, dropout: float = 0.0) -> None:
         super().__init__()
         self.causal = causal
         self.dropout = nn.Dropout(dropout)
-        self.attn = None
+        self.attn: torch.Tensor | None = None
 
-    def forward(self, qk, v, query_len=None, input_mask=None, input_attn_mask=None, **kwargs):
+    def forward(
+        self,
+        qk: torch.Tensor,
+        v: torch.Tensor,
+        query_len: int | None = None,
+        input_mask: torch.Tensor | None = None,
+        input_attn_mask: torch.Tensor | None = None,
+        **kwargs: object,
+    ) -> AttentionResult:
+        """Run dense attention on (batch*heads, sequence, dim_head) tensors."""
         b, seq_len, dim = qk.shape
         query_len = default(query_len, seq_len)
         t = query_len
@@ -820,7 +894,7 @@ class FullQKAttention(nn.Module):
 
         out = torch.einsum('bij,bje->bie', dot, v)
 
-        return out, dot, torch.empty(0), None, None, None
+        return out, dot, torch.empty(0, device=qk.device), None, None, None
 
 
 class LSHSelfAttention(nn.Module):
@@ -845,22 +919,49 @@ class LSHSelfAttention(nn.Module):
         MONGOOSE-SCHEDULER-CHANGE, MONGOOSE-SCHEDULER-GATE.
     """
 
-    def __init__(self, dim, heads=8, bucket_size=64, n_hashes=8, causal=False, dim_head=None, attn_chunks=1,
-                 random_rotations_per_head=False, attend_across_buckets=True, allow_duplicate_attention=True,
-                 num_mem_kv=0, one_value_head=False, use_full_attn=False, full_attn_thres=None, return_attn=False,
-                 post_attn_dropout=0., dropout=0., n_local_attn_heads=0, attn_type='lsh', max_seq_len=None,
-                 alpha=1.0, triplet_chunks=None, scheduler_hashes=10, thresh=0.01, **kwargs):
+    def __init__(
+        self,
+        dim: int,
+        heads: int = 8,
+        bucket_size: int = 64,
+        n_hashes: int = 8,
+        causal: bool = False,
+        dim_head: int | None = None,
+        attn_chunks: int | None = 1,
+        random_rotations_per_head: bool = False,
+        attend_across_buckets: bool = True,
+        allow_duplicate_attention: bool = True,
+        num_mem_kv: int = 0,
+        one_value_head: bool = False,
+        use_full_attn: bool = False,
+        full_attn_thres: int | None = None,
+        return_attn: bool = False,
+        post_attn_dropout: float = 0.0,
+        dropout: float = 0.0,
+        n_local_attn_heads: int = 0,
+        attn_type: str = "lsh",
+        max_seq_len: int | None = None,
+        alpha: float = 1.0,
+        triplet_chunks: int | None = None,
+        scheduler_hashes: int = 10,
+        thresh: float = 0.01,
+        store_stats: bool = False,
+        **kwargs: object,
+    ) -> None:
         super().__init__()
         assert dim_head or (dim % heads) == 0, 'dimensions must be divisible by number of heads'
         assert n_local_attn_heads < heads, 'local attention heads must be less than number of heads'
 
+        if kwargs:
+            unknown = ", ".join(sorted(kwargs))
+            raise TypeError(f"unsupported LSHSelfAttention options: {unknown}")
         dim_head = default(dim_head, dim // heads)
         dim_heads = dim_head * heads
 
         self.dim = dim
         self.heads = heads
         self.dim_head = dim_head
-        self.attn_chunks = default(attn_chunks, 1)
+        self.attn_chunks: int = default(attn_chunks, 1)
 
         self.v_head_repeats = (heads if one_value_head else 1)
         v_dim = dim_heads // self.v_head_repeats
@@ -872,13 +973,18 @@ class LSHSelfAttention(nn.Module):
         self.bucket_size = bucket_size
 
         self.attn_type = attn_type
+        self.scheduler: Scheduler | None = None
+        self.lsh_attn: LSHAttention
         if self.attn_type == 'triplet':
+            if max_seq_len is None:
+                raise ValueError("triplet attention requires max_seq_len")
             self.lsh_attn = TripletLSHAttention(alpha=alpha, dim=self.dim, seq_len=max_seq_len, heads=self.heads,
                                                 bucket_size=bucket_size, n_hashes=n_hashes, causal=causal,
                                                 random_rotations_per_head=random_rotations_per_head,
                                                 attend_across_buckets=attend_across_buckets,
                                                 allow_duplicate_attention=allow_duplicate_attention,
-                                                return_attn=return_attn, triplet_chunks=triplet_chunks, **kwargs)
+                                                return_attn=return_attn, triplet_chunks=triplet_chunks,
+                                                store_stats=store_stats)
             # init scheduler
             self.scheduler = Scheduler(self.toqk.weight, dim, scheduler_hashes, 1, thresh)
 
@@ -887,7 +993,7 @@ class LSHSelfAttention(nn.Module):
                                          random_rotations_per_head=random_rotations_per_head,
                                          attend_across_buckets=attend_across_buckets,
                                          allow_duplicate_attention=allow_duplicate_attention, return_attn=return_attn,
-                                         dropout=dropout, **kwargs)
+                                         dropout=dropout, store_stats=store_stats)
 
         self.full_attn = FullQKAttention(causal=causal, dropout=dropout)
         self.post_attn_dropout = nn.Dropout(post_attn_dropout)
@@ -899,22 +1005,38 @@ class LSHSelfAttention(nn.Module):
         self.mem_kv = nn.Parameter(torch.randn(1, num_mem_kv, dim, requires_grad=True)) if num_mem_kv > 0 else None
 
         self.n_local_attn_heads = n_local_attn_heads
-        self.local_attn = LocalAttention(window_size=bucket_size * 2, causal=causal, dropout=dropout, shared_qk=True,
-                                         look_forward=(1 if not causal else 0))
+        self.local_attn = cast(
+            _LocalAttentionCallable,
+            LocalAttention(
+                window_size=bucket_size * 2,
+                causal=causal,
+                dropout=dropout,
+                shared_qk=True,
+                look_forward=(1 if not causal else 0),
+            ),
+        )
 
-        self.callback = None
-        self.attn = None
-        self.triplet_loss = 0.0
+        self.callback: Callable[[torch.Tensor, torch.Tensor], None] | None = None
+        self.attn: torch.Tensor | None = None
+        self.triplet_loss: float | torch.Tensor = 0.0
         self._reset_parameters()
 
-    def _reset_parameters(self):
+    def _reset_parameters(self) -> None:
         # if self._qkv_same_embed_dim:
         xavier_uniform_(self.toqk.weight)
         xavier_uniform_(self.tov.weight)
         xavier_uniform_(self.to_out.weight)
 
-    def forward(self, x, keys=None, input_mask=None, input_attn_mask=None, context_mask=None, calc_triplet=False,
-                **kwargs):
+    def forward(
+        self,
+        x: torch.Tensor,
+        keys: torch.Tensor | None = None,
+        input_mask: torch.Tensor | None = None,
+        input_attn_mask: torch.Tensor | None = None,
+        context_mask: torch.Tensor | None = None,
+        calc_triplet: bool = False,
+        **kwargs: object,
+    ) -> torch.Tensor:
         """Run attention and optionally refresh the learnable-LSH training signal.
 
         If calc_triplet is requested, Scheduler.detect_change() first applies
@@ -922,8 +1044,15 @@ class LSHSelfAttention(nn.Module):
         example mining and accumulation of the learned-hash loss, matching the
         Section 3.2 -> Section 3.3 control flow described by MONGOOSE.
         """
+        del kwargs
         device, dtype = x.device, x.dtype
-        b, t, e, h, dh, m, l_h = *x.shape, self.heads, self.dim_head, self.num_mem_kv, self.n_local_attn_heads
+        b, t, e, h, _dh, m, l_h = (
+            *x.shape,
+            self.heads,
+            self.dim_head,
+            self.num_mem_kv,
+            self.n_local_attn_heads,
+        )
 
         mem_kv = default(self.mem_kv, torch.empty(b, 0, e, dtype=dtype, device=device))
         mem = mem_kv.expand(-1, m, -1)
@@ -939,10 +1068,10 @@ class LSHSelfAttention(nn.Module):
         v = self.tov(x)
         v = v.repeat(1, 1, self.v_head_repeats)
 
-        def merge_heads(v):
+        def merge_heads(v: torch.Tensor) -> torch.Tensor:
             return v.view(b, kv_len, h, -1).transpose(1, 2)
 
-        def split_heads(v):
+        def split_heads(v: torch.Tensor) -> torch.Tensor:
             return v.view(b, h, t, -1).transpose(1, 2).contiguous()
 
         merge_batch_and_heads = partial(merge_dims, 0, 1)
@@ -956,7 +1085,7 @@ class LSHSelfAttention(nn.Module):
         (lqk, qk), (lv, v) = map(split_index_fn, (qk, v))
         lqk, qk, lv, v = map(merge_batch_and_heads, (lqk, qk, lv, v))
 
-        masks = {}
+        masks: dict[str, torch.Tensor] = {}
         if input_mask is not None or context_mask is not None:
             default_mask = torch.tensor([True], device=device)
             i_mask = default(input_mask, default_mask.expand(b, t))
@@ -970,36 +1099,79 @@ class LSHSelfAttention(nn.Module):
             input_attn_mask = merge_batch_and_heads(expand_dim(1, lsh_h, input_attn_mask))
             masks['input_attn_mask'] = input_attn_mask
 
-        attn_fn = self.lsh_attn if not use_full_attn else self.full_attn
+        if use_full_attn:
+            base_attn_fn = self.full_attn.forward
+        else:
+            base_attn_fn = self.lsh_attn.forward
 
-        # update rotations
         if calc_triplet:
-            if not self.scheduler.detect_change(self.toqk.weight):
-                calc_triplet = False
-        return_triplet_examples = (self.attn_type in ['triplet', 'simhash']) and calc_triplet and not use_full_attn
-        partial_attn_fn = partial(attn_fn, query_len=t, input_mask=input_mask,
-                                  triplet_examples=return_triplet_examples)
+            calc_triplet = (
+                self.scheduler is not None
+                and self.scheduler.detect_change(self.toqk.weight)
+            )
+        return_triplet_examples = (
+            self.attn_type == "triplet"
+            and calc_triplet
+            and not use_full_attn
+        )
+        partial_attn_fn = cast(
+            AttentionChunkFn,
+            partial(
+                base_attn_fn,
+                query_len=t,
+                input_mask=input_mask,
+                triplet_examples=return_triplet_examples,
+            ),
+        )
 
-        attn_fn_in_chunks = process_inputs_chunk(partial_attn_fn, chunks=self.attn_chunks)
+        attn_fn_in_chunks = process_inputs_chunk(
+            partial_attn_fn, chunks=self.attn_chunks
+        )
         out, attn, buckets, emb_x, pos, neg = attn_fn_in_chunks(qk, v, **masks)
 
         if self.callback is not None:
             self.callback(attn.reshape(b, lsh_h, t, -1), buckets.reshape(b, lsh_h, -1))
 
         if return_triplet_examples:
-            def chunked_loss(fn, *args, chunks=1, dim=0):
-                chunked_inputs = list(map(lambda x: x.chunk(chunks, dim=dim), args))
-                outputs = [fn(*inputs) for inputs in zip(*chunked_inputs)]
-                return sum(outputs)
+            assert isinstance(self.lsh_attn, TripletLSHAttention)
+            assert emb_x is not None and pos is not None and neg is not None
 
-            triplet_loss = chunked_loss(self.lsh_attn.triplet_forward,
-                                        emb_x, pos, neg,
-                                        chunks=self.attn_chunks, dim=1)
+            def chunked_loss(
+                fn: Callable[
+                    [torch.Tensor, torch.Tensor, torch.Tensor],
+                    torch.Tensor,
+                ],
+                x_arg: torch.Tensor,
+                p_arg: torch.Tensor,
+                n_arg: torch.Tensor,
+                chunks: int = 1,
+                dim: int = 0,
+            ) -> torch.Tensor:
+                chunked_inputs = [
+                    arg.chunk(chunks, dim=dim)
+                    for arg in (x_arg, p_arg, n_arg)
+                ]
+                outputs = [
+                    fn(*inputs) for inputs in zip(*chunked_inputs)
+                ]
+                result = outputs[0]
+                for output in outputs[1:]:
+                    result = result + output
+                return result
 
-            if self.triplet_loss is None:
+            triplet_loss = chunked_loss(
+                self.lsh_attn.triplet_forward,
+                emb_x,
+                pos,
+                neg,
+                chunks=self.attn_chunks,
+                dim=1,
+            )
+
+            if isinstance(self.triplet_loss, float):
                 self.triplet_loss = triplet_loss
             else:
-                self.triplet_loss += triplet_loss
+                self.triplet_loss = self.triplet_loss + triplet_loss
 
         if has_local:
             lqk, lv = lqk[:, :t], lv[:, :t]

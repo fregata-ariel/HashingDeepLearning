@@ -81,3 +81,19 @@ See `BUILDING.md` for run links and details.
 4. Performance figures are attached to paper experiments, not individual
    functions unless the paper explicitly reports that function-level result.
 5. New compatibility changes should add or strengthen a smoke/sanitizer test.
+
+
+## Research integration process
+
+For future paper/reference-code additions, follow
+`docs/RESEARCH_INTEGRATION_PLAYBOOK.md`. In particular:
+
+- establish behavior with independent tests before refactoring;
+- add maintenance changes only under `ports/`;
+- register stable paper/code/test IDs in `papers/traceability.json`;
+- document ownership, preconditions, relation strength, and traceability IDs;
+- enroll new maintained Python automatically in the all-ports strict gate;
+- remove temporary diagnostic workflows after a maintained regression replaces
+  them.
+
+The permanent CI topology is documented in `docs/CI_ARCHITECTURE.md`.

@@ -3,6 +3,7 @@
 #include <math.h>
 #include <algorithm>
 #include "Config.h"
+#include "Bfloat16.h"
 #include <omp.h>
 #define DEBUG 1
 using namespace std;

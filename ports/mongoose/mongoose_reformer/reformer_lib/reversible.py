@@ -166,20 +166,22 @@ class _ReversibleFunction(Function):
         blocks: Sequence[ReversibleBlock],
         kwargs: BlockKwargs,
     ) -> torch.Tensor:
-        ctx.kwargs = kwargs
-        ctx.blocks = list(blocks)
+        setattr(ctx, "kwargs", kwargs)
+        setattr(ctx, "blocks", list(blocks))
         for block in blocks:
             x = block(x, **kwargs)
-        ctx.y = x.detach()
+        setattr(ctx, "y", x.detach())
         return x
 
     @staticmethod
     def backward(
         ctx: FunctionCtx, dy: torch.Tensor
     ) -> tuple[torch.Tensor, None, None]:
-        y = cast(torch.Tensor, ctx.y)
-        kwargs = cast(BlockKwargs, ctx.kwargs)
-        blocks = cast(list[ReversibleBlock], ctx.blocks)
+        y = cast(torch.Tensor, getattr(ctx, "y"))
+        kwargs = cast(BlockKwargs, getattr(ctx, "kwargs"))
+        blocks = cast(
+            list[ReversibleBlock], getattr(ctx, "blocks")
+        )
         for block in blocks[::-1]:
             y, dy = block.backward_pass(y, dy, **kwargs)
         return dy, None, None

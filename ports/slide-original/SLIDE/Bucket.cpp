@@ -27,6 +27,23 @@ int Bucket::getSize()
 }
 
 
+/**
+ * @brief Insert one stored one-based neuron id and return its bucket position.
+ *
+ * @par Implementation support
+ * With FIFO enabled, storage is a BUCKETSIZE-sized circular array and the
+ * logical insertion count continues to grow after older entries are replaced.
+ * This replacement policy is implementation support for the released SLIDE
+ * hash table; it is not a separate algorithmic claim of the SLIDE paper.
+ *
+ * @par Ownership
+ * The bucket copies id into Bucket-owned storage; no pointer ownership crosses
+ * this API.
+ *
+ * @par Traceability relation
+ * Support.
+ * TRACE_TEST_ID: SLIDE2020-BUCKET-FIFO.
+ */
 int Bucket::add(int id) {
 
     //FIFO
@@ -67,6 +84,13 @@ int Bucket::retrieve(int indice)
 }
 
 
+/**
+ * @brief Borrow the contiguous bucket storage used by LSH::retrieveRaw().
+ *
+ * @return nullptr for an uninitialized bucket; otherwise a borrowed pointer
+ *         to Bucket-owned storage. The pointer must not be freed and becomes
+ *         invalid when this Bucket is destroyed/replaced.
+ */
 int * Bucket::getAll()
 {
     if (isInit == -1)

@@ -35,6 +35,15 @@ cdef class pyLSH:
 
     The matching clsh.pyi exposes the same contract for static typing.
 
+    Traceability relation:
+        Support. This class exposes the native table used by the released
+        MONGOOSE-SLIDE path; it is not the learnable-LSH objective itself.
+
+    Return contract:
+        query/query_multi expose copied Python sets. multi_label returns
+        (list[int], float32 matrix). multi_label_nonunion/query_matrix return
+        int64 sample-id matrices paired with float32 probabilities/count data.
+
     Traceability:
         MONGOOSE-CYTHON-LSH-BOUNDARY.
     """

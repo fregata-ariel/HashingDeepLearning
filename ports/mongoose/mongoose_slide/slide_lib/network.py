@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import TypeAlias
+from typing import TypeAlias, cast
 
 import numpy as np
 import torch
@@ -248,8 +248,9 @@ class Net(nn.Module):
         emb = torch.sum(self.fc(x), dim=1)
         emb = emb / torch.norm(emb, dim=1, keepdim=True)
         query = F.relu(emb + self.bias)
-        return self.lshLayer(
-            query, y, triplet_flag, debug
+        return cast(
+            ForwardResult,
+            self.lshLayer(query, y, triplet_flag, debug),
         )
 
     def forward_full(

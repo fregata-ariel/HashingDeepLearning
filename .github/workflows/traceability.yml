@@ -82,6 +82,12 @@ jobs:
             -Iports/slide-original/SLIDE -o /tmp/test_slide_adam_state
           /tmp/test_slide_adam_state
 
+      - name: Original SLIDE maintenance schedule oracle
+        run: |
+          g++ -std=c++11 -O0 tests/traceability/test_slide_maintenance_schedule.cpp \
+            -Iports/slide-original/SLIDE -o /tmp/test_slide_maintenance_schedule
+          /tmp/test_slide_maintenance_schedule
+
       - name: Optimized SLIDE BF16 conversion characterization
         run: |
           g++ -std=c++17 -O0 -mavx512f             tests/traceability/test_bfloat16_conversion.cpp             -Iports/slide-optimized-avx512/SLIDE             -o /tmp/test_bfloat16_conversion

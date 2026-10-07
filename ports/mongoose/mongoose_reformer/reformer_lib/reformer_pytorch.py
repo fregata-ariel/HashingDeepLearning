@@ -726,6 +726,15 @@ class LSHSelfAttention(nn.Module):
     TripletLSHAttention instance. The forward path asks the scheduler whether
     the model has changed enough before mining examples and accumulating a
     triplet loss.
+
+    Implementation distinction:
+        The released Scheduler used here is a compact packed-code
+        absolute-difference trigger. It realizes the paper's "avoid expensive
+        updates while parameters change slowly" control-flow goal, but it is
+        not the full dynamic-maintenance data structure of Algorithm 1.
+
+    Traceability:
+        MONGOOSE-SCHEDULER-CHANGE, MONGOOSE-SCHEDULER-GATE.
     """
 
     def __init__(self, dim, heads=8, bucket_size=64, n_hashes=8, causal=False, dim_head=None, attn_chunks=1,

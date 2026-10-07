@@ -4,6 +4,7 @@
 
 #include "../../ports/slide-original/SLIDE/WtaHash.h"
 #include "../../ports/slide-original/SLIDE/DensifiedWtaHash.h"
+#include "../../ports/slide-original/SLIDE/Config.h"
 
 // TRACE_TEST_ID: SLIDE2020-WTA-DWTA-PRIMITIVES
 

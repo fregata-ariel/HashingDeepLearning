@@ -29,6 +29,7 @@ Layer::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, NodeTyp
     _dwtaHasher = nullptr;
     _binids = nullptr;
     _ownsParameters = !LOADWEIGHT;
+    _hashGeneration = 0;
 
     _layerID = layerID;
     _noOfNodes = noOfNodes;
@@ -118,25 +119,67 @@ Layer::Layer(size_t noOfNodes, int previousLayerNumOfNodes, int layerID, NodeTyp
 
 void Layer::updateTable()
 {
-
     if (HashFunction == 1) {
-         delete _wtaHasher;
+        delete _wtaHasher;
         _wtaHasher = new WtaHash(_K * _L, _previousLayerNumOfNodes);
     } else if (HashFunction == 2) {
-         delete _dwtaHasher, _binids;
+        delete _dwtaHasher;
+        delete[] _binids;
         _binids = new int[_previousLayerNumOfNodes];
         _dwtaHasher = new DensifiedWtaHash(_K * _L, _previousLayerNumOfNodes);
     } else if (HashFunction == 3) {
-
-         delete _MinHasher,  _binids;
+        delete _MinHasher;
+        delete[] _binids;
         _binids = new int[_previousLayerNumOfNodes];
         _MinHasher = new DensifiedMinhash(_K * _L, _previousLayerNumOfNodes);
         _MinHasher->getMap(_previousLayerNumOfNodes, _binids);
     } else if (HashFunction == 4) {
-
-        _srp = new SparseRandomProjection(_previousLayerNumOfNodes, _K * _L, Ratio);
-
+        delete _srp;
+        _srp = new SparseRandomProjection(
+            _previousLayerNumOfNodes, _K * _L, Ratio);
     }
+    ++_hashGeneration;
+}
+
+
+/**
+ * @brief Rebuild this layer's hash index after parameter updates.
+ *
+ * @param rebuildHasher When true, regenerate the hash-function state before
+ *        reinserting every node. Rebuild always includes table rehashing.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 4.2 updating overhead.
+ *
+ * @par Implementation note
+ * The released driver uses fixed record-count intervals. This maintained
+ * helper makes table/hash-function transitions internally consistent even
+ * when rehash and rebuild periods are not aligned.
+ *
+ * @par Traceability
+ * TRACE_TEST_ID: SLIDE2020-MAINTENANCE-SCHEDULE.
+ * TRACE_TEST_ID: SLIDE2020-MAINTENANCE-STATE.
+ */
+void Layer::refreshHashIndex(bool rebuildHasher)
+{
+    _hashTables->clear();
+    if (rebuildHasher)
+        updateTable();
+
+    for (size_t id = 0; id < _noOfNodes; ++id) {
+        Node* node = getNodebyID(id);
+        delete[] node->_indicesInTables;
+        delete[] node->_indicesInBuckets;
+        node->_indicesInTables = nullptr;
+        node->_indicesInBuckets = nullptr;
+        addtoHashTable(node->_weights, node->_dim, node->_bias, id);
+    }
+}
+
+
+size_t Layer::getHashGeneration() const
+{
+    return _hashGeneration;
 }
 
 

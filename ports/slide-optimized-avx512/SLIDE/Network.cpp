@@ -561,47 +561,29 @@ int Network<T, Tp>::ProcessInputOpt(DataLayerOpt<T> &dataLayerOpt, size_t batchI
       };
 #else
       auto adamWeights = [&](int idx) {
-        float w;
-        if (std::is_same<Tp, float>::value) {
-          w = layer->_weights[idx];
-        } else {
-          w = load_split_fp32(layer->_weights[idx], layer->_weightsLo[idx]);
-        }
         T &gw = layer->_weightGrads[idx];
         float &mom = layer->_adamAvgMom[idx];
         float &vel = layer->_adamAvgVel[idx];
-
-        mom = BETA1 * mom + (1 - BETA1) * gw;
-        vel = BETA2 * vel + (1 - BETA2) * gw * gw;
-        w += ratio * tmplr * mom / (sqrt(vel) + EPS);
-        gw = 0;
-        if (std::is_same<Tp, float>::value) {
-          layer->_weights[idx] = w;
-        } else {
-          store_split_fp32(w, layer->_weights[idx], layer->_weightsLo[idx]);
-        }
+        uint16_t* low = std::is_same<Tp, float>::value
+            ? nullptr : &layer->_weightsLo[idx];
+        apply_storage_adam(
+            static_cast<float>(gw), ratio * tmplr,
+            BETA1, BETA2, EPS,
+            layer->_weights[idx], low, mom, vel);
+        gw = T{};
       };
 
       auto adamBias = [&](int oc) {
-        float b;
         T &gb = layer->_biasGrads[oc];
-        if (std::is_same<Tp, float>::value) {
-          b = layer->_bias[oc];
-        } else {
-          b = load_split_fp32(layer->_bias[oc], layer->_biasLo[oc]);
-        }
-
         float &bmom = layer->_adamAvgMomBias[oc];
         float &bvel = layer->_adamAvgVelBias[oc];
-        bmom = BETA1 * bmom + (1 - BETA1) * gb;
-        bvel = BETA2 * bvel + (1 - BETA2) * gb * gb;
-        b += ratio * tmplr * bmom / (sqrt(bvel) + EPS);
-        gb = 0;
-        if (std::is_same<Tp, float>::value) {
-          layer->_bias[oc] = b;
-        } else {
-          store_split_fp32(b, layer->_bias[oc], layer->_biasLo[oc]);
-        }
+        uint16_t* low = std::is_same<Tp, float>::value
+            ? nullptr : &layer->_biasLo[oc];
+        apply_storage_adam(
+            static_cast<float>(gb), ratio * tmplr,
+            BETA1, BETA2, EPS,
+            layer->_bias[oc], low, bmom, bvel);
+        gb = T{};
       };
 #endif
 

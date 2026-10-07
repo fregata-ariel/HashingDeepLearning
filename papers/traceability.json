@@ -666,6 +666,28 @@
         "softmax": "training 5-tuple; evaluation dense logits"
       },
       "note": "This is integration/support coverage for the released MONGOOSE-SLIDE code path rather than a separate algorithmic claim of the paper."
+    },
+    {
+      "id": "MONGOOSE-SLIDE-SUPPORT-CONTRACTS",
+      "paper": "mongoose-2021",
+      "paper_location": "Released MONGOOSE-SLIDE support code around sampled training, parsing, optimizer state, and CUDA hashing support",
+      "mechanism": "Exercise typed optimizer state, sparse-dataset parsing, lazy CUDA-kernel loading, and the sampled network path that feeds the native LSH wrapper.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_slide/slide_lib/network.py",
+        "symbol": "class LSHSampledLayer"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_slide_support.py",
+        "id": "MONGOOSE-SLIDE-SUPPORT-CONTRACTS"
+      },
+      "conditions": {
+        "optimizer": "dense and sparse Adam state",
+        "parser": "padded torch.long labels/features",
+        "cuda": "lazy import/compile boundary",
+        "network": "LSHSampledLayer train/eval with native clsh available"
+      },
+      "note": "Support coverage for the released MONGOOSE-SLIDE training stack; these utilities are not separate algorithmic claims of the paper."
     }
   ]
 }

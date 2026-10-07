@@ -1,160 +1,211 @@
+from __future__ import annotations
+
 import math
+from collections.abc import Callable, Iterable
+from typing import TypedDict, cast
+
 import torch
 from torch.optim import Optimizer
 
 
+class AdamGroup(TypedDict):
+    params: list[torch.Tensor]
+    lr: float
+    betas: tuple[float, float]
+    eps: float
+    weight_decay: float
+    amsgrad: bool
+
+
+class AdamState(TypedDict, total=False):
+    step: int
+    exp_avg: torch.Tensor
+    exp_avg_sq: torch.Tensor
+    max_exp_avg_sq: torch.Tensor
+
+
 class Adam(Optimizer):
-    """Implements Adam algorithm.
+    """Adam variant supporting both dense and sparse gradients.
 
-    It has been proposed in `Adam: A Method for Stochastic Optimization`_.
-
-    Arguments:
-        params (iterable): iterable of parameters to optimize or dicts defining
-            parameter groups
-        lr (float, optional): learning rate (default: 1e-3)
-        betas (Tuple[float, float], optional): coefficients used for computing
-            running averages of gradient and its square (default: (0.9, 0.999))
-        eps (float, optional): term added to the denominator to improve
-            numerical stability (default: 1e-8)
-        weight_decay (float, optional): weight decay (L2 penalty) (default: 0)
-        amsgrad (boolean, optional): whether to use the AMSGrad variant of this
-            algorithm from the paper `On the Convergence of Adam and Beyond`_
-
-    .. _Adam\: A Method for Stochastic Optimization:
-        https://arxiv.org/abs/1412.6980
-    .. _On the Convergence of Adam and Beyond:
-        https://openreview.net/forum?id=ryQu7f-RZ
+    Optimizer state is explicit: one integer step and dense first/second
+    moment tensors per parameter, plus max_exp_avg_sq when AMSGrad is enabled.
+    Sparse updates only touch indices present in the coalesced sparse gradient.
     """
 
-    def __init__(self, params, lr=1e-5, betas=(0.9, 0.999), eps=1e-8,
-                 weight_decay=0, amsgrad=False):
-        if not 0.0 <= lr:
-            raise ValueError("Invalid learning rate: {}".format(lr))
-        if not 0.0 <= eps:
-            raise ValueError("Invalid epsilon value: {}".format(eps))
+    def __init__(
+        self,
+        params: Iterable[torch.Tensor],
+        lr: float = 1e-5,
+        betas: tuple[float, float] = (0.9, 0.999),
+        eps: float = 1e-8,
+        weight_decay: float = 0.0,
+        amsgrad: bool = False,
+    ) -> None:
+        if lr < 0.0:
+            raise ValueError(f"Invalid learning rate: {lr}")
+        if eps < 0.0:
+            raise ValueError(f"Invalid epsilon value: {eps}")
         if not 0.0 <= betas[0] < 1.0:
-            raise ValueError("Invalid beta parameter at index 0: {}".format(betas[0]))
+            raise ValueError(
+                f"Invalid beta parameter at index 0: {betas[0]}"
+            )
         if not 0.0 <= betas[1] < 1.0:
-            raise ValueError("Invalid beta parameter at index 1: {}".format(betas[1]))
-        defaults = dict(lr=lr, betas=betas, eps=eps,
-                        weight_decay=weight_decay, amsgrad=amsgrad)
-        super(Adam, self).__init__(params, defaults)
+            raise ValueError(
+                f"Invalid beta parameter at index 1: {betas[1]}"
+            )
+        defaults = {
+            "lr": lr,
+            "betas": betas,
+            "eps": eps,
+            "weight_decay": weight_decay,
+            "amsgrad": amsgrad,
+        }
+        super().__init__(params, defaults)
 
-    def __setstate__(self, state):
-        super(Adam, self).__setstate__(state)
-        for group in self.param_groups:
-            group.setdefault('amsgrad', False)
+    def __setstate__(self, state: dict[str, object]) -> None:
+        super().__setstate__(state)
+        groups = cast(list[AdamGroup], self.param_groups)
+        for group in groups:
+            group.setdefault("amsgrad", False)
 
-    def dense(self, p, grad, group):
-        amsgrad = group['amsgrad']
-        state = self.state[p]
+    @staticmethod
+    def _state_for(
+        optimizer: Adam,
+        parameter: torch.Tensor,
+        amsgrad: bool,
+    ) -> AdamState:
+        state = cast(AdamState, optimizer.state[parameter])
+        if not state:
+            state["step"] = 0
+            state["exp_avg"] = torch.zeros_like(parameter.data)
+            state["exp_avg_sq"] = torch.zeros_like(parameter.data)
+            if amsgrad:
+                state["max_exp_avg_sq"] = torch.zeros_like(
+                    parameter.data
+                )
+        return state
 
-        # State initialization
-        if len(state) == 0:
-           state['step'] = 0
-           # Exponential moving average of gradient values
-           state['exp_avg'] = torch.zeros_like(p.data)
-           # Exponential moving average of squared gradient values
-           state['exp_avg_sq'] = torch.zeros_like(p.data)
-           if amsgrad:
-               # Maintains max of all exp. moving avg. of sq. grad. values
-               state['max_exp_avg_sq'] = torch.zeros_like(p.data)
+    def dense(
+        self,
+        parameter: torch.Tensor,
+        grad: torch.Tensor,
+        group: AdamGroup,
+    ) -> None:
+        amsgrad = group["amsgrad"]
+        state = self._state_for(self, parameter, amsgrad)
+        state["step"] += 1
 
-        exp_avg, exp_avg_sq = state['exp_avg'], state['exp_avg_sq']
-        beta1, beta2 = group['betas']
+        if group["weight_decay"] != 0:
+            grad = grad.add(
+                parameter.data, alpha=group["weight_decay"]
+            )
+
+        exp_avg = state["exp_avg"]
+        exp_avg_sq = state["exp_avg_sq"]
+        beta1, beta2 = group["betas"]
+        exp_avg.mul_(beta1).add_(grad, alpha=1 - beta1)
+        exp_avg_sq.mul_(beta2).addcmul_(
+            grad, grad, value=1 - beta2
+        )
+
         if amsgrad:
-           max_exp_avg_sq = state['max_exp_avg_sq']
-
-        state['step'] += 1
-
-        if group['weight_decay'] != 0:
-           grad = grad.add(group['weight_decay'], p.data)
-
-        # Decay the first and second moment running average coefficient
-        exp_avg.mul_(beta1).add_(1 - beta1, grad)
-        exp_avg_sq.mul_(beta2).addcmul_(1 - beta2, grad, grad)
-        if amsgrad:
-            # Maintains the maximum of all 2nd moment running avg. till now
-            torch.max(max_exp_avg_sq, exp_avg_sq, out=max_exp_avg_sq)
-
-            # Use the max. for normalizing running avg. of gradient
-            denom = max_exp_avg_sq.sqrt().add_(group['eps'])
+            max_exp_avg_sq = state["max_exp_avg_sq"]
+            torch.maximum(
+                max_exp_avg_sq, exp_avg_sq, out=max_exp_avg_sq
+            )
+            denom = max_exp_avg_sq.sqrt().add_(group["eps"])
         else:
-            denom = exp_avg_sq.sqrt().add_(group['eps'])
+            denom = exp_avg_sq.sqrt().add_(group["eps"])
 
-        bias_correction1 = 1 - beta1 ** state['step']
-        bias_correction2 = 1 - beta2 ** state['step']
-        step_size = group['lr'] * math.sqrt(bias_correction2) / bias_correction1
-        p.data.addcdiv_(-step_size, exp_avg, denom)
+        step = state["step"]
+        bias_correction1 = 1 - beta1 ** step
+        bias_correction2 = 1 - beta2 ** step
+        step_size = (
+            group["lr"]
+            * math.sqrt(bias_correction2)
+            / bias_correction1
+        )
+        parameter.data.addcdiv_(
+            exp_avg, denom, value=-step_size
+        )
 
-    def sparse(self, p, grad, group):
-        state = self.state[p]
+    def sparse(
+        self,
+        parameter: torch.Tensor,
+        grad: torch.Tensor,
+        group: AdamGroup,
+    ) -> None:
+        if group["weight_decay"] != 0:
+            raise RuntimeError(
+                "weight_decay is not supported for sparse Adam updates"
+            )
+        if group["amsgrad"]:
+            raise RuntimeError(
+                "AMSGrad is not supported for sparse Adam updates"
+            )
 
-        # State initialization
-        if len(state) == 0:
-            state['step'] = 0
-            # Exponential moving average of gradient values
-            state['exp_avg'] = torch.zeros_like(p.data)
-            # Exponential moving average of squared gradient values
-            state['exp_avg_sq'] = torch.zeros_like(p.data)
+        state = self._state_for(self, parameter, False)
+        state["step"] += 1
 
-        state['step'] += 1
+        coalesced = grad.coalesce()
+        indices = coalesced.indices()
+        values = coalesced.values()
+        size = coalesced.size()
+        exp_avg = state["exp_avg"]
+        exp_avg_sq = state["exp_avg_sq"]
+        beta1, beta2 = group["betas"]
 
-        grad = grad.coalesce()  # the update is non-linear so indices must be unique
-        grad_indices = grad._indices()
-        grad_values = grad._values()
-        size = grad.size()
+        def make_sparse(update_values: torch.Tensor) -> torch.Tensor:
+            if indices.dim() == 0 or update_values.dim() == 0:
+                return torch.zeros_like(coalesced)
+            return torch.sparse_coo_tensor(
+                indices,
+                update_values,
+                size=size,
+                dtype=coalesced.dtype,
+                device=coalesced.device,
+            )
 
-        exp_avg, exp_avg_sq = state['exp_avg'], state['exp_avg_sq']
-        beta1, beta2 = group['betas']
+        old_avg = exp_avg.sparse_mask(coalesced).values()
+        avg_update = values.sub(old_avg).mul_(1 - beta1)
+        exp_avg.add_(make_sparse(avg_update))
 
-        def make_sparse(values):
-            constructor = grad.new
-            if grad_indices.dim() == 0 or values.dim() == 0:
-                return constructor().resize_as_(grad)
-            return constructor(grad_indices, values, size)
+        old_avg_sq = exp_avg_sq.sparse_mask(coalesced).values()
+        avg_sq_update = (
+            values.pow(2).sub_(old_avg_sq).mul_(1 - beta2)
+        )
+        exp_avg_sq.add_(make_sparse(avg_sq_update))
 
-        # Decay the first and second moment running average coefficient
-        #      old <- b * old + (1 - b) * new  <==> old += (1 - b) * (new - old)
-        old_exp_avg_values = exp_avg.sparse_mask(grad)._values()
-        exp_avg_update_values = grad_values.sub(old_exp_avg_values).mul_(1 - beta1)
-        exp_avg.add_(make_sparse(exp_avg_update_values))
+        numer = avg_update.add_(old_avg)
+        avg_sq_update.add_(old_avg_sq)
+        denom = avg_sq_update.sqrt_().add_(group["eps"])
 
-        old_exp_avg_sq_values = exp_avg_sq.sparse_mask(grad)._values()
-        exp_avg_sq_update_values = grad_values.pow(2).sub_(old_exp_avg_sq_values).mul_(1 - beta2)
-        exp_avg_sq.add_(make_sparse(exp_avg_sq_update_values))
+        step = state["step"]
+        bias_correction1 = 1 - beta1 ** step
+        bias_correction2 = 1 - beta2 ** step
+        step_size = (
+            group["lr"]
+            * math.sqrt(bias_correction2)
+            / bias_correction1
+        )
+        parameter.data.add_(
+            make_sparse(-step_size * numer.div_(denom))
+        )
 
-        # Dense addition again is intended, avoiding another sparse_mask
-        numer = exp_avg_update_values.add_(old_exp_avg_values)
-        exp_avg_sq_update_values.add_(old_exp_avg_sq_values)
-        denom = exp_avg_sq_update_values.sqrt_().add_(group['eps'])
-        del exp_avg_update_values, exp_avg_sq_update_values
-
-        bias_correction1 = 1 - beta1 ** state['step']
-        bias_correction2 = 1 - beta2 ** state['step']
-        step_size = group['lr'] * math.sqrt(bias_correction2) / bias_correction1
-
-        p.data.add_(make_sparse(-step_size * numer.div_(denom)))
-
-    def step(self, closure=None):
-        """Performs a single optimization step.
-
-        Arguments:
-            closure (callable, optional): A closure that reevaluates the model
-                and returns the loss.
-        """
-        loss = None
-        if closure is not None:
-            loss = closure()
-
-        for group in self.param_groups:
-            for p in group['params']:
-                if p.grad is None:
+    def step(
+        self,
+        closure: Callable[[], float] | None = None,
+    ) -> float | None:
+        """Perform one optimizer step and return an optional closure loss."""
+        loss = closure() if closure is not None else None
+        groups = cast(list[AdamGroup], self.param_groups)
+        for group in groups:
+            for parameter in group["params"]:
+                if parameter.grad is None:
                     continue
-                grad = p.grad.data
-
+                grad = parameter.grad.detach()
                 if grad.is_sparse:
-                    self.sparse(p, grad, group)
+                    self.sparse(parameter, grad, group)
                 else:
-                    self.dense(p, grad, group)
+                    self.dense(parameter, grad, group)
         return loss

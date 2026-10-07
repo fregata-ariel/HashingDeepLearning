@@ -268,6 +268,8 @@ if __name__ == "__main__":
         attn_type_list=args.attn_type_list,
         store_stats=args.log,
         pkm_num_keys=0,
+        scheduler_hashes=args.scheduler_hashes,
+        thresh=args.thresh,
     )
 
     model = TrainingWrapper(model)

@@ -13,6 +13,16 @@ struct MaintenanceDecision {
  *
  * batchIndex is zero-based. The check is expressed in processed records so
  * Rehash and Rebuild use their own independent intervals.
+ *
+ * @par Paper mapping
+ * SLIDE (MLSys 2020), Section 4.2 discusses reducing update overhead and an
+ * increasing interval heuristic.
+ *
+ * @par Traceability relation
+ * Variant. The maintained driver intentionally uses fixed record-count
+ * intervals; this helper must not be described as the paper's increasing
+ * interval heuristic.
+ * TRACE_TEST_ID: SLIDE2020-MAINTENANCE-SCHEDULE.
  */
 inline bool maintenanceDue(
     std::size_t batchIndex, std::size_t batchSize,

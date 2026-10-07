@@ -19,6 +19,7 @@ private:
     int *_indices, _numhashes, _rangePow;
 public:
     WtaHash(int numHashes, int noOfBitsToHash);
+    static int selectWinnerPosition(const float* data, const int* featureIndices, int count);
     int * getHash(float* data);
     ~WtaHash();
 };

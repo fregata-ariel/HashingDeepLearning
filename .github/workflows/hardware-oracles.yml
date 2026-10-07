@@ -1,0 +1,53 @@
+name: Hardware numerical oracles
+
+on:
+  push:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "tests/traceability/test_optimized_avx_*.cpp"
+      - "tests/traceability/test_bfloat16_native.cpp"
+      - "ports/slide-optimized-avx512/SLIDE/Layer.cpp"
+      - "ports/slide-optimized-avx512/SLIDE/Bfloat16.h"
+      - ".github/workflows/hardware-oracles.yml"
+  workflow_dispatch:
+
+jobs:
+  cpu-oracles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inspect CPU capabilities
+        id: cpu
+        run: |
+          uname -a
+          lscpu || true
+          grep -m1 '^flags' /proc/cpuinfo || true
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          if grep -qw avx512f /proc/cpuinfo; then
+            echo "avx512=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "avx512=false" >> "$GITHUB_OUTPUT"
+            echo "AVX-512F unavailable; AVX numerical oracles will be skipped."
+          fi
+          if grep -qw avx512_bf16 /proc/cpuinfo; then
+            echo "bf16=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "bf16=false" >> "$GITHUB_OUTPUT"
+            echo "AVX-512 BF16 unavailable; native BF16 oracle will be skipped."
+          fi
+
+      - name: Run AVX-512 forward/backward scalar oracles
+        if: steps.cpu.outputs.avx512 == 'true'
+        run: |
+          g++ -std=c++17 -O2 -mavx512f -mfma             tests/traceability/test_optimized_avx_forward.cpp             -o /tmp/test_optimized_avx_forward
+          /tmp/test_optimized_avx_forward
+          g++ -std=c++17 -O2 -mavx512f -mfma             tests/traceability/test_optimized_avx_backward.cpp             -o /tmp/test_optimized_avx_backward
+          /tmp/test_optimized_avx_backward
+
+      - name: Run native AVX-512 BF16 dot-product oracle
+        if: steps.cpu.outputs.bf16 == 'true'
+        run: |
+          g++ -std=c++17 -O2 -mavx512f -mavx512bf16             tests/traceability/test_bfloat16_native.cpp             -o /tmp/test_bfloat16_native
+          /tmp/test_bfloat16_native

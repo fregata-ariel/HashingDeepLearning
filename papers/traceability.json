@@ -568,7 +568,7 @@
       "relation": "variant",
       "implementation": {
         "file": "ports/mongoose/mongoose_slide/slide_lib/triplet_network.py",
-        "symbol": "def forward(self, arc, pair, label)"
+        "symbol": "class TripletNet"
       },
       "test": {
         "file": "tests/traceability/test_mongoose_slide_pairwise_loss.py",

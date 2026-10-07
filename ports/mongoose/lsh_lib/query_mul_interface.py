@@ -42,8 +42,19 @@ class QueryMulFn(Function):
         None,
         None,
     ]:
-        A_cont, B_cont, rowPtrC, colIdxC = ctx.saved_tensors
-        needs = cast(tuple[bool, ...], ctx.needs_input_grad)
+        saved = cast(
+            tuple[
+                torch.Tensor,
+                torch.Tensor,
+                torch.Tensor,
+                torch.Tensor,
+            ],
+            getattr(ctx, "saved_tensors"),
+        )
+        A_cont, B_cont, rowPtrC, colIdxC = saved
+        needs = cast(
+            tuple[bool, ...], getattr(ctx, "needs_input_grad")
+        )
 
         grad_A: torch.Tensor | None = None
         grad_B: torch.Tensor | None = None

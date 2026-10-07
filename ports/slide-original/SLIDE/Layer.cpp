@@ -151,12 +151,22 @@ void Layer::updateTable()
  * @par Paper mapping
  * SLIDE (MLSys 2020), Section 4.2 updating overhead.
  *
+ * @par Ownership / side effects
+ * The Layer owns _hashTables and the per-Node _indicesInTables /
+ * _indicesInBuckets arrays. This function invalidates and deletes every
+ * previously stored Node index array, clears the table, optionally replaces
+ * the hash-function state, then allocates fresh index arrays via
+ * addtoHashTable().
+ *
  * @par Implementation note
  * The released driver uses fixed record-count intervals. This maintained
  * helper makes table/hash-function transitions internally consistent even
  * when rehash and rebuild periods are not aligned.
  *
- * @par Traceability
+ * @par Traceability relation
+ * Variant. Rebuild implies rehash here, while the paper describes the
+ * maintenance idea and an increasing-interval heuristic rather than this
+ * fixed-interval state machine.
  * TRACE_TEST_ID: SLIDE2020-MAINTENANCE-SCHEDULE.
  * TRACE_TEST_ID: SLIDE2020-MAINTENANCE-STATE.
  */
@@ -291,6 +301,17 @@ float collision(int* hashes, int* table_hashes, int k, int l){
  * Activations are then evaluated only for that set; inactive neurons are
  * represented implicitly by their absence from the returned sparse arrays.
  * The function also contains non-LSH comparison modes used by experiments.
+ *
+ * @par Ownership / side effects
+ * activenodesperlayer/activeValuesperlayer and their input slices are borrowed.
+ * The function allocates the next-layer sparse index/value arrays for the
+ * caller and mutates per-input Node training state. Bucket pointers returned
+ * by LSH::retrieveRaw() are borrowed and only the outer pointer array is freed.
+ *
+ * @par Traceability relation
+ * Direct for sparse activation evaluation; the Mode 4 candidate aggregation
+ * and random filler are a maintained implementation variant.
+ * TRACE_TEST_ID: SLIDE2020-LAYER-SAMPLING-INTEGRATION.
  *
  * @par Reported effect
  * The paper attributes SLIDE's system-level compute reduction to this adaptive

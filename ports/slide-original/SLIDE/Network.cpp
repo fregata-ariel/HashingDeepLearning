@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "Config.h"
 #include "Adam.h"
+#include "Maintenance.h"
 #include <omp.h>
 #define DEBUG 1
 using namespace std;
@@ -232,37 +233,22 @@ int Network::ProcessInput(int **inputIndices, float **inputValues, int *lengths,
 
 
     auto t1 = std::chrono::high_resolution_clock::now();
-    bool tmpRehash;
-    bool tmpRebuild;
 
-    for (int l=0; l<_numberOfLayers ;l++) {
-        if(rehash & _Sparsity[l]<1){
-            tmpRehash=true;
-        }else{
-            tmpRehash=false;
-        }
-        if(rebuild & _Sparsity[l]<1){
-            tmpRebuild=true;
-        }else{
-            tmpRebuild=false;
-        }
-        if (tmpRehash) {
-            _hiddenlayers[l]->_hashTables->clear();
-        }
-        if (tmpRebuild){
-            _hiddenlayers[l]->updateTable();
-        }
+    for (int l = 0; l < _numberOfLayers; ++l) {
+        const slide::MaintenanceDecision maintenance =
+            slide::effectiveMaintenance(
+                rehash, rebuild, _Sparsity[l] < 1.0f);
         int ratio = 1;
 #pragma omp parallel for
-        for (size_t m = 0; m < _hiddenlayers[l]->_noOfNodes; m++)
+        for (size_t m = 0; m < _hiddenlayers[l]->_noOfNodes; ++m)
         {
             Node *tmp = _hiddenlayers[l]->getNodebyID(m);
             int dim = tmp->_dim;
             float* local_weights = new float[dim];
             std::copy(tmp->_weights, tmp->_weights + dim, local_weights);
 
-            if(ADAM){
-                for (int d=0; d < dim;d++){
+            if (ADAM) {
+                for (int d = 0; d < dim; ++d) {
                     float &Mom = tmp->_adamAvgMom[d];
                     float &Vel = tmp->_adamAvgVel[d];
                     slide::applyAdamUpdate(
@@ -276,35 +262,18 @@ int Network::ProcessInput(int **inputIndices, float **inputValues, int *lengths,
                     tmp->_bias, tmp->_adamAvgMombias, tmp->_adamAvgVelbias);
                 tmp->_tbias = 0;
                 std::copy(local_weights, local_weights + dim, tmp->_weights);
-            }
-            else
-            {
-                std::copy(tmp->_mirrorWeights, tmp->_mirrorWeights+(tmp->_dim) , tmp->_weights);
+            } else {
+                std::copy(tmp->_mirrorWeights,
+                          tmp->_mirrorWeights + tmp->_dim,
+                          tmp->_weights);
                 tmp->_bias = tmp->_mirrorbias;
             }
-            if (tmpRehash) {
-                int *hashes;
-                if(HashFunction==1) {
-                    hashes = _hiddenlayers[l]->_wtaHasher->getHash(local_weights);
-                }else if (HashFunction==2){
-                    hashes = _hiddenlayers[l]->_dwtaHasher->getHashEasy(local_weights, dim, TOPK);
-                }else if (HashFunction==3){
-                    hashes = _hiddenlayers[l]->_MinHasher->getHashEasy(_hiddenlayers[l]->_binids, local_weights, dim, TOPK);
-                }else if (HashFunction==4){
-                    hashes = _hiddenlayers[l]->_srp->getHash(local_weights, dim);
-                }
-
-                int *hashIndices = _hiddenlayers[l]->_hashTables->hashesToIndex(hashes);
-                int * bucketIndices = _hiddenlayers[l]->_hashTables->add(hashIndices, m+1);
-
-                delete[] hashes;
-                delete[] hashIndices;
-                delete[] bucketIndices;
-            }
-
 
             delete[] local_weights;
         }
+
+        if (maintenance.rehash)
+            _hiddenlayers[l]->refreshHashIndex(maintenance.rebuild);
     }
 
     if (DEBUG&rehash) {

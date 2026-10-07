@@ -7,6 +7,7 @@ from torch.autograd import Function
 from functools import partial, reduce, wraps
 from itertools import chain
 from operator import mul
+from collections.abc import Sequence
 from typing import Callable, Protocol, TypeAlias, TypeVar, cast
 
 from local_attention import LocalAttention
@@ -23,6 +24,8 @@ from torch.nn.init import xavier_normal_
 TOKEN_SELF_ATTN_VALUE = -5e4  # carefully set for half precision to work
 
 _DefaultT = TypeVar("_DefaultT")
+_CacheT = TypeVar("_CacheT")
+_TupleT = TypeVar("_TupleT")
 AttentionResult: TypeAlias = tuple[
     torch.Tensor,
     torch.Tensor,
@@ -178,7 +181,9 @@ def default(
     return default_val if val is None else val
 
 
-def cast_tuple(x):
+def cast_tuple(
+    x: _TupleT | tuple[_TupleT, ...],
+) -> tuple[_TupleT, ...]:
     return x if isinstance(x, tuple) else (x,)
 
 
@@ -186,15 +191,16 @@ def max_neg_value(tensor: torch.Tensor) -> float:
     return -torch.finfo(tensor.dtype).max
 
 
-def cache_fn(f):
-    cache = None
+def cache_fn(
+    factory: Callable[[], _CacheT],
+) -> Callable[[], _CacheT]:
+    cache: _CacheT | None = None
 
-    @wraps(f)
-    def cached_fn(*args, **kwargs):
+    @wraps(factory)
+    def cached_fn() -> _CacheT:
         nonlocal cache
-        if cache is not None:
-            return cache
-        cache = f(*args, **kwargs)
+        if cache is None:
+            cache = factory()
         return cache
 
     return cached_fn
@@ -274,13 +280,18 @@ def split_at_index(
 # helper classes
 
 class MatrixMultiply(nn.Module):
-    def __init__(self, tensor, transpose=False, normalize=False):
+    def __init__(
+        self,
+        tensor: torch.Tensor,
+        transpose: bool = False,
+        normalize: bool = False,
+    ) -> None:
         super().__init__()
         self.tensor = tensor
         self.transpose = transpose
         self.normalize = normalize
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         tensor = self.tensor
         if self.normalize:
             tensor = F.normalize(tensor, dim=-1)
@@ -290,49 +301,68 @@ class MatrixMultiply(nn.Module):
 
 
 class ReZero(nn.Module):
-    def __init__(self, fn):
+    def __init__(self, fn: nn.Module) -> None:
         super().__init__()
         self.g = nn.Parameter(torch.zeros(1))
         self.fn = fn
 
-    def forward(self, x, **kwargs):
-        return self.fn(x, **kwargs) * self.g
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        return cast(torch.Tensor, self.fn(x, **kwargs)) * self.g
 
 
 class ScaleNorm(nn.Module):
-    def __init__(self, dim, eps=1e-5):
+    def __init__(self, dim: int, eps: float = 1e-5) -> None:
         super().__init__()
         self.g = nn.Parameter(torch.ones(1))
         self.eps = eps
 
-    def forward(self, x):
-        n = torch.norm(x, dim=-1, keepdim=True).clamp(min=self.eps)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        n = torch.norm(
+            x, dim=-1, keepdim=True
+        ).clamp(min=self.eps)
         return x / n * self.g
 
 
 class PreNorm(nn.Module):
-    def __init__(self, norm_class, dim, fn):
+    def __init__(
+        self,
+        norm_class: Callable[[int], nn.Module],
+        dim: int,
+        fn: nn.Module,
+    ) -> None:
         super().__init__()
         self.norm = norm_class(dim)
         self.fn = fn
 
-    def forward(self, x, **kwargs):
-        x = self.norm(x)
-        return self.fn(x, **kwargs)
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        normalized = cast(torch.Tensor, self.norm(x))
+        return cast(torch.Tensor, self.fn(normalized, **kwargs))
 
 
 class Chunk(nn.Module):
-    def __init__(self, chunks, fn, along_dim=-1):
+    def __init__(
+        self, chunks: int, fn: nn.Module, along_dim: int = -1
+    ) -> None:
         super().__init__()
         self.dim = along_dim
         self.chunks = chunks
         self.fn = fn
 
-    def forward(self, x, **kwargs):
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
         if self.chunks == 1:
-            return self.fn(x, **kwargs)
+            return cast(torch.Tensor, self.fn(x, **kwargs))
         chunks = x.chunk(self.chunks, dim=self.dim)
-        return torch.cat([self.fn(c, **kwargs) for c in chunks], dim=self.dim)
+        outputs = [
+            cast(torch.Tensor, self.fn(chunk, **kwargs))
+            for chunk in chunks
+        ]
+        return torch.cat(outputs, dim=self.dim)
 
 
 # LSH attention as described in https://openreview.net/pdf?id=rkgNKkHtvB
@@ -1029,7 +1059,7 @@ class LSHSelfAttention(nn.Module):
 
         self.callback: Callable[[torch.Tensor, torch.Tensor], None] | None = None
         self.attn: torch.Tensor | None = None
-        self.triplet_loss: float | torch.Tensor = 0.0
+        self.triplet_loss: float | torch.Tensor | None = 0.0
         self._reset_parameters()
 
     def _reset_parameters(self) -> None:
@@ -1189,7 +1219,9 @@ class LSHSelfAttention(nn.Module):
                 dim=1,
             )
 
-            if isinstance(self.triplet_loss, float):
+            if self.triplet_loss is None or isinstance(
+                self.triplet_loss, float
+            ):
                 self.triplet_loss = triplet_loss
             else:
                 self.triplet_loss = self.triplet_loss + triplet_loss
@@ -1211,500 +1243,1010 @@ class LSHSelfAttention(nn.Module):
 
 # feed forward
 class GELU_(nn.Module):
-    def forward(self, x):
-        return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return 0.5 * x * (
+            1
+            + torch.tanh(
+                math.sqrt(2 / math.pi)
+                * (x + 0.044715 * torch.pow(x, 3))
+            )
+        )
 
 
-GELU = nn.GELU if hasattr(nn, 'GELU') else GELU_
+GELU: type[nn.Module] = nn.GELU if hasattr(nn, "GELU") else GELU_
 
 
 class FeedForward(nn.Module):
-    def __init__(self, dim, mult=4, dropout=0., activation=None, glu=False):
+    def __init__(
+        self,
+        dim: int,
+        mult: int = 4,
+        dropout: float = 0.0,
+        activation: type[nn.Module] | None = None,
+        glu: bool = False,
+    ) -> None:
         super().__init__()
-        activation = default(activation, GELU)
-
+        activation_type = default(activation, GELU)
         self.glu = glu
-        self.w1 = nn.Linear(dim, dim * mult * (2 if glu else 1))
-        self.act = activation()
+        self.w1 = nn.Linear(
+            dim, dim * mult * (2 if glu else 1)
+        )
+        self.act = activation_type()
         self.dropout = nn.Dropout(dropout)
         self.w2 = nn.Linear(dim * mult, dim)
 
-    def forward(self, x, **kwargs):
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        del kwargs
         if not self.glu:
             x = self.w1(x)
-            x = self.act(x)
+            x = cast(torch.Tensor, self.act(x))
         else:
-            x, v = self.w1(x).chunk(2, dim=-1)
-            x = self.act(x) * v
-
+            x, value = self.w1(x).chunk(2, dim=-1)
+            x = cast(torch.Tensor, self.act(x)) * value
         x = self.dropout(x)
-        x = self.w2(x)
-        return x
+        return self.w2(x)
 
 
-# positional embeddings
 class AbsolutePositionalEmbedding(nn.Module):
-    def __init__(self, dim, max_seq_len):
+    def __init__(self, dim: int, max_seq_len: int) -> None:
         super().__init__()
         self.emb = nn.Embedding(max_seq_len, dim)
 
-    def forward(self, x):
-        t = torch.arange(x.shape[1], device=x.device)
-        return self.emb(t)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        positions = torch.arange(
+            x.shape[1], device=x.device
+        )
+        return self.emb(positions)
 
 
 class FixedPositionalEmbedding(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim: int) -> None:
         super().__init__()
-        inv_freq = 1. / (10000 ** (torch.arange(0, dim, 2).float() / dim))
-        self.register_buffer('inv_freq', inv_freq)
+        inv_freq = 1.0 / (
+            10000
+            ** (torch.arange(0, dim, 2).float() / dim)
+        )
+        self.register_buffer("inv_freq", inv_freq)
 
-    def forward(self, x):
-        t = torch.arange(x.shape[1], device=x.device).type_as(self.inv_freq)
-        sinusoid_inp = torch.einsum("i,j->ij", t, self.inv_freq)
-        emb = torch.cat((sinusoid_inp.sin(), sinusoid_inp.cos()), dim=-1)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        inv_freq = cast(
+            torch.Tensor, getattr(self, "inv_freq")
+        )
+        positions = torch.arange(
+            x.shape[1], device=x.device
+        ).type_as(inv_freq)
+        sinusoid = torch.einsum(
+            "i,j->ij", positions, inv_freq
+        )
+        emb = torch.cat(
+            (sinusoid.sin(), sinusoid.cos()), dim=-1
+        )
         return emb[None, :, :]
 
 
 class PositionalEncoding(nn.Module):
-
-    def __init__(self, d_model, dropout=0.1, max_len=5000):
-        super(PositionalEncoding, self).__init__()
+    def __init__(
+        self,
+        d_model: int,
+        dropout: float = 0.1,
+        max_len: int = 5000,
+    ) -> None:
+        super().__init__()
         self.dropout = nn.Dropout(p=dropout)
-
         pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        position = torch.arange(
+            0, max_len, dtype=torch.float
+        ).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2).float()
+            * (-math.log(10000.0) / d_model)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
-        pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)
+        self.register_buffer(
+            "pe", pe.unsqueeze(0).transpose(0, 1)
+        )
 
-    def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
-        return self.dropout(x)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        pe = cast(torch.Tensor, getattr(self, "pe"))
+        return cast(
+            torch.Tensor,
+            self.dropout(x + pe[: x.size(0), :]),
+        )
 
 
-# reformer lm
+def _wrap_residual(
+    module: nn.Module,
+    *,
+    use_rezero: bool,
+    norm_type: Callable[[int], nn.Module],
+    dim: int,
+) -> nn.Module:
+    return (
+        ReZero(module)
+        if use_rezero
+        else PreNorm(norm_type, dim, module)
+    )
+
+
 class Reformer_tune(nn.Module):
-    def __init__(self, dim, depth, max_seq_len, heads=8, dim_head=None, bucket_size_list=[], n_hashes_list=[],
-                 ff_chunks=100,
-                 attn_chunks=None, causal=False, weight_tie=False, lsh_dropout=0., ff_dropout=0., ff_activation=None,
-                 ff_mult=4, ff_glu=False, post_attn_dropout=0., layer_dropout=0., lsh_attend_across_buckets=True,
-                 lsh_allow_duplicate_attention=True, random_rotations_per_head=False, twin_attention=False,
-                 use_scale_norm=False, use_rezero=False, use_full_attn=False, full_attn_thres=0, reverse_thres=0,
-                 num_mem_kv=0, one_value_head=False, n_local_attn_heads=0, pkm_layers=tuple(), pkm_num_keys=128,
-                 attn_type_list=[], store_stats=False, scheduler_hashes=10, thresh=0.01):
+    """Reformer stack with per-layer hash/attention configuration."""
+
+    def __init__(
+        self,
+        dim: int,
+        depth: int,
+        max_seq_len: int,
+        heads: int = 8,
+        dim_head: int | None = None,
+        bucket_size_list: Sequence[int] | None = None,
+        n_hashes_list: Sequence[int] | None = None,
+        ff_chunks: int = 100,
+        attn_chunks: int | None = None,
+        causal: bool = False,
+        weight_tie: bool = False,
+        lsh_dropout: float = 0.0,
+        ff_dropout: float = 0.0,
+        ff_activation: type[nn.Module] | None = None,
+        ff_mult: int = 4,
+        ff_glu: bool = False,
+        post_attn_dropout: float = 0.0,
+        layer_dropout: float = 0.0,
+        lsh_attend_across_buckets: bool = True,
+        lsh_allow_duplicate_attention: bool = True,
+        random_rotations_per_head: bool = False,
+        twin_attention: bool = False,
+        use_scale_norm: bool = False,
+        use_rezero: bool = False,
+        use_full_attn: bool = False,
+        full_attn_thres: int = 0,
+        reverse_thres: int = 0,
+        num_mem_kv: int = 0,
+        one_value_head: bool = False,
+        n_local_attn_heads: int = 0,
+        pkm_layers: Sequence[int] = (),
+        pkm_num_keys: int = 128,
+        attn_type_list: Sequence[str] | None = None,
+        store_stats: bool = False,
+        scheduler_hashes: int = 10,
+        thresh: float = 0.01,
+    ) -> None:
         super().__init__()
+        bucket_sizes = (
+            [] if bucket_size_list is None
+            else list(bucket_size_list)
+        )
+        hash_counts = (
+            [] if n_hashes_list is None
+            else list(n_hashes_list)
+        )
+        attention_types = (
+            [] if attn_type_list is None
+            else list(attn_type_list)
+        )
+        if len(bucket_sizes) != depth:
+            raise ValueError("bucket_size_list must match depth")
+        if len(hash_counts) != depth:
+            raise ValueError("n_hashes_list must match depth")
+        if len(attention_types) != depth:
+            raise ValueError("attn_type_list must match depth")
+
         self.dim = dim
         self.depth = depth
-        assert len(bucket_size_list) == depth
-        assert len(n_hashes_list) == depth
-        assert len(attn_type_list) == depth
-
-        self.bucket_size_list = bucket_size_list
+        self.max_seq_len = max_seq_len
+        self.bucket_size_list = bucket_sizes
         self.num_mem_kv = num_mem_kv
-
         self.twin_attention = twin_attention
         self.full_attn_thres = full_attn_thres
 
-        get_ff = lambda: Chunk(ff_chunks,
-                               FeedForward(dim, dropout=ff_dropout, activation=ff_activation, mult=ff_mult, glu=ff_glu),
-                               along_dim=-2)
-        get_pkm = lambda: PKM(dim, num_keys=pkm_num_keys)
+        def make_ff() -> nn.Module:
+            return Chunk(
+                ff_chunks,
+                FeedForward(
+                    dim,
+                    dropout=ff_dropout,
+                    activation=ff_activation,
+                    mult=ff_mult,
+                    glu=ff_glu,
+                ),
+                along_dim=-2,
+            )
 
-        if weight_tie:
-            get_attn = lambda: LSHSelfAttention(dim, heads, bucket_size_list[0], n_hashes_list[0], causal=causal,
-                                                dim_head=dim_head,
-                                                dropout=lsh_dropout, post_attn_dropout=post_attn_dropout,
-                                                attn_chunks=attn_chunks,
-                                                allow_duplicate_attention=lsh_allow_duplicate_attention,
-                                                attend_across_buckets=lsh_attend_across_buckets,
-                                                random_rotations_per_head=random_rotations_per_head,
-                                                num_mem_kv=num_mem_kv,
-                                                use_full_attn=use_full_attn, full_attn_thres=full_attn_thres,
-                                                one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
-                                                max_seq_len=max_seq_len, attn_type=attn_type_list[0],
-                                                store_stats=store_stats, scheduler_hashes=scheduler_hashes, thresh=thresh)
-            get_attn, get_ff, get_pkm = map(cache_fn, (get_attn, get_ff, get_pkm))
+        def make_pkm() -> nn.Module:
+            return cast(
+                nn.Module, PKM(dim, num_keys=pkm_num_keys)
+            )
 
-        blocks = []
+        def make_attn(index: int) -> LSHSelfAttention:
+            return LSHSelfAttention(
+                dim,
+                heads,
+                bucket_sizes[index],
+                hash_counts[index],
+                causal=causal,
+                dim_head=dim_head,
+                dropout=lsh_dropout,
+                post_attn_dropout=post_attn_dropout,
+                attn_chunks=attn_chunks,
+                allow_duplicate_attention=(
+                    lsh_allow_duplicate_attention
+                ),
+                attend_across_buckets=(
+                    lsh_attend_across_buckets
+                ),
+                random_rotations_per_head=(
+                    random_rotations_per_head
+                ),
+                num_mem_kv=num_mem_kv,
+                use_full_attn=use_full_attn,
+                full_attn_thres=full_attn_thres,
+                one_value_head=one_value_head,
+                n_local_attn_heads=n_local_attn_heads,
+                max_seq_len=max_seq_len,
+                attn_type=attention_types[index],
+                store_stats=store_stats,
+                scheduler_hashes=scheduler_hashes,
+                thresh=thresh,
+            )
 
-        norm_type = ScaleNorm if use_scale_norm else nn.LayerNorm
+        shared_attn = (
+            cache_fn(lambda: make_attn(0))
+            if weight_tie else None
+        )
+        ff_factory = (
+            cache_fn(make_ff) if weight_tie else make_ff
+        )
+        pkm_factory = (
+            cache_fn(make_pkm) if weight_tie else make_pkm
+        )
+        norm_type: Callable[[int], nn.Module] = (
+            ScaleNorm if use_scale_norm else nn.LayerNorm
+        )
 
-        residual_fn_wrapper = ReZero if use_rezero else partial(PreNorm, norm_type, dim)
-
-        for ind in range(depth):
-            layer_num = ind + 1
-            use_pkm = layer_num in cast_tuple(pkm_layers)
-            parallel_net = None
-
-            attn = LSHSelfAttention(dim, heads, bucket_size_list[ind], n_hashes_list[ind], causal=causal,
-                                    dim_head=dim_head,
-                                    dropout=lsh_dropout, post_attn_dropout=post_attn_dropout,
-                                    attn_chunks=attn_chunks,
-                                    allow_duplicate_attention=lsh_allow_duplicate_attention,
-                                    attend_across_buckets=lsh_attend_across_buckets,
-                                    random_rotations_per_head=random_rotations_per_head, num_mem_kv=num_mem_kv,
-                                    use_full_attn=use_full_attn, full_attn_thres=full_attn_thres,
-                                    one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
-                                    max_seq_len=max_seq_len, attn_type=attn_type_list[ind], store_stats=store_stats
-                                    , scheduler_hashes=scheduler_hashes, thresh=thresh)
-
-            if use_pkm:
-                parallel_net = get_pkm()
+        blocks: list[list[nn.Module]] = []
+        for index in range(depth):
+            attn = (
+                shared_attn()
+                if shared_attn is not None
+                else make_attn(index)
+            )
+            layer_num = index + 1
+            if layer_num in pkm_layers:
+                parallel = pkm_factory()
             elif twin_attention:
-                parallel_net = get_attn()
+                parallel = (
+                    shared_attn()
+                    if shared_attn is not None
+                    else make_attn(index)
+                )
             else:
-                parallel_net = get_ff()
+                parallel = ff_factory()
 
-            f = residual_fn_wrapper(attn)
-            g = residual_fn_wrapper(parallel_net)
+            blocks.append(
+                [
+                    _wrap_residual(
+                        attn,
+                        use_rezero=use_rezero,
+                        norm_type=norm_type,
+                        dim=dim,
+                    ),
+                    _wrap_residual(
+                        parallel,
+                        use_rezero=use_rezero,
+                        norm_type=norm_type,
+                        dim=dim,
+                    ),
+                ]
+            )
 
-            blocks.append(nn.ModuleList([f, g]))
+        self.layers = ReversibleSequence(
+            blocks,
+            layer_dropout=layer_dropout,
+            reverse_thres=reverse_thres,
+            send_signal=True,
+        )
+        self.layer_modules: list[nn.Module] = list(
+            chain.from_iterable(blocks)
+        )
 
-        self.layers = ReversibleSequence(nn.ModuleList(blocks), layer_dropout=layer_dropout,
-                                         reverse_thres=reverse_thres, send_signal=True)
-        self.layer_modules = list(chain(*[[m[0], m[1]] for m in blocks]))
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        doubled = torch.cat([x, x], dim=-1)
+        routed = self.layers(
+            doubled,
+            arg_route=(True, self.twin_attention),
+            **kwargs,
+        )
+        return torch.stack(
+            routed.chunk(2, dim=-1)
+        ).mean(dim=0)
 
-    def forward(self, x, **kwargs):
-        x = torch.cat([x, x], dim=-1)
-        arg_route = (True, self.twin_attention)
-        x = self.layers(x, arg_route=arg_route, **kwargs)
-        return torch.stack(x.chunk(2, dim=-1)).mean(dim=0)
 
-
-# reformer lm
 class Reformer(nn.Module):
-    def __init__(self, dim, depth, max_seq_len, heads=8, dim_head=None, bucket_size=64, n_hashes=8, ff_chunks=100,
-                 attn_chunks=None, causal=False, weight_tie=False, lsh_dropout=0., ff_dropout=0., ff_activation=None,
-                 ff_mult=4, ff_glu=False, post_attn_dropout=0., layer_dropout=0., lsh_attend_across_buckets=True,
-                 lsh_allow_duplicate_attention=True, random_rotations_per_head=False, twin_attention=False,
-                 use_scale_norm=False, use_rezero=False, use_full_attn=False, full_attn_thres=0, reverse_thres=0,
-                 num_mem_kv=0, one_value_head=False, n_local_attn_heads=0, pkm_layers=tuple(), pkm_num_keys=128,
-                 attn_type='lsh', store_stats=False):
+    """Reformer stack with one hash/attention configuration."""
+
+    def __init__(
+        self,
+        dim: int,
+        depth: int,
+        max_seq_len: int,
+        heads: int = 8,
+        dim_head: int | None = None,
+        bucket_size: int = 64,
+        n_hashes: int = 8,
+        ff_chunks: int = 100,
+        attn_chunks: int | None = None,
+        causal: bool = False,
+        weight_tie: bool = False,
+        lsh_dropout: float = 0.0,
+        ff_dropout: float = 0.0,
+        ff_activation: type[nn.Module] | None = None,
+        ff_mult: int = 4,
+        ff_glu: bool = False,
+        post_attn_dropout: float = 0.0,
+        layer_dropout: float = 0.0,
+        lsh_attend_across_buckets: bool = True,
+        lsh_allow_duplicate_attention: bool = True,
+        random_rotations_per_head: bool = False,
+        twin_attention: bool = False,
+        use_scale_norm: bool = False,
+        use_rezero: bool = False,
+        use_full_attn: bool = False,
+        full_attn_thres: int = 0,
+        reverse_thres: int = 0,
+        num_mem_kv: int = 0,
+        one_value_head: bool = False,
+        n_local_attn_heads: int = 0,
+        pkm_layers: Sequence[int] = (),
+        pkm_num_keys: int = 128,
+        attn_type: str = "lsh",
+        store_stats: bool = False,
+    ) -> None:
         super().__init__()
         self.dim = dim
         self.depth = depth
-
+        self.max_seq_len = max_seq_len
         self.bucket_size = bucket_size
         self.num_mem_kv = num_mem_kv
-
         self.twin_attention = twin_attention
         self.full_attn_thres = full_attn_thres
 
-        get_attn = lambda: LSHSelfAttention(dim, heads, bucket_size, n_hashes, causal=causal, dim_head=dim_head,
-                                            dropout=lsh_dropout, post_attn_dropout=post_attn_dropout,
-                                            attn_chunks=attn_chunks,
-                                            allow_duplicate_attention=lsh_allow_duplicate_attention,
-                                            attend_across_buckets=lsh_attend_across_buckets,
-                                            random_rotations_per_head=random_rotations_per_head, num_mem_kv=num_mem_kv,
-                                            use_full_attn=use_full_attn, full_attn_thres=full_attn_thres,
-                                            one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
-                                            max_seq_len=max_seq_len, attn_type=attn_type, store_stats=store_stats)
-        get_ff = lambda: Chunk(ff_chunks,
-                               FeedForward(dim, dropout=ff_dropout, activation=ff_activation, mult=ff_mult, glu=ff_glu),
-                               along_dim=-2)
-        get_pkm = lambda: PKM(dim, num_keys=pkm_num_keys)
+        def make_attn() -> LSHSelfAttention:
+            return LSHSelfAttention(
+                dim,
+                heads,
+                bucket_size,
+                n_hashes,
+                causal=causal,
+                dim_head=dim_head,
+                dropout=lsh_dropout,
+                post_attn_dropout=post_attn_dropout,
+                attn_chunks=attn_chunks,
+                allow_duplicate_attention=(
+                    lsh_allow_duplicate_attention
+                ),
+                attend_across_buckets=(
+                    lsh_attend_across_buckets
+                ),
+                random_rotations_per_head=(
+                    random_rotations_per_head
+                ),
+                num_mem_kv=num_mem_kv,
+                use_full_attn=use_full_attn,
+                full_attn_thres=full_attn_thres,
+                one_value_head=one_value_head,
+                n_local_attn_heads=n_local_attn_heads,
+                max_seq_len=max_seq_len,
+                attn_type=attn_type,
+                store_stats=store_stats,
+            )
 
-        if weight_tie:
-            get_attn, get_ff, get_pkm = map(cache_fn, (get_attn, get_ff, get_pkm))
+        def make_ff() -> nn.Module:
+            return Chunk(
+                ff_chunks,
+                FeedForward(
+                    dim,
+                    dropout=ff_dropout,
+                    activation=ff_activation,
+                    mult=ff_mult,
+                    glu=ff_glu,
+                ),
+                along_dim=-2,
+            )
 
-        blocks = []
+        def make_pkm() -> nn.Module:
+            return cast(
+                nn.Module, PKM(dim, num_keys=pkm_num_keys)
+            )
 
-        norm_type = ScaleNorm if use_scale_norm else nn.LayerNorm
+        attn_factory = (
+            cache_fn(make_attn) if weight_tie else make_attn
+        )
+        ff_factory = (
+            cache_fn(make_ff) if weight_tie else make_ff
+        )
+        pkm_factory = (
+            cache_fn(make_pkm) if weight_tie else make_pkm
+        )
+        norm_type: Callable[[int], nn.Module] = (
+            ScaleNorm if use_scale_norm else nn.LayerNorm
+        )
 
-        residual_fn_wrapper = ReZero if use_rezero else partial(PreNorm, norm_type, dim)
-
-        for ind in range(depth):
-            layer_num = ind + 1
-            use_pkm = layer_num in cast_tuple(pkm_layers)
-            parallel_net = None
-
-            attn = get_attn()
-
-            if use_pkm:
-                parallel_net = get_pkm()
+        blocks: list[list[nn.Module]] = []
+        for index in range(depth):
+            attn = attn_factory()
+            if (index + 1) in pkm_layers:
+                parallel = pkm_factory()
             elif twin_attention:
-                parallel_net = get_attn()
+                parallel = attn_factory()
             else:
-                parallel_net = get_ff()
+                parallel = ff_factory()
+            blocks.append(
+                [
+                    _wrap_residual(
+                        attn,
+                        use_rezero=use_rezero,
+                        norm_type=norm_type,
+                        dim=dim,
+                    ),
+                    _wrap_residual(
+                        parallel,
+                        use_rezero=use_rezero,
+                        norm_type=norm_type,
+                        dim=dim,
+                    ),
+                ]
+            )
 
-            f = residual_fn_wrapper(attn)
-            g = residual_fn_wrapper(parallel_net)
+        self.layers = ReversibleSequence(
+            blocks,
+            layer_dropout=layer_dropout,
+            reverse_thres=reverse_thres,
+            send_signal=True,
+        )
+        self.layer_modules: list[nn.Module] = list(
+            chain.from_iterable(blocks)
+        )
 
-            blocks.append(nn.ModuleList([f, g]))
-
-        self.layers = ReversibleSequence(nn.ModuleList(blocks), layer_dropout=layer_dropout,
-                                         reverse_thres=reverse_thres, send_signal=True)
-        self.layer_modules = list(chain(*[[m[0], m[1]] for m in blocks]))
-
-    def forward(self, x, **kwargs):
-        x = torch.cat([x, x], dim=-1)
-        arg_route = (True, self.twin_attention)
-        x = self.layers(x, arg_route=arg_route, **kwargs)
-        return torch.stack(x.chunk(2, dim=-1)).mean(dim=0)
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        doubled = torch.cat([x, x], dim=-1)
+        routed = self.layers(
+            doubled,
+            arg_route=(True, self.twin_attention),
+            **kwargs,
+        )
+        return torch.stack(
+            routed.chunk(2, dim=-1)
+        ).mean(dim=0)
 
 
 class ReformerLM_tune(nn.Module):
-    def __init__(self, num_tokens, dim, depth, max_seq_len, heads=8, dim_head=None, bucket_size_list=[],
-                 n_hashes_list=[],
-                 ff_chunks=100, attn_chunks=1, causal=False, weight_tie=False, lsh_dropout=0., ff_dropout=0., ff_mult=4,
-                 ff_activation=None, ff_glu=False, post_attn_dropout=0., layer_dropout=0.,
-                 random_rotations_per_head=False, twin_attention=False, use_scale_norm=False, use_rezero=False,
-                 use_full_attn=False, full_attn_thres=0, reverse_thres=0, num_mem_kv=0, one_value_head=False,
-                 emb_dim=None, return_embeddings=False, weight_tie_embedding=False, fixed_position_emb=False,
-                 absolute_position_emb=False, axial_position_shape=None, n_local_attn_heads=0, pkm_layers=tuple(),
-                 pkm_num_keys=128, attn_type_list=[], store_stats=False, scheduler_hashes=10, thresh=0.01):
+    """Token LM wrapper around the per-layer-configurable Reformer."""
+
+    def __init__(
+        self,
+        num_tokens: int,
+        dim: int,
+        depth: int,
+        max_seq_len: int,
+        heads: int = 8,
+        dim_head: int | None = None,
+        bucket_size_list: Sequence[int] | None = None,
+        n_hashes_list: Sequence[int] | None = None,
+        ff_chunks: int = 100,
+        attn_chunks: int = 1,
+        causal: bool = False,
+        weight_tie: bool = False,
+        lsh_dropout: float = 0.0,
+        ff_dropout: float = 0.0,
+        ff_mult: int = 4,
+        ff_activation: type[nn.Module] | None = None,
+        ff_glu: bool = False,
+        post_attn_dropout: float = 0.0,
+        layer_dropout: float = 0.0,
+        random_rotations_per_head: bool = False,
+        twin_attention: bool = False,
+        use_scale_norm: bool = False,
+        use_rezero: bool = False,
+        use_full_attn: bool = False,
+        full_attn_thres: int = 0,
+        reverse_thres: int = 0,
+        num_mem_kv: int = 0,
+        one_value_head: bool = False,
+        emb_dim: int | None = None,
+        return_embeddings: bool = False,
+        weight_tie_embedding: bool = False,
+        fixed_position_emb: bool = False,
+        absolute_position_emb: bool = False,
+        axial_position_shape: tuple[int, ...] | None = None,
+        n_local_attn_heads: int = 0,
+        pkm_layers: Sequence[int] = (),
+        pkm_num_keys: int = 128,
+        attn_type_list: Sequence[str] | None = None,
+        store_stats: bool = False,
+        scheduler_hashes: int = 10,
+        thresh: float = 0.01,
+    ) -> None:
         super().__init__()
-        emb_dim = default(emb_dim, dim)
+        embedding_dim = default(emb_dim, dim)
         self.max_seq_len = max_seq_len
+        self.token_emb = nn.Embedding(num_tokens, embedding_dim)
+        self.to_model_dim: nn.Module = (
+            Identity()
+            if embedding_dim == dim
+            else nn.Linear(embedding_dim, dim)
+        )
 
-        self.token_emb = nn.Embedding(num_tokens, emb_dim)
-
-        self.to_model_dim = Identity() if emb_dim == dim else nn.Linear(emb_dim, dim)
-
+        bucket_sizes = (
+            [] if bucket_size_list is None
+            else list(bucket_size_list)
+        )
         if absolute_position_emb:
-            # self.pos_emb = PositionalEncoding(emb_dim, layer_dropout, max_seq_len)
-            self.pos_emb = AbsolutePositionalEmbedding(emb_dim, max_seq_len)
+            self.pos_emb: nn.Module = (
+                AbsolutePositionalEmbedding(
+                    embedding_dim, max_seq_len
+                )
+            )
         elif fixed_position_emb:
-            self.pos_emb = FixedPositionalEmbedding(emb_dim)
+            self.pos_emb = FixedPositionalEmbedding(
+                embedding_dim
+            )
         else:
-            axial_position_shape = default(axial_position_shape,
-                                           (max_seq_len // bucket_size_list[0], bucket_size_list[0]))
-            self.pos_emb = AxialPositionalEmbedding(emb_dim, axial_position_shape)
+            if not bucket_sizes:
+                raise ValueError(
+                    "bucket_size_list is required for axial embedding"
+                )
+            axial_shape = default(
+                axial_position_shape,
+                (
+                    max_seq_len // bucket_sizes[0],
+                    bucket_sizes[0],
+                ),
+            )
+            self.pos_emb = cast(
+                nn.Module,
+                AxialPositionalEmbedding(
+                    embedding_dim, axial_shape
+                ),
+            )
 
-        self.reformer = Reformer_tune(dim, depth, max_seq_len, heads=heads, dim_head=dim_head,
-                                      bucket_size_list=bucket_size_list,
-                                      n_hashes_list=n_hashes_list, ff_chunks=ff_chunks, attn_chunks=attn_chunks,
-                                      causal=causal,
-                                      weight_tie=weight_tie, lsh_dropout=lsh_dropout, ff_mult=ff_mult,
-                                      ff_activation=ff_activation, ff_glu=ff_glu, ff_dropout=ff_dropout,
-                                      post_attn_dropout=0., layer_dropout=layer_dropout,
-                                      random_rotations_per_head=random_rotations_per_head,
-                                      twin_attention=twin_attention,
-                                      use_scale_norm=use_scale_norm, use_rezero=use_rezero, use_full_attn=use_full_attn,
-                                      full_attn_thres=full_attn_thres, reverse_thres=reverse_thres,
-                                      num_mem_kv=num_mem_kv,
-                                      one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
-                                      pkm_layers=pkm_layers, pkm_num_keys=pkm_num_keys, attn_type_list=attn_type_list,
-                                      store_stats=store_stats, scheduler_hashes=scheduler_hashes, thresh=thresh)
+        self.reformer = Reformer_tune(
+            dim,
+            depth,
+            max_seq_len,
+            heads=heads,
+            dim_head=dim_head,
+            bucket_size_list=bucket_sizes,
+            n_hashes_list=n_hashes_list,
+            ff_chunks=ff_chunks,
+            attn_chunks=attn_chunks,
+            causal=causal,
+            weight_tie=weight_tie,
+            lsh_dropout=lsh_dropout,
+            ff_mult=ff_mult,
+            ff_activation=ff_activation,
+            ff_glu=ff_glu,
+            ff_dropout=ff_dropout,
+            post_attn_dropout=post_attn_dropout,
+            layer_dropout=layer_dropout,
+            random_rotations_per_head=random_rotations_per_head,
+            twin_attention=twin_attention,
+            use_scale_norm=use_scale_norm,
+            use_rezero=use_rezero,
+            use_full_attn=use_full_attn,
+            full_attn_thres=full_attn_thres,
+            reverse_thres=reverse_thres,
+            num_mem_kv=num_mem_kv,
+            one_value_head=one_value_head,
+            n_local_attn_heads=n_local_attn_heads,
+            pkm_layers=pkm_layers,
+            pkm_num_keys=pkm_num_keys,
+            attn_type_list=attn_type_list,
+            store_stats=store_stats,
+            scheduler_hashes=scheduler_hashes,
+            thresh=thresh,
+        )
 
         if return_embeddings:
-            self.out = Identity()
-            return
+            self.out: nn.Module = Identity()
+        else:
+            output_projection: nn.Module = (
+                nn.Linear(embedding_dim, num_tokens)
+                if not weight_tie_embedding
+                else MatrixMultiply(
+                    self.token_emb.weight,
+                    transpose=True,
+                    normalize=True,
+                )
+            )
+            self.out = nn.Sequential(
+                nn.Linear(dim, embedding_dim)
+                if embedding_dim != dim
+                else Identity(),
+                output_projection,
+            )
+            self.init_weights()
 
-        self.out = nn.Sequential(
-            nn.Linear(dim, emb_dim) if emb_dim != dim else Identity(),
-            nn.Linear(emb_dim, num_tokens) if not weight_tie_embedding else MatrixMultiply(self.token_emb.weight,
-                                                                                           transpose=True,
-                                                                                           normalize=True)
-        )
-        self.init_weights()
-
-    def init_weights(self):
+    def init_weights(self) -> None:
         initrange = 0.1
-        self.token_emb.weight.data.uniform_(-initrange, initrange)
-        self.out[1].bias.data.zero_()
-        self.out[1].weight.data.uniform_(-initrange, initrange)
+        self.token_emb.weight.data.uniform_(
+            -initrange, initrange
+        )
+        if isinstance(self.out, nn.Sequential):
+            final = self.out[-1]
+            if isinstance(final, nn.Linear):
+                if final.bias is not None:
+                    final.bias.data.zero_()
+                final.weight.data.uniform_(
+                    -initrange, initrange
+                )
 
-    def forward(self, x, **kwargs):
-        x = self.token_emb(x)
-        x = x + self.pos_emb(x).type_as(x)
-        # x = self.pos_emb(x)
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        embedded = self.token_emb(x)
+        position = cast(
+            torch.Tensor, self.pos_emb(embedded)
+        ).type_as(embedded)
+        hidden = embedded + position
+        hidden = cast(
+            torch.Tensor, self.to_model_dim(hidden)
+        )
+        hidden = self.reformer(hidden, **kwargs)
+        return cast(torch.Tensor, self.out(hidden))
 
-        x = self.to_model_dim(x)
-        x = self.reformer(x, **kwargs)
-        return self.out(x)
+    def _attention_layers(self) -> list[LSHSelfAttention]:
+        layers: list[LSHSelfAttention] = []
+        for index in range(
+            len(self.reformer.layer_modules) // 2
+        ):
+            wrapper = self.reformer.layer_modules[
+                2 * index
+            ]
+            fn = getattr(wrapper, "fn", None)
+            if not isinstance(fn, LSHSelfAttention):
+                raise TypeError(
+                    "expected LSHSelfAttention residual wrapper"
+                )
+            layers.append(fn)
+        return layers
 
-    def clear_non_rotation_gradients(self):
-        # clear gradients from triplet loss
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            g = self.reformer.layer_modules[(2 * i) + 1].fn
-            # only zero out toqk, tov, and to_out
-            # leave gradients of rotations
-            f.toqk.zero_grad()
-            f.tov.zero_grad()
-            f.to_out.zero_grad()
-            g.zero_grad()
+    def clear_non_rotation_gradients(self) -> None:
+        for index, attention in enumerate(
+            self._attention_layers()
+        ):
+            attention.toqk.zero_grad()
+            attention.tov.zero_grad()
+            attention.to_out.zero_grad()
+            parallel = self.reformer.layer_modules[
+                2 * index + 1
+            ]
+            parallel.zero_grad()
 
-    def get_triplet_loss(self):
-        total = 0
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            if f.triplet_loss is not None:
-                total += f.triplet_loss
+    def get_triplet_loss(self) -> float | torch.Tensor:
+        total: float | torch.Tensor = 0.0
+        for attention in self._attention_layers():
+            loss = attention.triplet_loss
+            if loss is None:
+                continue
+            if isinstance(total, float):
+                total = loss
+            else:
+                total = total + loss
         return total
 
-    def update_simhash(self):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            if hasattr(attn_fn, 'simhash'):
-                attn_fn.update_simhash()
+    def update_simhash(self) -> None:
+        for attention in self._attention_layers():
+            method = getattr(
+                attention.lsh_attn,
+                "update_simhash",
+                None,
+            )
+            if callable(method):
+                cast(Callable[[], None], method)()
 
-    def reset_triplet(self):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            if hasattr(attn_fn, 'rotations'):
-                attn_fn.reset_rotations()
+    def reset_triplet(self) -> None:
+        for attention in self._attention_layers():
+            if isinstance(
+                attention.lsh_attn, TripletLSHAttention
+            ):
+                attention.lsh_attn.reset_rotations()
 
-    def get_statistics(self, batch_size):
-        means = []
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            means.append(attn_fn.mean_dp / attn_fn.stat_count)
-            attn_fn.mean_dp = 0.0
-            attn_fn.stat_count = 0
+    def get_statistics(
+        self, batch_size: int
+    ) -> list[float]:
+        del batch_size
+        means: list[float] = []
+        for attention in self._attention_layers():
+            attn = attention.lsh_attn
+            means.append(
+                attn.mean_dp / attn.stat_count
+            )
+            attn.mean_dp = 0.0
+            attn.stat_count = 0
         return means
 
-    def set_alpha(self, alpha):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            if hasattr(attn_fn, 'alpha'):
-                attn_fn.alpha = alpha
+    def set_alpha(self, alpha: float) -> None:
+        for attention in self._attention_layers():
+            if isinstance(
+                attention.lsh_attn, TripletLSHAttention
+            ):
+                attention.lsh_attn.alpha = alpha
 
-    def clear_triplet_loss(self):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            if f.triplet_loss is not None:
-                f.triplet_loss = None
+    def clear_triplet_loss(self) -> None:
+        for attention in self._attention_layers():
+            attention.triplet_loss = None
 
-    def save_triplet_params(self, prefix):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            weight = f.lsh_attn.rotations.weight
-            torch.save(weight, prefix + '%d.pt' % i)
+    def save_triplet_params(self, prefix: str) -> None:
+        for index, attention in enumerate(
+            self._attention_layers()
+        ):
+            if isinstance(
+                attention.lsh_attn, TripletLSHAttention
+            ):
+                torch.save(
+                    attention.lsh_attn.rotations.weight,
+                    f"{prefix}{index}.pt",
+                )
 
 
 class ReformerLM(nn.Module):
-    def __init__(self, num_tokens, dim, depth, max_seq_len, heads=8, dim_head=None, bucket_size=64, n_hashes=4,
-                 ff_chunks=100, attn_chunks=1, causal=False, weight_tie=False, lsh_dropout=0., ff_dropout=0., ff_mult=4,
-                 ff_activation=None, ff_glu=False, post_attn_dropout=0., layer_dropout=0.,
-                 random_rotations_per_head=False, twin_attention=False, use_scale_norm=False, use_rezero=False,
-                 use_full_attn=False, full_attn_thres=0, reverse_thres=0, num_mem_kv=0, one_value_head=False,
-                 emb_dim=None, return_embeddings=False, weight_tie_embedding=False, fixed_position_emb=False,
-                 absolute_position_emb=False, axial_position_shape=None, n_local_attn_heads=0, pkm_layers=tuple(),
-                 pkm_num_keys=128, attn_type='lsh', store_stats=False):
+    """Token LM wrapper around a uniform-config Reformer stack."""
+
+    def __init__(
+        self,
+        num_tokens: int,
+        dim: int,
+        depth: int,
+        max_seq_len: int,
+        heads: int = 8,
+        dim_head: int | None = None,
+        bucket_size: int = 64,
+        n_hashes: int = 4,
+        ff_chunks: int = 100,
+        attn_chunks: int = 1,
+        causal: bool = False,
+        weight_tie: bool = False,
+        lsh_dropout: float = 0.0,
+        ff_dropout: float = 0.0,
+        ff_mult: int = 4,
+        ff_activation: type[nn.Module] | None = None,
+        ff_glu: bool = False,
+        post_attn_dropout: float = 0.0,
+        layer_dropout: float = 0.0,
+        random_rotations_per_head: bool = False,
+        twin_attention: bool = False,
+        use_scale_norm: bool = False,
+        use_rezero: bool = False,
+        use_full_attn: bool = False,
+        full_attn_thres: int = 0,
+        reverse_thres: int = 0,
+        num_mem_kv: int = 0,
+        one_value_head: bool = False,
+        emb_dim: int | None = None,
+        return_embeddings: bool = False,
+        weight_tie_embedding: bool = False,
+        fixed_position_emb: bool = False,
+        absolute_position_emb: bool = False,
+        axial_position_shape: tuple[int, ...] | None = None,
+        n_local_attn_heads: int = 0,
+        pkm_layers: Sequence[int] = (),
+        pkm_num_keys: int = 128,
+        attn_type: str = "lsh",
+        store_stats: bool = False,
+    ) -> None:
         super().__init__()
-        emb_dim = default(emb_dim, dim)
+        embedding_dim = default(emb_dim, dim)
         self.max_seq_len = max_seq_len
-
-        self.token_emb = nn.Embedding(num_tokens, emb_dim)
-
-        self.to_model_dim = Identity() if emb_dim == dim else nn.Linear(emb_dim, dim)
+        self.token_emb = nn.Embedding(num_tokens, embedding_dim)
+        self.to_model_dim: nn.Module = (
+            Identity()
+            if embedding_dim == dim
+            else nn.Linear(embedding_dim, dim)
+        )
 
         if absolute_position_emb:
-            # self.pos_emb = PositionalEncoding(emb_dim, layer_dropout, max_seq_len)
-            self.pos_emb = AbsolutePositionalEmbedding(emb_dim, max_seq_len)
+            self.pos_emb: nn.Module = (
+                AbsolutePositionalEmbedding(
+                    embedding_dim, max_seq_len
+                )
+            )
         elif fixed_position_emb:
-            self.pos_emb = FixedPositionalEmbedding(emb_dim)
+            self.pos_emb = FixedPositionalEmbedding(
+                embedding_dim
+            )
         else:
-            axial_position_shape = default(axial_position_shape, (max_seq_len // bucket_size, bucket_size))
-            self.pos_emb = AxialPositionalEmbedding(emb_dim, axial_position_shape)
+            axial_shape = default(
+                axial_position_shape,
+                (
+                    max_seq_len // bucket_size,
+                    bucket_size,
+                ),
+            )
+            self.pos_emb = cast(
+                nn.Module,
+                AxialPositionalEmbedding(
+                    embedding_dim, axial_shape
+                ),
+            )
 
-        self.reformer = Reformer(dim, depth, max_seq_len, heads=heads, dim_head=dim_head, bucket_size=bucket_size,
-                                 n_hashes=n_hashes, ff_chunks=ff_chunks, attn_chunks=attn_chunks, causal=causal,
-                                 weight_tie=weight_tie, lsh_dropout=lsh_dropout, ff_mult=ff_mult,
-                                 ff_activation=ff_activation, ff_glu=ff_glu, ff_dropout=ff_dropout,
-                                 post_attn_dropout=0., layer_dropout=layer_dropout,
-                                 random_rotations_per_head=random_rotations_per_head, twin_attention=twin_attention,
-                                 use_scale_norm=use_scale_norm, use_rezero=use_rezero, use_full_attn=use_full_attn,
-                                 full_attn_thres=full_attn_thres, reverse_thres=reverse_thres, num_mem_kv=num_mem_kv,
-                                 one_value_head=one_value_head, n_local_attn_heads=n_local_attn_heads,
-                                 pkm_layers=pkm_layers, pkm_num_keys=pkm_num_keys, attn_type=attn_type,
-                                 store_stats=store_stats)
+        self.reformer = Reformer(
+            dim,
+            depth,
+            max_seq_len,
+            heads=heads,
+            dim_head=dim_head,
+            bucket_size=bucket_size,
+            n_hashes=n_hashes,
+            ff_chunks=ff_chunks,
+            attn_chunks=attn_chunks,
+            causal=causal,
+            weight_tie=weight_tie,
+            lsh_dropout=lsh_dropout,
+            ff_mult=ff_mult,
+            ff_activation=ff_activation,
+            ff_glu=ff_glu,
+            ff_dropout=ff_dropout,
+            post_attn_dropout=post_attn_dropout,
+            layer_dropout=layer_dropout,
+            random_rotations_per_head=random_rotations_per_head,
+            twin_attention=twin_attention,
+            use_scale_norm=use_scale_norm,
+            use_rezero=use_rezero,
+            use_full_attn=use_full_attn,
+            full_attn_thres=full_attn_thres,
+            reverse_thres=reverse_thres,
+            num_mem_kv=num_mem_kv,
+            one_value_head=one_value_head,
+            n_local_attn_heads=n_local_attn_heads,
+            pkm_layers=pkm_layers,
+            pkm_num_keys=pkm_num_keys,
+            attn_type=attn_type,
+            store_stats=store_stats,
+        )
 
         if return_embeddings:
-            self.out = Identity()
-            return
+            self.out: nn.Module = Identity()
+        else:
+            output_projection: nn.Module = (
+                nn.Linear(embedding_dim, num_tokens)
+                if not weight_tie_embedding
+                else MatrixMultiply(
+                    self.token_emb.weight,
+                    transpose=True,
+                    normalize=True,
+                )
+            )
+            self.out = nn.Sequential(
+                nn.Linear(dim, embedding_dim)
+                if embedding_dim != dim
+                else Identity(),
+                output_projection,
+            )
+            self.init_weights()
 
-        self.out = nn.Sequential(
-            nn.Linear(dim, emb_dim) if emb_dim != dim else Identity(),
-            nn.Linear(emb_dim, num_tokens) if not weight_tie_embedding else MatrixMultiply(self.token_emb.weight,
-                                                                                           transpose=True,
-                                                                                           normalize=True)
-        )
-        self.init_weights()
-
-    def init_weights(self):
+    def init_weights(self) -> None:
         initrange = 0.1
-        self.token_emb.weight.data.uniform_(-initrange, initrange)
-        self.out[1].bias.data.zero_()
-        self.out[1].weight.data.uniform_(-initrange, initrange)
+        self.token_emb.weight.data.uniform_(
+            -initrange, initrange
+        )
+        if isinstance(self.out, nn.Sequential):
+            final = self.out[-1]
+            if isinstance(final, nn.Linear):
+                if final.bias is not None:
+                    final.bias.data.zero_()
+                final.weight.data.uniform_(
+                    -initrange, initrange
+                )
 
-    def forward(self, x, **kwargs):
-        x = self.token_emb(x)
-        x = x + self.pos_emb(x).type_as(x)
-        # x = self.pos_emb(x)
+    def forward(
+        self, x: torch.Tensor, **kwargs: object
+    ) -> torch.Tensor:
+        embedded = self.token_emb(x)
+        position = cast(
+            torch.Tensor, self.pos_emb(embedded)
+        ).type_as(embedded)
+        hidden = embedded + position
+        hidden = cast(
+            torch.Tensor, self.to_model_dim(hidden)
+        )
+        hidden = self.reformer(hidden, **kwargs)
+        return cast(torch.Tensor, self.out(hidden))
 
-        x = self.to_model_dim(x)
-        x = self.reformer(x, **kwargs)
-        return self.out(x)
+    def _attention_layers(self) -> list[LSHSelfAttention]:
+        layers: list[LSHSelfAttention] = []
+        for index in range(
+            len(self.reformer.layer_modules) // 2
+        ):
+            wrapper = self.reformer.layer_modules[
+                2 * index
+            ]
+            fn = getattr(wrapper, "fn", None)
+            if not isinstance(fn, LSHSelfAttention):
+                raise TypeError(
+                    "expected LSHSelfAttention residual wrapper"
+                )
+            layers.append(fn)
+        return layers
 
-    def clear_non_rotation_gradients(self):
-        # clear gradients from triplet loss
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            g = self.reformer.layer_modules[(2 * i) + 1].fn
-            # only zero out toqk, tov, and to_out
-            # leave gradients of rotations
-            f.toqk.zero_grad()
-            f.tov.zero_grad()
-            f.to_out.zero_grad()
-            g.zero_grad()
+    def clear_non_rotation_gradients(self) -> None:
+        for index, attention in enumerate(
+            self._attention_layers()
+        ):
+            attention.toqk.zero_grad()
+            attention.tov.zero_grad()
+            attention.to_out.zero_grad()
+            self.reformer.layer_modules[
+                2 * index + 1
+            ].zero_grad()
 
-    def get_triplet_loss(self):
-        total = 0
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            if f.triplet_loss is not None:
-                total += f.triplet_loss
+    def get_triplet_loss(self) -> float | torch.Tensor:
+        total: float | torch.Tensor = 0.0
+        for attention in self._attention_layers():
+            loss = attention.triplet_loss
+            if loss is None:
+                continue
+            if isinstance(total, float):
+                total = loss
+            else:
+                total = total + loss
         return total
 
-    def update_simhash(self):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            if hasattr(attn_fn, 'simhash'):
-                attn_fn.update_simhash()
+    def update_simhash(self) -> None:
+        for attention in self._attention_layers():
+            method = getattr(
+                attention.lsh_attn,
+                "update_simhash",
+                None,
+            )
+            if callable(method):
+                cast(Callable[[], None], method)()
 
-    def reset_triplet(self):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            if hasattr(attn_fn, 'rotations'):
-                attn_fn.reset_rotations()
+    def reset_triplet(self) -> None:
+        for attention in self._attention_layers():
+            if isinstance(
+                attention.lsh_attn, TripletLSHAttention
+            ):
+                attention.lsh_attn.reset_rotations()
 
-    def set_alpha(self, alpha):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            if hasattr(attn_fn, 'alpha'):
-                attn_fn.alpha = alpha
+    def set_alpha(self, alpha: float) -> None:
+        for attention in self._attention_layers():
+            if isinstance(
+                attention.lsh_attn, TripletLSHAttention
+            ):
+                attention.lsh_attn.alpha = alpha
 
-    def get_statistics(self, batch_size):
-        means = []
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            attn_fn = f.lsh_attn
-            means.append(attn_fn.mean_dp / attn_fn.stat_count)
-            attn_fn.mean_dp = 0.0
-            attn_fn.stat_count = 0
+    def get_statistics(
+        self, batch_size: int
+    ) -> list[float]:
+        del batch_size
+        means: list[float] = []
+        for attention in self._attention_layers():
+            attn = attention.lsh_attn
+            means.append(
+                attn.mean_dp / attn.stat_count
+            )
+            attn.mean_dp = 0.0
+            attn.stat_count = 0
         return means
 
-    def clear_triplet_loss(self):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            if f.triplet_loss is not None:
-                f.triplet_loss = None
+    def clear_triplet_loss(self) -> None:
+        for attention in self._attention_layers():
+            attention.triplet_loss = None
 
-    def save_triplet_params(self, prefix):
-        for i in range(len(self.reformer.layer_modules) // 2):
-            f = self.reformer.layer_modules[2 * i].fn
-            weight = f.lsh_attn.rotations.weight
-            torch.save(weight, prefix + '%d.pt' % i)
+    def save_triplet_params(self, prefix: str) -> None:
+        for index, attention in enumerate(
+            self._attention_layers()
+        ):
+            if isinstance(
+                attention.lsh_attn, TripletLSHAttention
+            ):
+                torch.save(
+                    attention.lsh_attn.rotations.weight,
+                    f"{prefix}{index}.pt",
+                )

@@ -49,6 +49,10 @@ jobs:
           /tmp/test_slide_bucket_fifo
           g++ -std=c++11 -O0 tests/traceability/test_slide_sampling_policy.cpp ports/slide-original/SLIDE/SamplingPolicy.cpp -Iports/slide-original/SLIDE -o /tmp/test_slide_sampling_policy
           /tmp/test_slide_sampling_policy
+          g++ -std=c++11 -O0 tests/traceability/test_slide_sparse_node_math.cpp ports/slide-original/SLIDE/Node.cpp -Iports/slide-original/SLIDE -o /tmp/test_slide_sparse_node_math
+          /tmp/test_slide_sparse_node_math
+          g++ -std=c++11 -O0 tests/traceability/test_optimized_weight_layout.cpp -o /tmp/test_optimized_weight_layout
+          /tmp/test_optimized_weight_layout
 
       - name: Optimized SLIDE BF16 conversion characterization
         run: |

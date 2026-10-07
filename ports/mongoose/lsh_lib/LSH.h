@@ -3,6 +3,18 @@
 #include <unordered_set>
 #include <random>
 
+/**
+ * @brief Native hash-table set store used by the released MONGOOSE SLIDE path.
+ *
+ * Each item has one integer fingerprint per table. Query operations return the
+ * union (or one set per query) of item ids found in matching buckets. remove()
+ * writes tombstones that query paths erase before exposing results.
+ *
+ * Ownership: the table copies integer keys and item ids into STL containers;
+ * pointers supplied by the Cython boundary are borrowed only during calls.
+ *
+ * TRACE_TEST_ID: MONGOOSE-NATIVE-LSH-SET.
+ */
 class LSH
 {
 	private:

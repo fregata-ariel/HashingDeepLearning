@@ -539,6 +539,46 @@
         "gate_true": "example mining enabled and triplet loss evaluated once"
       },
       "note": "The control-flow goal matches the paper's scheduler idea, while the repository Scheduler remains a simplified hash-code change detector rather than the full maintenance algorithm."
+    },
+    {
+      "id": "MONGOOSE-TRIPLET-MINING",
+      "paper": "mongoose-2021",
+      "paper_location": "Section 3.3.1 learnable-LSH positive/negative examples",
+      "mechanism": "Construct positive examples from the largest post-mask/post-softmax attention probability and negative examples from the raw pre-mask dot-product argmin used by the released Reformer path.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_reformer/reformer_lib/reformer_pytorch.py",
+        "symbol": "mine_triplet_examples"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_triplet_mining.py",
+        "id": "MONGOOSE-TRIPLET-MINING"
+      },
+      "conditions": {
+        "oracle": "fixed candidate-index tensor, attention probabilities, and negative argmin positions",
+        "gradient": "returned examples are detached"
+      },
+      "note": "This records the released example-mining rule around the paper's positive/negative training concept; it is not presented as a verbatim statement of Equation 3."
+    },
+    {
+      "id": "MONGOOSE-SLIDE-PAIRWISE-LOSS",
+      "paper": "mongoose-2021",
+      "paper_location": "Section 3.3 learnable LSH; released SLIDE-side implementation variant",
+      "mechanism": "Train the SLIDE-side hash projection with pair labels using tanh hash surrogates, inner-product agreement, sigmoid, and binary cross entropy.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/mongoose/mongoose_slide/slide_lib/triplet_network.py",
+        "symbol": "TripletNet.forward"
+      },
+      "test": {
+        "file": "tests/traceability/test_mongoose_slide_pairwise_loss.py",
+        "id": "MONGOOSE-SLIDE-PAIRWISE-LOSS"
+      },
+      "conditions": {
+        "projection": "2x2 identity",
+        "oracle": "explicit tanh agreement followed by sigmoid BCE"
+      },
+      "note": "This objective is separate from the Reformer-side cosine-margin triplet objective and is not a literal implementation of Equation 3."
     }
   ]
 }

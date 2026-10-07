@@ -16,6 +16,7 @@ class DensifiedWtaHash
 {
 private:
     int *_randHash, _randa, _numhashes, _rangePow,_lognumhash, *_indices, *_pos, _permute;
+    int densifyBin(const int* hashes, int binid);
 public:
     DensifiedWtaHash(int numHashes, int noOfBitsToHash);
     static void updateMappedWinners(

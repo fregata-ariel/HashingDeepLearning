@@ -78,12 +78,15 @@ void LSH::count()
  * to be bin-local winner positions in [0, binsize). The maintained WTA port
  * now enforces that domain; DWTA positions are constructed in the same domain.
  *
- * @par Known packing variant
- * For binsize == 8 this snapshot shifts components by floor(log(8)) == 2
- * rather than the 3 bits required for an injective concatenation, so distinct
- * component tuples can collide before the table lookup. This behavior is
- * characterized by TRACE_TEST_ID SLIDE2020-LSH-PACKING rather than presented
- * as Algorithm 2 itself.
+ * @par Ownership / preconditions
+ * hashes is a borrowed array containing K*L component values. The returned
+ * L-element array is newly allocated with new[] and is owned by the caller.
+ *
+ * @par Traceability relation
+ * Variant. For binsize == 8 this snapshot shifts components by
+ * floor(log(8)) == 2 rather than the 3 bits required for an injective
+ * concatenation, so distinct component tuples can collide before table lookup.
+ * TRACE_TEST_ID: SLIDE2020-LSH-PACKING.
  *
  * @see https://arxiv.org/abs/1903.03129
  */
@@ -153,9 +156,19 @@ int LSH::add(int tableId, int indices, int id)
  * bucket in each of L tables, then combine the retrieved candidates into the
  * active-neuron sample.
  *
+ * @par Ownership / lifetime
+ * indices is borrowed for the duration of the call. The outer L-element
+ * pointer array is allocated with new[] and must be deleted by the caller.
+ * Each inner int* points into Bucket-owned storage and must not be deleted or
+ * retained across LSH::clear(), table rebuilds, or destruction.
+ *
  * @par Implementation note
  * This routine exposes raw bucket storage; candidate union/counting and the
  * sampling policy are implemented by Layer::queryActiveNodeandComputeActivations.
+ *
+ * @par Traceability relation
+ * Direct table-probing contract beneath Algorithm 2.
+ * TRACE_TEST_ID: SLIDE2020-LSH-TABLE.
  *
  * @see https://arxiv.org/abs/1903.03129
  */

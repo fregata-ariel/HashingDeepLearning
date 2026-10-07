@@ -120,6 +120,13 @@ jobs:
           grep -m1 '^flags' /proc/cpuinfo || true
           if grep -qw avx512f /proc/cpuinfo; then echo "avx=true" >> "$GITHUB_OUTPUT"; else echo "avx=false" >> "$GITHUB_OUTPUT"; fi
           if grep -qw avx512_bf16 /proc/cpuinfo; then echo "bf16=true" >> "$GITHUB_OUTPUT"; else echo "bf16=false" >> "$GITHUB_OUTPUT"; fi
+      - name: Run AVX arithmetic oracle
+        if: steps.cpu.outputs.avx == 'true'
+        shell: bash
+        run: |
+          g++ -std=c++17 -O2 -mavx512f -mfma tests/traceability/test_optimized_avx_forward.cpp -o /tmp/test_optimized_avx_forward
+          /tmp/test_optimized_avx_forward
+
       - name: Build AVX maintained port
         if: steps.cpu.outputs.avx == 'true'
         working-directory: ports/slide-optimized-avx512

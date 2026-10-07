@@ -13,6 +13,15 @@
 
 */
 using namespace std;
+/**
+ * @brief Winner-Take-All hash prerequisite used by released SLIDE modes.
+ *
+ * The hash component is the position of the maximum value inside a permuted
+ * bin, hence its domain is [0, binsize). WTA predates SLIDE and should be
+ * treated as an LSH-family dependency, not as a SLIDE algorithm contribution.
+ *
+ * TRACE_TEST_ID: SLIDE2020-WTA-DWTA-PRIMITIVES.
+ */
 class WtaHash
 {
 private:

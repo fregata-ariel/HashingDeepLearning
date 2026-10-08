@@ -134,3 +134,13 @@ MagicPIG #62 is deferred, with no date or recurring GPU job. CPU composition
 must not claim production Llama generation, GPU scheduling/device ownership,
 paper accuracy or throughput. After #54 integration, #55/#56/#57 can proceed
 in parallel using its per-task suite/ledger interface; #58 still depends on #57.
+
+## MP2 selected-CPU checkpoint: SimHash (#55)
+
+#55 supplies five actual archived AST blocks with a stdlib-only CPU tensor
+adapter, independent literal/dense expectations and a separate Python suite
+interface. Fixed code/sign ordering, centering/append and all K1..11 integer
+codes pass. [Coverage](MAGICPIG_SIMHASH_CPU.md) names substitutions and excludes
+Torch/BF16/GPU runtime. Packing loss at K12+ is reproduced, with repair #65.
+Task #56/#57 mechanism integration proceeds in separate task PRs; #58 continues
+to depend on #57. No full production extension or model inference is claimed.

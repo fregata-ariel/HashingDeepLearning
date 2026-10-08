@@ -80,7 +80,10 @@ Issue #54 adds portable CPU oracles, capability selection and driver regression
 tests, followed by plain and ASan/UBSan runs in the same workflow. UBSan errors
 are fatal; hosted LeakSanitizer remains enabled. Native SIMD is executed only
 after CPU/OS/compiler checks and otherwise records an explicit skip. All
-enrolled portable suites run by default, including future per-task descriptors.
+enrolled portable suites run by default, including per-task descriptors.
+#55 additionally enrolls selected Python AST blocks through a stdlib-only
+adapter; its execution is separate from native sanitizer claims. Shared
+framework regressions verify source/block evidence and exact diagnostic matching.
 Source/fixture/adapter/descriptor hashes, compiler flags and results are uploaded
 with the existing artifact. Full extension/GPU execution remains unvalidated.
 See [the CPU contract](../ports/magicpig/CPU_VALIDATION.md); no new permanent

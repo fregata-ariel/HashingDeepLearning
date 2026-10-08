@@ -8,6 +8,7 @@ This does not build Torch/FBGEMM extensions or execute GPU/model generation.
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -32,6 +33,7 @@ class Suite:
     definitions: dict[str, list[str]]
     descriptor: Path
     adapter_file: Path | None = None
+    native_avx512: bool = False
 
 
 def fixture_path(relative: str, suffix: str) -> Path:
@@ -46,7 +48,7 @@ def load_suites() -> dict[str, Suite]:
     for descriptor in sorted((ROOT / "tests/traceability/magicpig_suites").glob("*.json")):
         data = json.loads(descriptor.read_text())
         required = {"name", "test_file", "definitions"}
-        if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {"adapter_file"}:
+        if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {"adapter_file", "native_avx512"}:
             raise ValueError(f"invalid descriptor: {descriptor}")
         name = data["name"]
         if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9_-]*", name) or name != descriptor.stem or name in suites:
@@ -55,11 +57,14 @@ def load_suites() -> dict[str, Suite]:
         if not isinstance(definitions, dict) or not definitions:
             raise ValueError(f"missing definitions: {descriptor}")
         for source, symbols in definitions.items():
-            if source not in ALLOWED_SOURCES or not isinstance(symbols, list) or not symbols or len(set(symbols)) != len(symbols) or not all(isinstance(s, str) and re.fullmatch(r"[A-Za-z_][A-Za-z_0-9:]*", s) for s in symbols):
+            if source not in ALLOWED_SOURCES or not isinstance(symbols, list) or not symbols or not all(isinstance(s, str) and re.fullmatch(r"(?:[A-Za-z_]\w*::)*~?[A-Za-z_]\w*", s) for s in symbols) or len(set(symbols)) != len(symbols):
                 raise ValueError(f"invalid source/symbol selection: {descriptor}")
         test = fixture_path(data["test_file"], ".cpp")
         adapter = fixture_path(data["adapter_file"], ".hpp") if "adapter_file" in data else None
-        suites[name] = Suite(name, test, definitions, descriptor, adapter)
+        native = data.get("native_avx512", False)
+        if not isinstance(native, bool):
+            raise ValueError(f"invalid native selection: {descriptor}")
+        suites[name] = Suite(name, test, definitions, descriptor, adapter, native)
     if "baseline" not in suites:
         raise ValueError("baseline suite is not enrolled")
     return suites
@@ -74,12 +79,30 @@ def load_bf16_suite() -> Suite:
     return Suite(data["name"], fixture_path(data["test_file"], ".cpp"), data["definitions"], path)
 
 
-def check_enrollment(suites: dict[str, Suite], bf16: Suite) -> None:
+def load_python_suites() -> dict[str, dict[str, object]]:
+    suites = {}
+    required = {"name", "test_file", "source_file", "class_name", "blocks"}
+    for path in sorted((ROOT / "tests/traceability/magicpig_python_suites").glob("*.json")):
+        data = json.loads(path.read_text())
+        if not isinstance(data, dict) or set(data) != required or data["name"] != path.stem or not re.fullmatch(r"[a-z][a-z0-9_-]*", data["name"]):
+            raise ValueError("invalid Python suite descriptor")
+        if data["source_file"] != "third_party/magicpig/models/attnserver.py" or data["class_name"] != "LSHSparseAttnServer":
+            raise ValueError("unapproved Python source/class")
+        if data["blocks"] != ["packing", "centering", "fill_hash", "decode_hash", "append_centering"]:
+            raise ValueError("invalid Python block selection")
+        fixture_path(data["test_file"], ".py")
+        data["descriptor"] = path
+        suites[data["name"]] = data
+    return suites
+
+
+def check_enrollment(suites: dict[str, Suite], bf16: Suite, python_suites: dict[str, dict[str, object]] | None = None) -> None:
     data = json.loads((ROOT / "papers/traceability.json").read_text())
     experiments = list(data["experiments"])
     for path in sorted((ROOT / "papers/traceability").glob("*.json")):
         experiments.extend(json.loads(path.read_text())["experiments"])
     enrolled = {s.test_file.resolve() for s in [*suites.values(), bf16]}
+    enrolled.update(fixture_path(s["test_file"], ".py") for s in (python_suites or {}).values())
     mapped: set[Path] = set()
     for record in experiments:
         if record["paper"] == "magicpig-2024" and record["id"].endswith("-CPU"):
@@ -93,7 +116,10 @@ def check_enrollment(suites: dict[str, Suite], bf16: Suite) -> None:
 
 def extract_definition(source: str, symbol: str) -> tuple[str, int]:
     masked = re.sub(r'//[^\n]*|/\*[\s\S]*?\*/|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'', lambda m: re.sub(r"[^\n]", " ", m.group()), source)
-    pattern = re.compile(r"(?m)^(?:void|int|__m512)\s+" + re.escape(symbol) + r"\s*\([^)]*\)\s*\{")
+    parts = symbol.split("::")
+    constructor = len(parts) >= 2 and parts[-1].lstrip("~") == parts[-2]
+    prefix = "" if constructor else r"(?:static\s+)?(?:inline\s+)?(?:void|int|__m512|torch::Tensor)\s+"
+    pattern = re.compile(r"(?m)^" + prefix + re.escape(symbol) + r"\s*\([^)]*\)\s*\{")
     matches = list(pattern.finditer(masked))
     if len(matches) != 1:
         raise ValueError(f"expected one definition of {symbol}, got {len(matches)}")
@@ -172,6 +198,19 @@ def capabilities(cxx: str, build: Path, requested: bool) -> dict[str, object]:
     return {"machine": machine, "compiler_version": version, "gcc_major": major, "flags": sorted(flags), "proc_flags_available": bool(flag_sets), "probe_status": probe_status, "probe_command": probe_command, "probe_sha256": digest(build / "cpu_capabilities.cpp") if probe_command else None, "modes": decide_modes(flags, machine, major, requested)}
 
 
+def validate_fastfill_probe(probe: subprocess.CompletedProcess[str], sanitize: bool, disable_leaks: bool) -> str:
+    if "MAGICPIG-FASTFILL-DEFECT: expected {0,1,2,3}; actual {0}" not in probe.stdout:
+        raise RuntimeError(f"fastfill characterization marker missing: {probe.stdout}\n{probe.stderr}")
+    if sanitize and not disable_leaks:
+        expected = "SUMMARY: AddressSanitizer: 64 byte(s) leaked in 4 allocation(s)"
+        if probe.returncode != 1 or "LeakSanitizer: detected memory leaks" not in probe.stderr or expected not in probe.stderr or "LSH::fastfill" not in probe.stderr or "runtime error:" in probe.stderr or "ERROR: AddressSanitizer:" in probe.stderr:
+            raise RuntimeError(f"unexpected fastfill sanitizer outcome ({probe.returncode}): {probe.stdout}\n{probe.stderr}")
+        return "expected_leak_reproduced"
+    if probe.returncode:
+        raise RuntimeError(f"fastfill probe failed: {probe.stdout}\n{probe.stderr}")
+    return "not_checked"
+
+
 def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, disable_leaks: bool) -> dict[str, object]:
     directory = build / mode / suite.name
     directory.mkdir(parents=True, exist_ok=True)
@@ -196,7 +235,7 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         adapters.append(suite.adapter_file)
     pieces = [prelude]
     records = []
-    if mode == "avx512":
+    if mode == "avx512" and suite.name == "baseline":
         source = (PORT / SOURCE).read_bytes().decode()
         constants = re.findall(r"(?ms)^const __m512\s+(?:LOG2E_VEC|MAGIC_FLOAT_BIAS|ONE_VEC|LN2_PART_VEC|EXP_POLY_COEFFS)\b.*?;", source)
         if len(constants) != 5:
@@ -205,6 +244,8 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         pieces.append(constant_block)
         records.append({"symbol": "polynomial_constants", "sha256": hashlib.sha256(constant_block.encode()).hexdigest()})
         definitions.setdefault(SOURCE, []).insert(0, "avx512_exp_ps")
+    if mode == "avx512" and suite.name == "lsh_retrieval":
+        definitions.setdefault("library/lsh/lsh.cc", []).insert(0, "fast_memcpy_avx512")
     for relative, symbols in definitions.items():
         source_file = PORT / relative
         source = source_file.read_bytes().decode()
@@ -219,9 +260,11 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
     executable = directory / "oracle"
     command = [cxx, "-std=c++17", "-O1", "-fno-tree-vectorize", "-fno-tree-slp-vectorize"]
     if sanitize:
-        command += ["-fsanitize=address,undefined", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie"]
+        command += ["-fsanitize=address,undefined", "-g", "-fno-sanitize-recover=all", "-fno-omit-frame-pointer", "-no-pie"]
     if mode == "avx512":
         command += ["-mavx512f", "-mfma", "-DMAGIC_NATIVE_AVX512=1"]
+        if suite.name == "lsh_retrieval":
+            command += ["-DMAGICPIG_NATIVE_LSH_COPY=1"]
     if mode == "bf16":
         command += ["-mavx512f", "-mavx512bw", "-mavx512bf16"]
     command += [str(translation), "-o", str(executable)]
@@ -231,9 +274,47 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         env["ASAN_OPTIONS"] = env.get("ASAN_OPTIONS", "") + ":detect_leaks=0"
     output = checked([str(executable)], env=env)
     print(output, end="" if output.endswith("\n") else "\n")
+    defect_probe = None
+    if suite.name == "lsh_retrieval":
+        probe = subprocess.run([str(executable), "--fastfill-probe"], capture_output=True, text=True, env=env)
+        leak_status = validate_fastfill_probe(probe, sanitize, disable_leaks)
+        defect_probe = {"status": "known_defect_reproduced", "leak_status": leak_status, "returncode": probe.returncode, "stdout": probe.stdout, "stderr": probe.stderr}
+        print(f"MAGICPIG_FASTFILL_CHARACTERIZED mode={mode} leak_status={leak_status}")
     headers = {str(p.relative_to(ROOT)): digest(p) for p in sorted(PORT.rglob("*.h"))}
     evidence = {"suite": suite.name, "mode": mode, "status": "pass", "sanitize": sanitize, "leak_check_explicitly_disabled": disable_leaks, "compiler_command": command, "translation_sha256": digest(translation), "source_sha256": sources, "recorded_native_header_sha256": headers, "definitions": records, "fixture": str(suite.test_file.relative_to(ROOT)), "fixture_sha256": digest(suite.test_file), "descriptor_sha256": digest(suite.descriptor), "adapter_sha256": {str(p.relative_to(ROOT)): digest(p) for p in adapters}, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
+    evidence["defect_probe"] = defect_probe
     evidence_path.write_text(json.dumps(evidence, indent=2) + "\n")
+    return evidence
+
+
+def validate_python_evidence(suite: dict[str, object], data: dict[str, object]) -> None:
+    source = (ROOT / suite["source_file"]).read_text()
+    if data.get("source") != suite["source_file"] or data.get("gpu_execution") is not False or data.get("torch_runtime") is not False or data.get("name") != suite["name"] or data.get("status") != "passed" or data.get("source_sha256") != digest(ROOT / suite["source_file"]) or set(data.get("selected_blocks", {})) != set(suite["blocks"]):
+        raise ValueError("Python selected-block evidence does not match enrolled source")
+    statements = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.stmt)]
+    for block in data["selected_blocks"].values():
+        start, end = block.get("start_line"), block.get("end_line")
+        if not isinstance(start, int) or not isinstance(end, int) or not 1 <= start <= end <= len(source.splitlines()):
+            raise ValueError("invalid Python selected-block line range")
+        nodes = sorted((n for n in statements if start <= n.lineno and n.end_lineno <= end), key=lambda n: n.lineno)
+        text = "\n".join(ast.get_source_segment(source, n) or "" for n in nodes)
+        if not nodes or hashlib.sha256(text.encode()).hexdigest() != block.get("sha256"):
+            raise ValueError("Python selected-block hash mismatch")
+
+
+def run_python(suite: dict[str, object], build: Path) -> dict[str, object]:
+    directory = build / "portable_python" / suite["name"]
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / "selected_blocks.json"
+    path.unlink(missing_ok=True)
+    fixture = fixture_path(suite["test_file"], ".py")
+    command = [os.sys.executable, str(fixture), "--root", str(ROOT), "--evidence", str(path)]
+    output = checked(command)
+    data = json.loads(path.read_text())
+    validate_python_evidence(suite, data)
+    evidence = {"suite": suite["name"], "mode": "portable_python", "status": "pass", "sanitizer": "not_applicable_python_adapter", "fixture_sha256": digest(fixture), "descriptor_sha256": digest(suite["descriptor"]), "command": command, "selected_body_evidence": data, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
+    (directory / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
+    print(output, end="" if output.endswith("\n") else "\n")
     return evidence
 
 
@@ -244,29 +325,34 @@ def run(build: Path, cxx: str, sanitize: bool, native: bool, suites_requested: l
     for old_evidence in build.glob("*/*/evidence.json"):
         old_evidence.unlink(missing_ok=True)
     suites = load_suites()
+    python_suites = load_python_suites()
+    if set(suites) & set(python_suites):
+        raise ValueError("duplicate C++/Python suite name")
     bf16 = load_bf16_suite()
-    check_enrollment(suites, bf16)
-    if len(set(suites_requested)) != len(suites_requested) or set(suites_requested) - set(suites):
+    check_enrollment(suites, bf16, python_suites)
+    if len(set(suites_requested)) != len(suites_requested) or set(suites_requested) - set(suites) - set(python_suites):
         raise ValueError("unknown or duplicate requested suite")
-    selected = [suites[n] for n in suites_requested] if suites_requested else list(suites.values())
+    selected = [suites[n] for n in suites_requested if n in suites] if suites_requested else list(suites.values())
+    selected_python = [python_suites[n] for n in suites_requested if n in python_suites] if suites_requested else list(python_suites.values())
     # Preserve the independent immutable-source gate before any numerical test.
     checked([os.sys.executable, str(ROOT / "tools/check_magicpig_sources.py")])
     cap = capabilities(cxx, build, native)
     results = [compile_run(s, "portable", build, cxx, sanitize, disable_leaks) for s in selected]
+    results.extend(run_python(s, build) for s in selected_python)
     for mode in ("avx512", "bf16"):
         decision = cap["modes"][mode]
         if not decision["eligible"]:
             print(f"MAGICPIG_NATIVE_SKIP mode={mode} reason={decision['reason']}")
         elif mode == "avx512":
-            native_suites = [s for s in selected if s.name == "baseline"]
+            native_suites = [s for s in selected if s.name == "baseline" or s.native_avx512]
             if not native_suites:
-                print("MAGICPIG_NATIVE_SKIP mode=avx512 reason=baseline suite not selected")
+                print("MAGICPIG_NATIVE_SKIP mode=avx512 reason=no native suite selected")
             results.extend(compile_run(s, mode, build, cxx, sanitize, disable_leaks) for s in native_suites)
         else:
             results.append(compile_run(bf16, mode, build, cxx, sanitize, disable_leaks))
     summary = {"status": "pass", "driver_sha256": digest(Path(__file__)), "source_pin_sha256": digest(ROOT / "papers/magicpig-source-pin.json"), "fixture_seed": "fixed literals, no RNG", "capabilities": cap, "sanitize": sanitize, "results": results, "gpu_validated": False, "torch_extension_validated": False}
     summary_path.write_text(json.dumps(summary, indent=2) + "\n")
-    print(f"MAGICPIG_CPU_PASS portable_suites={len(selected)} executed_modes={','.join(sorted({r['mode'] for r in results}))} sanitize={sanitize}")
+    print(f"MAGICPIG_CPU_PASS portable_suites={len(selected) + len(selected_python)} executed_modes={','.join(sorted({r['mode'] for r in results}))} sanitize={sanitize}")
 
 
 def main() -> None:

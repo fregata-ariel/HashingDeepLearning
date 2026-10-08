@@ -46,12 +46,26 @@ python3 tools/audit_traceability_docs.py
 python3 tools/validate_traceability.py
 ```
 
-The driver extracts ten definitions from maintained CUDA sources at run time
+The baseline driver extracts ten definitions from maintained CUDA sources at run time
 and uses the actual data-structure headers, loop macros and optimizer
 constants. Independent oracles live in
 `tests/traceability/test_gslide_cpu_emulation.cpp`. Generated translation units
 and `gslide_cpu_evidence.json` record the selected definition hashes, compiler
 command/version, sanitizer mode and explicit `gpu_validated: false`.
+
+Independent task suites are enrolled by
+`tests/traceability/gslide_suites/<name>.json` and run by default, in separate
+translation units. Select one with `--suite <name>`. Each descriptor declares
+`name`, `test_file` and extra `definitions` by source; the baseline definitions
+remain available. Evidence lives under `<build-dir>/<name>/`; the root summary
+lists every executed suite. Experimental ledger fragments under
+`papers/traceability/*.json` join the baseline ledger before validation,
+documentation audit and artifact generation. Duplicate IDs fail validation.
+Every `g-slide-2022` experiment whose ID ends in `-CPU` must map to an enrolled
+suite file, and each suite must have a CPU ledger mapping. A descriptor omission
+therefore fails before compilation. The exact resolved test file is included
+and hashed; a same-basename file cannot be substituted. Old success summaries
+are invalidated before each invocation, including failed/interrupted runs.
 
 | Traceability ID | CPU evidence | Remaining boundary |
 | --- | --- | --- |

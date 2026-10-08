@@ -3,18 +3,17 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
+from validate_traceability import load
+
 ROOT = Path(__file__).resolve().parents[1]
-LEDGER = ROOT / "papers" / "traceability.json"
 DOCUMENTED_SUFFIXES = {".cpp", ".h", ".pyx", ".cu", ".cuh"}
 
 
 def _load() -> dict[str, Any]:
-    with LEDGER.open(encoding="utf-8") as handle:
-        return json.load(handle)
+    return load()
 
 
 def main() -> int:

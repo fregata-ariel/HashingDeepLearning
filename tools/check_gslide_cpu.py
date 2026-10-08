@@ -13,6 +13,7 @@ import json
 import re
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +23,65 @@ SELECTED = {
     "src/kernel.cu": ["relu_fwd_slide_in_knl", "softmax_fwd_bp_rowmajor_all_sm_knl", "bp_first_layer_knl", "update_weights_knl"],
     "src/GPUMultiLinkedHashTable.cu": ["GPUMultiLinkedHashTable::d_block_reduce_cnt", "GPUMultiLinkedHashTable::d_activate_labels_seq"],
 }
+
+
+@dataclass(frozen=True)
+class Suite:
+    name: str
+    test_file: Path
+    definitions: dict[str, list[str]]
+    descriptor: Path | None = None
+
+
+def load_suites() -> dict[str, Suite]:
+    """Enroll each isolated suite; unknown fields/names fail rather than skip."""
+    suites = {"baseline": Suite("baseline", ROOT / "tests/traceability/test_gslide_cpu_emulation.cpp", SELECTED)}
+    for path in sorted((ROOT / "tests/traceability/gslide_suites").glob("*.json")):
+        data = json.loads(path.read_text())
+        if not isinstance(data, dict) or set(data) != {"name", "test_file", "definitions"}:
+            raise ValueError(f"invalid suite descriptor: {path}")
+        name = data["name"]
+        if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9_-]*", name) or name != path.stem or name in suites:
+            raise ValueError(f"invalid/duplicate suite name: {path}")
+        relative = data["test_file"]
+        if not isinstance(relative, str):
+            raise ValueError(f"invalid test file: {path}")
+        test = (ROOT / relative).resolve()
+        if not test.is_relative_to(ROOT / "tests/traceability") or test.suffix != ".cpp" or not test.is_file():
+            raise ValueError(f"missing or out-of-scope test file: {path}")
+        extra = data["definitions"]
+        if not isinstance(extra, dict):
+            raise ValueError(f"invalid definitions: {path}")
+        definitions = {source: list(symbols) for source, symbols in SELECTED.items()}
+        for source, symbols in extra.items():
+            if source not in SELECTED or not isinstance(symbols, list) or not symbols or not all(isinstance(symbol, str) and symbol for symbol in symbols):
+                raise ValueError(f"invalid source/symbol selection: {path}")
+            for symbol in symbols:
+                if symbol not in definitions[source]:
+                    definitions[source].append(symbol)
+        suites[name] = Suite(name, test, definitions, path)
+    return suites
+
+
+def check_enrollment(suites: dict[str, Suite]) -> None:
+    """CPU ledger entries must name executed suite files, not just exist."""
+    data = json.loads((ROOT / "papers/traceability.json").read_text())
+    experiments = list(data["experiments"])
+    for path in sorted((ROOT / "papers/traceability").glob("*.json")):
+        experiments.extend(json.loads(path.read_text())["experiments"])
+    enrolled = {suite.test_file.resolve() for suite in suites.values()}
+    mapped: set[Path] = set()
+    for experiment in experiments:
+        # CPU IDs are a stable execution-scope convention. G3 GPU experiments
+        # have their own execution gate and must not be silently counted here.
+        if experiment["paper"] == "g-slide-2022" and experiment["id"].endswith("-CPU"):
+            path = (ROOT / experiment["test"]["file"]).resolve()
+            if path not in enrolled:
+                raise ValueError(f"CPU ledger test is not an enrolled suite: {experiment['id']}")
+            mapped.add(path)
+    for suite in suites.values():
+        if suite.test_file.resolve() not in mapped:
+            raise ValueError(f"suite has no CPU ledger mapping: {suite.name}")
 
 
 def extract(source: str, symbol: str) -> tuple[str, int]:
@@ -59,9 +119,9 @@ def check_archive() -> int:
     return len(actual)
 
 
-def run(build: Path, sanitize: bool) -> None:
-    archive_count = check_archive()
+def run_suite(suite: Suite, build: Path, sanitize: bool, archive_count: int) -> None:
     build.mkdir(parents=True, exist_ok=True)
+    (build / "gslide_cpu_evidence.json").unlink(missing_ok=True)
     sections = ['#include "gslide_cpu_adapter.h"']
     utils = (PORT / "include/utils.h").read_text()
     sections.append(utils[utils.index("#define FOR_IDX_SYNC"):utils.index("#define CUDA_CHECK")])
@@ -72,7 +132,7 @@ def run(build: Path, sanitize: bool) -> None:
             raise ValueError(f"missing source constant {name}")
         sections.append(match.group())
     evidence: list[dict[str, str | int]] = []
-    for relative, symbols in SELECTED.items():
+    for relative, symbols in suite.definitions.items():
         path = PORT / relative
         source = path.read_text()
         for symbol in symbols:
@@ -80,7 +140,9 @@ def run(build: Path, sanitize: bool) -> None:
             sections.extend([f'#line {line} "{path.as_posix()}"', body])
             evidence.append({"file": str(path.relative_to(ROOT)), "symbol": symbol,
                              "body_sha256": hashlib.sha256(body.encode()).hexdigest()})
-    sections.extend(['#line 1 "test_gslide_cpu_emulation.cpp"', '#include "test_gslide_cpu_emulation.cpp"'])
+    # Include the exact resolved file that is hashed, even if another directory
+    # has a test with the same basename.
+    sections.append(f'#include {json.dumps(suite.test_file.as_posix())}')
     unit = build / "gslide_cpu_generated.cpp"
     unit.write_text("\n".join(sections) + "\n")
     executable = build / "gslide_cpu_oracle"
@@ -93,10 +155,12 @@ def run(build: Path, sanitize: bool) -> None:
     subprocess.run([str(executable)], check=True)
     inputs = [Path(__file__), ROOT / "papers/g-slide-source-pin.json",
               ROOT / "tests/traceability/gslide_cpu_adapter.h",
-              ROOT / "tests/traceability/test_gslide_cpu_emulation.cpp",
+              suite.test_file,
               PORT / "include/CscActNodes.h", PORT / "include/GPUMultiLinkedHashTable.h",
-              PORT / "include/utils.h", *(PORT / relative for relative in SELECTED)]
-    report = {"mode": "CPU serial selected CUDA bodies", "gpu_validated": False,
+              PORT / "include/utils.h", *(PORT / relative for relative in suite.definitions)]
+    if suite.descriptor:
+        inputs.append(suite.descriptor)
+    report = {"suite": suite.name, "mode": "CPU serial selected CUDA bodies", "gpu_validated": False,
               "shared_kernel_block_size": 1, "warp_reductions": "scalar adapters",
               "archive_blobs_verified": archive_count, "compiler_command": command,
               "compiler_version": subprocess.check_output(["g++", "--version"], text=True).splitlines()[0],
@@ -104,19 +168,38 @@ def run(build: Path, sanitize: bool) -> None:
               "inputs_sha256": {str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest()
                                 for path in inputs}}
     (build / "gslide_cpu_evidence.json").write_text(json.dumps(report, indent=2) + "\n")
-    print(f"GSLIDE_CPU_PASS definitions={len(evidence)} archive_blobs={archive_count} sanitize={sanitize}")
+    print(f"GSLIDE_CPU_PASS suite={suite.name} definitions={len(evidence)} archive_blobs={archive_count} sanitize={sanitize}")
+
+
+def run(build: Path, sanitize: bool, selected: list[str] | None = None) -> None:
+    # An interrupted/failed invocation must not leave a previous PASS summary
+    # looking like this invocation's result in a reused build directory.
+    (build / "gslide_cpu_summary.json").unlink(missing_ok=True)
+    archive_count = check_archive()
+    suites = load_suites()
+    names = selected or list(suites)
+    if len(set(names)) != len(names) or any(name not in suites for name in names):
+        raise ValueError(f"invalid suite selection {names}; available: {list(suites)}")
+    check_enrollment(suites)
+    for name in names:
+        run_suite(suites[name], build / name, sanitize, archive_count)
+    summary = {"suites": names, "sanitize": sanitize, "gpu_validated": False,
+               "archive_blobs_verified": archive_count}
+    (build / "gslide_cpu_summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(f"GSLIDE_CPU_SUITES_PASS suites={len(names)} sanitize={sanitize}")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-dir", type=Path)
     parser.add_argument("--sanitize", action="store_true")
+    parser.add_argument("--suite", action="append", help="Run one named suite; repeat to select several. Default: all discovered suites.")
     args = parser.parse_args()
     if args.build_dir:
-        run(args.build_dir.resolve(), args.sanitize)
+        run(args.build_dir.resolve(), args.sanitize, args.suite)
     else:
         with tempfile.TemporaryDirectory(prefix="gslide-cpu-") as directory:
-            run(Path(directory), args.sanitize)
+            run(Path(directory), args.sanitize, args.suite)
 
 
 if __name__ == "__main__":

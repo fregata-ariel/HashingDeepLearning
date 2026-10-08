@@ -164,6 +164,12 @@ Original SLIDE, Optimized SLIDE, MONGOOSE, and final contracts/typing.
 Each experimentally verified relationship gets a stable ID in
 `papers/traceability.json`.
 
+Independent task PRs can own `papers/traceability/<task>.json` fragments with
+exact fields `schema_version: 1` and `experiments: [...]`. The existing loader
+appends sorted fragments to the baseline ledger before validation, document
+audit and artifact generation. IDs remain globally unique; fragments cannot
+redefine papers. This avoids concurrent edits to the shared baseline catalog.
+
 A record should contain at least:
 
 ```json

@@ -1,0 +1,19 @@
+{
+  "name": "lsh_retrieval",
+  "test_file": "tests/traceability/test_magicpig_lsh_cpu.cpp",
+  "adapter_file": "tests/traceability/magicpig_lsh_adapter.hpp",
+  "definitions": {
+    "library/lsh/lsh.cc": [
+      "LSH::LSH",
+      "LSH::~LSH",
+      "LSH::alloc",
+      "LSH::fill",
+      "LSH::fastfill",
+      "LSH::retrieve",
+      "LSH::batch_retrieve",
+      "LSH::clear",
+      "LSH::get_mask"
+    ]
+  },
+  "native_avx512": true
+}

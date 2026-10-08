@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-LSH-RETRIEVAL-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3, Equations 9-10, at-least-two-table candidate selection",
+      "mechanism": "Execute maintained LSH allocation, sorted fill, retrieval, batched GQA routing, clear and destruction against an independent distinct-table collision oracle.",
+      "relation": "direct",
+      "implementation": {"file": "ports/magicpig/library/lsh/lsh.cc", "symbol": "LSH::retrieve"},
+      "test": {"file": "tests/traceability/test_magicpig_lsh_cpu.cpp", "id": "MAGICPIG-LSH-RETRIEVAL-CPU"},
+      "conditions": {
+        "execution": "portable CPU; optional capability-gated actual AVX512F integer copy body; OpenMP pragmas ignored in serial compilation",
+        "adapter": "Explicit non-owning contiguous torch::Tensor/storage and class-declaration substitute; std::copy_n replaces AVX512 copy in portable mode",
+        "seed": "fixed literal collision patterns; no RNG",
+        "lengths": [1, 2, 15, 16, 17, 31, 32],
+        "additional_lengths": [0, 35],
+        "batched_head_checks": 2688,
+        "configuration": "K=2, L=4, 2 layers, batch=2, 4 attention heads, 2 KV heads, capacity=35; 3 independent lifetimes, 2 fill/clear generations",
+        "oracle": "Examine every unsorted token's literal hash vector; accept exactly when at least two distinct table coordinates equal the query. Compare candidate sets and uniqueness, not incidental output order.",
+        "contracts": "0/1/2/3/4 hits, all collisions, empty buckets, output bounds/canaries, GQA/batch/layer isolation, consecutive-query mask reset, copied input lifetime, clear/refill, get_mask shape/value borrow during owner lifetime and teardown",
+        "preconditions": "alloc exactly once; sorted contiguous int16 hashes in [0,2^K), contiguous int32 indices that are per-table permutations of valid token IDs; valid query/layer/head/capacity and divisible GQA dimensions",
+        "gpu_execution": "postponed",
+        "torch_extension": "not built"
+      },
+      "note": "Valid-input sorted-fill path only. Tensor shim does not validate production Torch dtype/device/contiguity or ABI. get_mask remains non-owning and is never dereferenced after owner destruction. No missing get_table_* definitions are claimed. Known-defective fastfill is isolated into a separate diagnostic, never repaired or silently executed in successful lifecycle tests."
+    },
+    {
+      "id": "MAGICPIG-FASTFILL-DEFECT-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 candidate selection; implementation-specific incomplete alternate fill path",
+      "mechanism": "Dedicated process executes maintained fastfill and characterizes incomplete table content plus its unfreed temporary allocation.",
+      "relation": "support",
+      "implementation": {"file": "ports/magicpig/library/lsh/lsh.cc", "symbol": "LSH::fastfill"},
+      "test": {"file": "tests/traceability/test_magicpig_lsh_cpu.cpp", "id": "MAGICPIG-FASTFILL-DEFECT-CPU"},
+      "conditions": {
+        "execution": "Explicit --fastfill-probe subprocess; never successful ordinary lifecycle execution",
+        "fixture": "One layer/request/head, K=2, L=4, four tokens all hashing to bucket zero",
+        "oracle": "Literal accepted IDs {0,1,2,3}; actual maintained fastfill retrieval {0}, because content is never written",
+        "leak": "mo_ij new int[num_buckets] per table has no delete; four 16-byte allocations total 64 bytes for this fixture",
+        "expected_diagnostic": "MAGICPIG-FASTFILL-DEFECT marker; hosted sanitizer diagnostic must separately establish LeakSanitizer detection rather than treating arbitrary failure as expected",
+        "local_limit": "LeakSanitizer /proc access may be unavailable; explicit local-only disabled leak checks do not validate this leak diagnostic",
+        "gpu_execution": "postponed"
+      },
+      "note": "Defect characterization, not a passing alternative-fill correctness test. The original body remains unchanged; unsupported until separately repaired and revalidated."
+    }
+  ]
+}

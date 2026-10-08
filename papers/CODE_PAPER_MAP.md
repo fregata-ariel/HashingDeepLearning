@@ -140,3 +140,13 @@ packing outside the exact domain is tracked in repair #65.
    so explicitly.
 5. Known defects and reproduction findings point to GitHub Issues instead of
    silently rewriting the historical behavior.
+
+## LSH retrieval/lifetime (#56)
+
+`LSH::retrieve` directly maps to §4.3 Equation10 under unique per-table IDs and
+valid sorted-fill inputs. Literal distinct-table oracles verify deduplication,
+GQA/isolation and state reset across lifetimes; Tensor/serial/copy substitutes
+are explicit. `LSH::fastfill` is a support defect characterization, not a parity
+success: it omits table contents and leaks temporary allocations (repair #66).
+[Contract](../ports/magicpig/LSH_CPU_CONTRACT.md) records supported preconditions
+and borrowed-view lifetime; actual Torch ABI and OpenMP are unverified.

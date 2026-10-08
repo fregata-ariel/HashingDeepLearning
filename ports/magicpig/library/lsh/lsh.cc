@@ -41,6 +41,12 @@ LSH::~LSH(){
     this->allocated = false;
 }
 
+/**
+ * @par Implementation note
+ * Allocate once per owner, with valid positive/divisible head dimensions and
+ * bounded K/length products. Reallocation and unchecked integer overflow are
+ * outside the selected CPU contract. Torch ABI and OpenMP remain unverified.
+ */
 void LSH::alloc(
 int K, 
 int L, 
@@ -90,6 +96,18 @@ int max_length)
 
 }
 
+/**
+ * @par Paper mapping
+ * MagicPIG v4 Section 4.3: alternate candidate-table construction support.
+ * @par Implementation note
+ * Known incomplete path: bucket prefixes are written but token contents are
+ * not; temporary mo_ij allocations leak. A dedicated CPU process reproduces
+ * expected {0,1,2,3} versus actual {0} and separately checks the leak diagnostic.
+ * This is defect characterization, not sorted-fill equivalence or correctness.
+ * Repair tracked in GitHub Issue #66; immutable archive remains unchanged.
+ * @par Traceability relation
+ * Support; TRACE_TEST_ID: MAGICPIG-FASTFILL-DEFECT-CPU.
+ */
 void LSH::fastfill(
 int layer_id, 
 int request_id, 
@@ -140,6 +158,13 @@ for(int i = 0;  i < this->num_key_value_heads; ++i){
 
 
 }
+/**
+ * @par Implementation note
+ * CPU contiguous int16 sorted bucket codes and int32 per-table permutations
+ * of valid token IDs are required. Indices are copied into owner storage;
+ * clear before refill. Portable tests replace the AVX copy explicitly; native
+ * copy is independently capability-gated. No Torch boundary validation added.
+ */
 void LSH::fill(
 int layer_id, 
 int request_id, 
@@ -240,6 +265,18 @@ for (int head_id = 0; head_id < this->batch_size * this->num_attention_heads; ++
 
 }
 
+/**
+ * @par Paper mapping
+ * MagicPIG v4 Section 4.3 Equation 10: accept at least two table collisions.
+ * @par Implementation note
+ * Direct under valid sorted-fill/query inputs and unique IDs per table; the
+ * saturating mask emits a token once and is reset between queries. Repeated
+ * IDs within one table violate the distinct-table interpretation. Independent
+ * CPU tests cover literal collision counts, capacity, clear/refill and GQA,
+ * batch/layer isolation. OpenMP scheduling and Torch ABI are unexecuted.
+ * @par Traceability relation
+ * Direct; TRACE_TEST_ID: MAGICPIG-LSH-RETRIEVAL-CPU.
+ */
 int LSH::retrieve(
 int layer_id, 
 int head_id, 
@@ -305,6 +342,12 @@ for (int i = 0; i < this->num_layers; ++i){
 
 }
 
+/**
+ * @par Implementation note
+ * Borrowed non-owning CPU int8 view: mutations/clear are visible; never retain
+ * or dereference after owner destruction. Tests use an explicit Tensor shim,
+ * not real Torch lifetime protection. Other declared getters lack definitions.
+ */
 torch::Tensor LSH::get_mask()
 {
 

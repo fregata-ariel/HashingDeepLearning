@@ -1,0 +1,12 @@
+{
+  "name": "backward",
+  "test_file": "tests/traceability/test_gslide_backward_cpu.cpp",
+  "definitions": {
+    "src/kernel.cu": [
+      "bp_knl",
+      "bp_rowmajor_knl",
+      "bp_rowmajor_no_sm_knl",
+      "bp_rowmajor_slide_knl"
+    ]
+  }
+}

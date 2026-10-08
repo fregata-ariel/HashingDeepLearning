@@ -157,6 +157,22 @@ __global__ void relu_fwd_slide_in_knl(const CscActNodes csc_inputs,
   }
 }
 
+/**
+ * @brief Normalize active logits and produce averaged multi-label deltas.
+ * @par Paper mapping G-SLIDE Section 4.4, Softmax training support.
+ * @par Preconditions Borrowed valid CSC/row-major buffers, nonempty active
+ * outputs, positive batch, unique nonempty labels included in the active set.
+ * Dynamic shared storage holds at least 2*blockDim.x + 2*max_out_num + max_label_num
+ * four-byte words, in addition to the static block-reduction storage.
+ * @par Ownership Mutates caller-owned outputs/deltas, retains no pointers;
+ * synchronize before consuming, reusing or freeing the buffers.
+ * @par Implementation note Delta=(target-probability)/gridDim.x. MAX_INIT
+ * restores stable normalization for large negative logits; EPS is retained.
+ * @par Traceability relation Support: independent dense oracle, non-square
+ * weights, sparse IDs, empty inputs, singleton/multiple labels and batch scale.
+ * CPU one-thread blocks use scalar block_max/reduce; warp behavior is pending.
+ * TRACE_TEST_ID: GSLIDE-SOFTMAX-SLIDE-IN-CPU
+ */
 __global__ void softmax_fwd_bp_rowmajor_slide_in_knl(
     const CscActNodes csc_inputs, const float *d_weights_rowmajor,
     const float *d_biases, const CscActNodes cmprs_labels,
@@ -256,6 +272,22 @@ __global__ void softmax_fwd_bp_rowmajor_slide_in_knl(
   }
 }
 
+/**
+ * @brief Normalize active logits and produce averaged multi-label deltas.
+ * @par Paper mapping G-SLIDE Section 4.4, Softmax training support.
+ * @par Preconditions Borrowed valid CSC/row-major buffers, nonempty active
+ * outputs, positive batch, unique nonempty labels included in the active set.
+ * Dynamic shared storage holds at least 2*max_in_num + max_label_num
+ * four-byte words, in addition to the static block-reduction storage.
+ * @par Ownership Mutates caller-owned outputs/deltas, retains no pointers;
+ * synchronize before consuming, reusing or freeing the buffers.
+ * @par Implementation note Delta=(target-probability)/gridDim.x. MAX_INIT
+ * restores stable normalization for large negative logits; EPS is retained.
+ * @par Traceability relation Support: independent dense oracle, non-square
+ * weights, sparse IDs, empty inputs, singleton/multiple labels and batch scale.
+ * CPU one-thread blocks use scalar block_max/reduce; warp behavior is pending.
+ * TRACE_TEST_ID: GSLIDE-SOFTMAX-SLIDE-OUT-CPU
+ */
 __global__ void softmax_fwd_bp_rowmajor_slide_out_knl(
     const CscActNodes csc_inputs, const float *d_weights_rowmajor,
     const float *d_biases, const CscActNodes cmprs_labels,
@@ -449,6 +481,23 @@ __global__ void softmax_fwd_bp_rowmajor_all_sm_knl(
   }
 }
 
+/**
+ * @brief Propagate sparse deeper-layer deltas and accumulate gradients.
+ * @par Paper mapping G-SLIDE Section 4.4, sparse backward computation.
+ * @par Preconditions Valid borrowed CSC IDs/offsets, compressed deltas,
+ * initialized accumulators and max_act_num * 8 shared bytes.
+ * Weights and gradients are column-major [input * weight_row_num + output].
+ * @par Ownership Caller owns storage; mutates previous deltas and weight/bias
+ * accumulators, retains no pointers. Synchronize before reuse or release.
+ * @par Implementation note Positive previous activations add W^T delta to
+ * existing deltas; nonpositive gates overwrite them with zero. Weight gradients
+ * still multiply actual signed activations. Per-step buffer reset is a caller
+ * responsibility; the production reset gap is tracked separately in Issue #43.
+ * @par Traceability relation Direct arithmetic mapping: independent dense 4x3
+ * oracle, two samples/updates, canaries and both matrix layouts. CPU block size
+ * one, serial atomics and scalar reductions do not validate CUDA parallelism.
+ * TRACE_TEST_ID: GSLIDE-BP-COLMAJOR-CPU
+ */
 __global__ void bp_knl(const CscActNodes csc_acts, const CscActNodes csc_prev,
                        const float *d_weights_colmajor,
                        const float *d_cmprs_bp_deltas, const int weight_row_num,
@@ -498,6 +547,23 @@ __global__ void bp_knl(const CscActNodes csc_acts, const CscActNodes csc_prev,
   }
 }
 
+/**
+ * @brief Propagate sparse deeper-layer deltas and accumulate gradients.
+ * @par Paper mapping G-SLIDE Section 4.4, sparse backward computation.
+ * @par Preconditions Valid borrowed CSC IDs/offsets, compressed deltas,
+ * initialized accumulators and max_act_num * 8 shared bytes.
+ * Weights and gradients are row-major [output * weight_col_num + input].
+ * @par Ownership Caller owns storage; mutates previous deltas and weight/bias
+ * accumulators, retains no pointers. Synchronize before reuse or release.
+ * @par Implementation note Positive previous activations add W^T delta to
+ * existing deltas; nonpositive gates overwrite them with zero. Weight gradients
+ * still multiply actual signed activations. Per-step buffer reset is a caller
+ * responsibility; the production reset gap is tracked separately in Issue #43.
+ * @par Traceability relation Direct arithmetic mapping: independent dense 4x3
+ * oracle, two samples/updates, canaries and both matrix layouts. CPU block size
+ * one, serial atomics and scalar reductions do not validate CUDA parallelism.
+ * TRACE_TEST_ID: GSLIDE-BP-ROWMAJOR-CPU
+ */
 __global__ void bp_rowmajor_knl(const CscActNodes csc_acts,
                                 const CscActNodes csc_prev,
                                 const float *d_weights_rowmajor,
@@ -549,6 +615,23 @@ __global__ void bp_rowmajor_knl(const CscActNodes csc_acts,
   }
 }
 
+/**
+ * @brief Propagate sparse deeper-layer deltas and accumulate gradients.
+ * @par Paper mapping G-SLIDE Section 4.4, sparse backward computation.
+ * @par Preconditions Valid borrowed CSC IDs/offsets, compressed deltas,
+ * initialized accumulators and no dynamic shared cache; sufficient launch threads.
+ * Weights and gradients are row-major [output * weight_col_num + input].
+ * @par Ownership Caller owns storage; mutates previous deltas and weight/bias
+ * accumulators, retains no pointers. Synchronize before reuse or release.
+ * @par Implementation note Positive previous activations add W^T delta to
+ * existing deltas; nonpositive gates overwrite them with zero. Weight gradients
+ * still multiply actual signed activations. Per-step buffer reset is a caller
+ * responsibility; the production reset gap is tracked separately in Issue #43.
+ * @par Traceability relation Direct arithmetic mapping: independent dense 4x3
+ * oracle, two samples/updates, canaries and both matrix layouts. CPU block size
+ * one, serial atomics and scalar reductions do not validate CUDA parallelism.
+ * TRACE_TEST_ID: GSLIDE-BP-NO-SM-CPU
+ */
 __global__ void bp_rowmajor_no_sm_knl(const CscActNodes csc_acts,
                                       const CscActNodes csc_prev,
                                       const float *d_weights_rowmajor,
@@ -590,6 +673,23 @@ __global__ void bp_rowmajor_no_sm_knl(const CscActNodes csc_acts,
   }
 }
 
+/**
+ * @brief Propagate sparse deeper-layer deltas and accumulate gradients.
+ * @par Paper mapping G-SLIDE Section 4.4, sparse backward computation.
+ * @par Preconditions Valid borrowed CSC IDs/offsets, compressed deltas,
+ * initialized accumulators and max_prev_num * 12 shared bytes.
+ * Weights and gradients are row-major [output * weight_col_num + input].
+ * @par Ownership Caller owns storage; mutates previous deltas and weight/bias
+ * accumulators, retains no pointers. Synchronize before reuse or release.
+ * @par Implementation note Positive previous activations add W^T delta to
+ * existing deltas; nonpositive gates overwrite them with zero. Weight gradients
+ * still multiply actual signed activations. Per-step buffer reset is a caller
+ * responsibility; the production reset gap is tracked separately in Issue #43.
+ * @par Traceability relation Direct arithmetic mapping: independent dense 4x3
+ * oracle, two samples/updates, canaries and both matrix layouts. CPU block size
+ * one, serial atomics and scalar reductions do not validate CUDA parallelism.
+ * TRACE_TEST_ID: GSLIDE-BP-SLIDE-CPU
+ */
 __global__ void bp_rowmajor_slide_knl(
     const CscActNodes csc_acts, const CscActNodes csc_prev,
     const float *d_weights_rowmajor, const float *d_cmprs_bp_deltas,

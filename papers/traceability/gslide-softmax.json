@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-SOFTMAX-SLIDE-IN-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module (training support)",
+      "mechanism": "Active-set Softmax and batch-averaged multi-label deltas with the slide-in shared-memory layout.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "softmax_fwd_bp_rowmajor_slide_in_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_softmax_variants_cpu.cpp",
+        "id": "GSLIDE-SOFTMAX-SLIDE-IN-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Independent double-precision dense W*x+b and max-subtracted active-set normalization, retaining denominator EPS=1e-8; each variant is checked against expected probabilities and deltas.",
+        "matrix_shape": [
+          6,
+          4
+        ],
+        "batch_sizes": [
+          4,
+          1
+        ],
+        "common_bias_shifts": [
+          0,
+          -1000,
+          -16384
+        ],
+        "cases": [
+          "unsorted nontrivial CSC IDs",
+          "mixed per-sample input/output/label counts",
+          "empty input with nonzero biases",
+          "singleton candidate and label",
+          "distinct multiple active labels",
+          "batch averaging"
+        ],
+        "labels": "nonempty, unique, and contained in active outputs",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "All three Softmax layouts, including all_sm, are checked against the independent oracle. Maintained MAX_INIT=-FLT_MAX is exercised by large negative shifts. Scalar block_max/block_reduce, host math intrinsics and serial atomics do not validate CUDA warp reductions, parallel shared memory, launch dispatch or full Network::train. See docs/g-slide/softmax.md."
+    },
+    {
+      "id": "GSLIDE-SOFTMAX-SLIDE-OUT-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module (training support)",
+      "mechanism": "Active-set Softmax and batch-averaged multi-label deltas with the slide-out shared-memory layout.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "softmax_fwd_bp_rowmajor_slide_out_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_softmax_variants_cpu.cpp",
+        "id": "GSLIDE-SOFTMAX-SLIDE-OUT-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial emulation of selected actual CUDA bodies",
+        "shared_kernel_threads_per_block": 1,
+        "oracle": "Independent double-precision dense W*x+b and max-subtracted active-set normalization, retaining denominator EPS=1e-8; each variant is checked against expected probabilities and deltas.",
+        "matrix_shape": [
+          6,
+          4
+        ],
+        "batch_sizes": [
+          4,
+          1
+        ],
+        "common_bias_shifts": [
+          0,
+          -1000,
+          -16384
+        ],
+        "cases": [
+          "unsorted nontrivial CSC IDs",
+          "mixed per-sample input/output/label counts",
+          "empty input with nonzero biases",
+          "singleton candidate and label",
+          "distinct multiple active labels",
+          "batch averaging"
+        ],
+        "labels": "nonempty, unique, and contained in active outputs",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "All three Softmax layouts, including all_sm, are checked against the independent oracle. Maintained MAX_INIT=-FLT_MAX is exercised by large negative shifts. Scalar block_max/block_reduce, host math intrinsics and serial atomics do not validate CUDA warp reductions, parallel shared memory, launch dispatch or full Network::train. See docs/g-slide/softmax.md."
+    }
+  ]
+}

@@ -197,10 +197,20 @@ __global__ void init_hash_knl(
  * @par Traceability relation Variant: floor(natural log(bin_size)) packs WTA
  * positions, unlike paper bit concatenation. At bin_size=8, K=2, (0,4) and
  * (1,0) alias. CPU serial tests cover this behavior, ties and a partial tile;
- * concurrent insertion/order, overflow and alternate kernels are unverified.
+ * concurrent insertion/order and alternate kernels are unverified.
  * TRACE_TEST_ID: GSLIDE-WTA-LSH-CPU
  */
 // No shared memory for weights
+/**
+ * @par Additional CPU contracts G-SLIDE Section 4.3: index reconstruction is
+ * a Variant preserving natural-log packing; bounded bucket rings are Support.
+ * Caller initializes counts and owns borrowed permutation/weight/bucket
+ * storage. Host resets and prefix scans are adapters, not CUDA/Thrust tests.
+ * Literal stale/rebuilt addresses and capacity-two serial overwrite/count
+ * clamping are verified; GPU retained subsets/order and pool limits pending.
+ * TRACE_TEST_ID: GSLIDE-INDEX-REBUILD-CPU
+ * TRACE_TEST_ID: GSLIDE-BUCKET-RING-CPU
+ */
 __global__ void init_hash_no_sw_knl(
     const int *d_bins, const float *d_weights_rowmajor, const int prev_node_num,
     const int node_num, const int tot_elem_num, const int L, const int K,

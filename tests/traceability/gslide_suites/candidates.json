@@ -1,0 +1,5 @@
+{
+  "name": "candidates",
+  "test_file": "tests/traceability/test_gslide_candidates_cpu.cpp",
+  "definitions": {}
+}

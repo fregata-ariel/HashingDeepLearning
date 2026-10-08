@@ -30,7 +30,8 @@ are pinned in `papers/magicpig-source-pin.json`.
 Included first-party scope: root README/LICENSE/install/requirements,
 `models/`, `examples/`, `library/lsh/`, and first-party `library/sparse_attention/`.
 Artwork, data, evaluation wrappers, `.gitignore` and unneeded dependency files
-are excluded by the inventory. Models/evaluations are not downloaded by CI.
+are excluded by the inventory. Pretrained weights and benchmark data are not
+downloaded by CI.
 
 Source/include closure includes the five FBGEMM `.cc` inputs named by upstream
 setup, `src/RefImplementations.h`, seven FBGEMM headers, cpuinfo's public header

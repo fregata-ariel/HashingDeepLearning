@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-BP-COLMAJOR-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module, backward propagation",
+      "mechanism": "Accumulate deeper-layer sparse gradients and propagate ReLU-gated deltas using column-major weights.",
+      "relation": "direct",
+      "implementation": {"file": "ports/g-slide/src/kernel.cu", "symbol": "bp_knl"},
+      "test": {"file": "tests/traceability/test_gslide_backward_cpu.cpp", "id": "GSLIDE-BP-COLMAJOR-CPU"},
+      "conditions": {
+        "execution": "CPU serial execution of extracted maintained CUDA body",
+        "block_threads": 1,
+        "atomic_add": "serial host substitution",
+        "weight_shape": [4, 3],
+        "weight_layout": "column-major",
+        "batch_size": 2,
+        "updates": 2,
+        "max_act_num": 2,
+        "previous_activations": "positive, zero and negative; sparse noncontiguous IDs",
+        "initial_state": "nonzero previous deltas, weight gradients and bias gradients",
+        "oracle": "independent dense masked outer products and matrix-vector products",
+        "gpu_validation": "pending"
+      },
+      "note": "Checks every physical gradient and bias element, compressed previous-delta ordering, repeated accumulation, output-buffer canaries and borrowed CSC preservation. Existing previous deltas are added only for positive activations; nonpositive activations overwrite previous deltas with zero but their actual values still multiply the weight gradients. One-thread shared-memory execution does not validate CUDA synchronization, parallel atomics, races or host dispatch."
+    },
+    {
+      "id": "GSLIDE-BP-ROWMAJOR-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module, backward propagation",
+      "mechanism": "Accumulate deeper-layer sparse gradients and propagate ReLU-gated deltas using row-major weights and cached active outputs.",
+      "relation": "direct",
+      "implementation": {"file": "ports/g-slide/src/kernel.cu", "symbol": "bp_rowmajor_knl"},
+      "test": {"file": "tests/traceability/test_gslide_backward_cpu.cpp", "id": "GSLIDE-BP-ROWMAJOR-CPU"},
+      "conditions": {
+        "execution": "CPU serial execution of extracted maintained CUDA body",
+        "block_threads": 1,
+        "atomic_add": "serial host substitution",
+        "weight_shape": [4, 3],
+        "weight_layout": "row-major",
+        "batch_size": 2,
+        "updates": 2,
+        "max_act_num": 2,
+        "previous_activations": "positive, zero and negative; sparse noncontiguous IDs",
+        "initial_state": "nonzero previous deltas, weight gradients and bias gradients",
+        "oracle": "independent dense masked outer products and matrix-vector products",
+        "gpu_validation": "pending"
+      },
+      "note": "Checks the independent dense oracle rather than comparing against another kernel variant. Non-square physical encodings expose incorrect weight strides. Existing previous deltas are accumulated only for positive activations; negative activations retain their signed weight-gradient contribution. One-thread cached-output execution does not validate CUDA synchronization, parallel atomics, races or host dispatch."
+    },
+    {
+      "id": "GSLIDE-BP-NO-SM-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module, backward propagation",
+      "mechanism": "Accumulate deeper-layer sparse gradients and propagate ReLU-gated deltas directly from CSC storage without a shared-memory cache.",
+      "relation": "direct",
+      "implementation": {"file": "ports/g-slide/src/kernel.cu", "symbol": "bp_rowmajor_no_sm_knl"},
+      "test": {"file": "tests/traceability/test_gslide_backward_cpu.cpp", "id": "GSLIDE-BP-NO-SM-CPU"},
+      "conditions": {
+        "execution": "CPU serial execution of extracted maintained CUDA body",
+        "block_threads": 1,
+        "atomic_add": "serial host substitution",
+        "weight_shape": [4, 3],
+        "weight_layout": "row-major",
+        "batch_size": 2,
+        "updates": 2,
+        "previous_activations": "positive, zero and negative; sparse noncontiguous IDs",
+        "initial_state": "nonzero previous deltas, weight gradients and bias gradients",
+        "oracle": "independent dense masked outer products and matrix-vector products",
+        "gpu_validation": "pending"
+      },
+      "note": "Checks all gradient and bias accumulators plus previous deltas after each of two distinct updates. Positive activations preserve and extend existing previous deltas; zero and negative activations reset them to zero while their values still participate in outer products. Serial execution does not validate CUDA barriers, parallel atomics, races or host dispatch."
+    },
+    {
+      "id": "GSLIDE-BP-SLIDE-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4; sparse neural network module, backward propagation",
+      "mechanism": "Cache previous sparse activations, reduce deeper-layer previous-delta contributions and accumulate row-major gradients.",
+      "relation": "direct",
+      "implementation": {"file": "ports/g-slide/src/kernel.cu", "symbol": "bp_rowmajor_slide_knl"},
+      "test": {"file": "tests/traceability/test_gslide_backward_cpu.cpp", "id": "GSLIDE-BP-SLIDE-CPU"},
+      "conditions": {
+        "execution": "CPU serial execution of extracted maintained CUDA body",
+        "block_threads": 1,
+        "atomic_add": "serial host substitution",
+        "block_reduce": "scalar host substitution with a one-thread block",
+        "weight_shape": [4, 3],
+        "weight_layout": "row-major",
+        "batch_size": 2,
+        "updates": 2,
+        "max_prev_num": 3,
+        "previous_activations": "positive, zero and negative; sparse noncontiguous IDs",
+        "initial_state": "nonzero previous deltas, weight gradients and bias gradients",
+        "oracle": "independent dense masked outer products and matrix-vector products",
+        "gpu_validation": "pending"
+      },
+      "note": "Checks the cached-previous-activation body against an independent dense reference, including signed negative-activation weight gradients and ReLU gating of existing previous deltas. Scalar block_reduce substitution verifies arithmetic only; warp/block reduction ordering, shared-memory synchronization, parallel atomics, races and host dispatch remain unvalidated on GPU."
+    }
+  ]
+}

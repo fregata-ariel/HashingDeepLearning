@@ -1,0 +1,5 @@
+{
+  "name": "training",
+  "test_file": "tests/traceability/test_gslide_training_cpu.cpp",
+  "definitions": {"src/kernel.cu": ["bp_rowmajor_knl"]}
+}

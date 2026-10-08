@@ -563,6 +563,13 @@ __global__ void bp_knl(const CscActNodes csc_acts, const CscActNodes csc_prev,
  * oracle, two samples/updates, canaries and both matrix layouts. CPU block size
  * one, serial atomics and scalar reductions do not validate CUDA parallelism.
  * TRACE_TEST_ID: GSLIDE-BP-ROWMAJOR-CPU
+ * @par CPU composition G-SLIDE Sections 4.3/4.4, training infrastructure support.
+ * The task fixture connects selected CUDA bodies under host orchestration and
+ * checks independent dense arithmetic across two Adam updates/rebuilds.
+ * Host allocation, scans/filter traversal, bias correction and hidden-delta
+ * resets are explicit substitutes. It does not execute Network::train, native
+ * CUDA scheduling or production device ownership; Issue #43 tracks reset wiring.
+ * TRACE_TEST_ID: GSLIDE-HIDDEN-DELTA-STALE-CPU
  */
 __global__ void bp_rowmajor_knl(const CscActNodes csc_acts,
                                 const CscActNodes csc_prev,
@@ -819,6 +826,13 @@ __global__ void bp_first_layer_knl(const CscActNodes csc_acts,
  * update direction (label-minus-probability), state decay and a 35-element tail.
  * CUDA atomic/concurrent behavior and launch wiring remain unverified.
  * TRACE_TEST_ID: GSLIDE-ADAM-CPU
+ * @par CPU composition G-SLIDE Sections 4.3/4.4, training infrastructure support.
+ * The task fixture connects selected CUDA bodies under host orchestration and
+ * checks independent dense arithmetic across two Adam updates/rebuilds.
+ * Host allocation, scans/filter traversal, bias correction and hidden-delta
+ * resets are explicit substitutes. It does not execute Network::train, native
+ * CUDA scheduling or production device ownership; Issue #43 tracks reset wiring.
+ * TRACE_TEST_ID: GSLIDE-TRAINING-COMPOSITION-CPU
  */
 __global__ void update_weights_knl(float *d_weights, float *d_adam_ts,
                                    float *d_adam_moms, float *d_adam_vels,

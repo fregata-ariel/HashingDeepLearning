@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-TRAINING-COMPOSITION-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.3-4.4, LSH sparsification and sparse neural network computation",
+      "mechanism": "Connect sparse ReLU inputs, rebuilt WTA output index, candidate counting and label promotion, selected Softmax, backward gradients, and Adam weight and bias updates over two steps.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "update_weights_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_training_cpu.cpp",
+        "id": "GSLIDE-TRAINING-COMPOSITION-CPU"
+      },
+      "conditions": {
+        "suite": "training",
+        "dimensions": {"input": 3, "hidden": 4, "output": 4, "batch": 2},
+        "lsh": {"L": 3, "K": 2, "bin_size": 4, "buckets_per_table": 16, "bucket_capacity": 4, "threshold": 2},
+        "host_fixture_seed": 40,
+        "updates": 2,
+        "repetitions": 2,
+        "index_change": {"near_tie_node": 1, "initial_coordinates": [0.50, 0.49], "winner_swap": "hidden coordinate 0 to 2 after connected first Adam update", "changed_wta_addresses": 3, "regression": "skipping the second rebuild and retaining the old index fails; changed bucket membership, sizes and query lengths verified against independent oracle"},
+        "oracle": "independent dense scalar FP64 forward, selected probabilities, signed backward gradients and Adam moments/velocities/parameters; deterministic scalar WTA address and candidate count oracle",
+        "arithmetic_absolute_tolerance": 0.000003,
+        "parameter_absolute_tolerance": 0.000008,
+        "optimizer": {"BETA1": 0.9, "BETA2": 0.999, "EPS": 1e-8, "base_lr": 0.01},
+        "optimizer_config_review": "amazon.json and wikiLSHTC.json BETA1/BETA2 verified equal to maintained kernel constants; main.cu bias-corrected learning rate emulated on host",
+        "host_substitutions": ["owned allocations with RAII normal teardown; allocation lifetime requires hosted sanitizer validation", "dense hidden IDs and offsets", "deterministic permutation rotations", "prefix scans", "linked traversal and storage-order threshold filtering", "per-step hidden-delta reset", "index rebuild every update", "bias-corrected learning rate"],
+        "execution": "extracted actual CUDA bodies, block size 1, serial atomics, scalar reductions",
+        "gpu_validated": false
+      },
+      "note": "Support connects selected functions under test host orchestration; it does not execute Network::train, CUDA launches, Thrust or cuBLAS. Every intermediate activation/probability/delta and every gradient, weight, bias, moment, velocity and consumed accumulator is checked. Active sets are sparse; both absent-label insertion and existing-label count promotion are checked. A connected Adam near-tie rank swap changes three WTA addresses; rebuilt bucket membership and query lengths differ from the saved stale index. Historical natural-log WTA packing is retained. Per-step hidden-delta reset is an explicit test substitution: source review found constructor-only initialization and the companion stale-state test characterizes reuse. GPU reductions, races, scheduling, production reset wiring, native teardown and convergence remain pending."
+    },
+    {
+      "id": "GSLIDE-HIDDEN-DELTA-STALE-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.4, sparse backward computation (state-lifetime characterization)",
+      "mechanism": "Characterize accumulation of prior compressed hidden deltas when a second selected backward call receives positive hidden activations and an existing delta buffer.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "bp_rowmajor_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_training_cpu.cpp",
+        "id": "GSLIDE-HIDDEN-DELTA-STALE-CPU"
+      },
+      "conditions": {
+        "suite": "training",
+        "repro": "step 2 actual backward replays the preceding step's hidden-delta buffer using connected updated weights and newly computed Softmax deltas",
+        "oracle": "fresh dense scalar backward plus retained previous delta for positive ReLU activations; zero for closed gates",
+        "absolute_tolerance": 0.000003,
+        "required_stale_discrepancy": 0.001,
+        "source_review": ["Layer::Layer initializes d_cmprs_bp_deltas once", "ReluLayer::forward and Network::train contain no per-step hidden-delta reset", "bp_rowmajor_knl adds existing previous deltas for positive activations"],
+        "execution": "actual extracted body, serial block size 1; production Network::train unexecuted",
+        "gpu_validated": false
+      },
+      "note": "This entry records an observed state-lifetime gap and is not evidence of paper-required accumulation or a production fix. The two-step fixture observes stale-delta discrepancy 0.201329470 and independently verifies that it equals the retained prior buffer. The main composition resets hidden deltas explicitly on the host. A focused production follow-up must confirm native behavior and choose/reset the intended per-step lifetime."
+    }
+  ]
+}

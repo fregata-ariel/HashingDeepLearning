@@ -1,8 +1,8 @@
 # G-SLIDE: CPU-first validation checkpoint
 
 G-SLIDE can follow the repository's standard research integration process.
-The first milestone freezes the reference source and verifies selected kernel
-arithmetic and serial state on CPU. Full CUDA build/train/save/teardown remains
+G1 freezes the reference source; G2 extends selected kernel arithmetic and serial
+state checks into a composed two-update CPU training fixture. Full CUDA build/train/save/teardown remains
 pending. CPU emulation is the primary routine test; GPU environments are used
 only when the user makes them available, at milestones.
 
@@ -69,12 +69,47 @@ are invalidated before each invocation, including failed/interrupted runs.
 
 | Traceability ID | CPU evidence | Remaining boundary |
 | --- | --- | --- |
-| `GSLIDE-WTA-LSH-CPU` | Bin initialization, fixed-permutation WTA, insert/query/gather, partial tile, negative ties, packing alias | RNG, alternate hash kernels, bucket overflow/order and parallel insertion |
+| `GSLIDE-WTA-LSH-CPU` | Bin initialization, fixed-permutation WTA, insert/query/gather, partial tile, negative ties, packing alias | RNG, alternate hash kernels and parallel insertion; serial capacity/rebuild cases are covered separately below |
 | `GSLIDE-CANDIDATE-COUNT-CPU` | Linked collisions, duplicate frequencies, threshold crossings, labels, empty second table | Lock contention, memory fences, random padding, pool exhaustion and Thrust filtering |
 | `GSLIDE-SPARSE-FORWARD-CPU` | CSC active sets, column-major dot products, bias and ReLU across two samples | Adaptive kernel selection, cuBLAS dense path, shared-memory parallelism |
-| `GSLIDE-SOFTMAX-CPU` | Row-major dot products, probabilities, multi-label batch deltas and negative-shift regression | CUDA warp/block reductions and other Softmax variants |
-| `GSLIDE-SPARSE-GRADIENT-CPU` | Column-major first-layer gradients and bias accumulation | Deeper-layer deltas, parallel atomics and complete backward wiring |
-| `GSLIDE-ADAM-CPU` | Two updates, moments, velocity, signed parameter change, reset and tail bounds | Host bias correction, concurrent writers and complete optimizer wiring |
+| `GSLIDE-SOFTMAX-CPU` | Row-major dot products, probabilities, multi-label batch deltas and negative-shift regression | CUDA warp/block reductions; two additional variants are covered below |
+| `GSLIDE-SPARSE-GRADIENT-CPU` | Column-major first-layer gradients and bias accumulation | Parallel atomics and production backward wiring; deeper variants are covered below |
+| `GSLIDE-ADAM-CPU` | Two updates, moments, velocity, signed parameter change, reset and tail bounds | Concurrent writers and production optimizer wiring; host bias correction is checked in the composition below |
+
+## G2 combined coverage
+
+The default command runs five suites. Definition counts include the ten common
+bodies, so they overlap: sixteen distinct maintained CUDA definitions are selected.
+
+| Suite | Definitions | Independent CPU evidence |
+| --- | ---: | --- |
+| `baseline` | 10 | Six G1 arithmetic/state contracts listed above |
+| `backward` | 14 | Four deeper backward variants, both layouts, sparse IDs, activation gating, accumulation and two updates against dense oracles |
+| `softmax` | 12 | Three variants, 45 fixtures / 72 sample checks, empty inputs, bias, labels, batches and large negative shifts against FP64 expectations |
+| `candidates` | 10 | Collision counts, threshold/label filtering, sample isolation, bounded ring overwrite and stale versus rebuilt memberships |
+| `training` | 11 | Two connected ReLU/selection/Softmax/backward/Adam/rebuild updates, repeated deterministically against a dense FP64 oracle |
+
+Task details: [Softmax](../../docs/g-slide/softmax.md),
+[candidates](../../docs/g-slide/candidates.md), and
+[training](../../docs/g-slide/training.md). Eleven new fragment records join the
+six baseline G-SLIDE records. The combined repository ledger has 48 experiments;
+the native documentation audit covers 38 entries.
+
+The training fixture observes loss `1.14521666 -> 0.890611627` and maximum
+absolute arithmetic error `8.83802084e-8`. Its first actual Adam update flips a
+near-tie WTA winner, changing three addresses. Removing the rebuild fails the
+fixture. These are fixture observations, not paper accuracy/performance results.
+Removing the maintained negative-logit maximum fix also fails the Softmax checks.
+
+The composition explicitly resets hidden deltas on the host. Replaying the
+actual backward body with stale deltas produces maximum discrepancy
+`0.20132947`; production per-step reset wiring needs native confirmation and
+repair in [Issue #43](https://github.com/fregata-ariel/HashingDeepLearning/issues/43).
+Within-step accumulation remains intentional. Host scans, table construction,
+scalar reductions and RAII teardown do not establish CUDA scheduling or ownership.
+
+Combined five-suite plain and ASan/UBSan gates, archive identities, ledger and
+code contracts passed in [PR #48 CI](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/37708385020).
 
 This is a restricted serial adapter, not a general CUDA simulator. Shared
 memory kernels run with one thread per block; barriers assert that restriction.
@@ -96,10 +131,11 @@ completion gate.
 
 ## Next milestones
 
-Continue CPU coverage with independently expected values for remaining sparse
-backward and kernel variants, then compose a tiny deterministic training
-fixture. Keep the full production CUDA baseline pending until GPU access is
-provided; a CPU fixture must not be presented as `Network::train` execution.
+G2's selected CPU coverage and composed training fixture are complete. The next
+milestone is G3 when GPU access is provided. Alternate hash/shared-memory bodies,
+adaptive dispatch and production CUDA execution remain pending; the CPU fixture
+does not execute `Network::train`. The durable task/PR checkpoints are in
+[the orchestration record](../../docs/GSLIDE_ORCHESTRATION.md).
 
 When an infrequent Hugging Face or Colab session is available, collect the
 exact commit, `nvidia-smi`, `nvcc --version`, architecture and build log first.
@@ -115,6 +151,8 @@ Modern toolkit compatibility is unverified.
 4. Run one deterministic train/update/rebuild/save/teardown fixture with
    observable parameter changes; use Compute Sanitizer for device memory,
    race and synchronization diagnostics where supported.
+   Confirm and repair the per-step hidden-delta reset tracked in #43, preserving
+   accumulation within a step and handling changed active sets.
 5. Investigate CUDA ownership, including the apparent omission of
    `d_rand_node_keys`/`d_rand_nodes` from `LSH::~LSH`; this is source inspection,
    not a confirmed runtime leak. Record fixes only with evidence.

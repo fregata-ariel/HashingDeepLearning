@@ -21,9 +21,8 @@ Acceptance:
   hosted plain + ASan/UBSan CPU gate pass;
 - current 31-file Python typing gate remains green.
 
-Implementation is present at this checkpoint. Close the milestone only after
-the exact committed revision passes hosted CI. It does not close the full
-production CUDA execution baseline.
+G1 parent Issue #32 is complete at `1e26e1326deedbe05760c700fd6324799fc07079`,
+with hosted gates passed. This does not close the full production CUDA baseline.
 
 ## G2 — Broader CPU coverage and composed training fixture
 
@@ -45,6 +44,13 @@ Acceptance:
 Potential capacity, ownership and synchronization findings become focused
 regressions only when reproduced. Parallel-only questions stay in G3.
 
+The five CPU suites and task PRs #41, #42, #44, #45, #46 and #48 are integrated.
+The full combined scope passed plain and ASan/UBSan in
+[run 37708385020](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/37708385020).
+Closeout Issue #47 records the final documentation gate and merge; parent #33
+is the durable G2 status. CPU composition supplies explicit host resets/scans;
+production hidden-delta reset is the separate G3 finding #43.
+
 ## G3 — Native CUDA checkpoint on an available GPU
 
 Goal: complete the real production build/execution baseline and compare native
@@ -61,6 +67,8 @@ Acceptance:
   contention/ordering, overflow and bounded pool behavior;
 - deterministic one-batch forward/backward/Adam/rebuild/save/teardown through
   the maintained production path, with observable parameter changes;
+- confirm and repair per-step hidden-delta resets in Issue #43 while retaining
+  within-step accumulation and checking changed active sets;
 - device memory/race/synchronization diagnostics where supported, and
   investigation of CUDA allocation/free ownership;
 - archived small fixtures/logs and precise passed/skipped/pending boundaries.
@@ -72,6 +80,9 @@ to scope after G3; they are not acceptance criteria for these CPU-first stages.
 
 Baseline before this addition: `602687f5a26720faf69ff65abf11dee7c6abefae`
 on `research/lsh-lineage-vendor` (research guide and seven-workflow cleanup).
-After G1 CI verification, G2 is the next work that can proceed without GPU
-access. The detailed source/test limits and G3 checklist live in
-`ports/g-slide/CPU_VALIDATION.md`.
+G1 starts at `1e26e1326deedbe05760c700fd6324799fc07079`; G2 training integration
+is `72f3a79096b411afe938f02db8b84da78f539cc5`. Read Issue #47 / parent #33
+for the final closeout revision before resuming. G3 parent #34 and Issue #43
+remain pending GPU access. Source/test limits and the G3 checklist live in
+`ports/g-slide/CPU_VALIDATION.md`; task ownership and merge history are in
+`docs/GSLIDE_ORCHESTRATION.md`.

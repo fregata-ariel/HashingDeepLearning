@@ -831,7 +831,7 @@
         "gpu_execution": "pending",
         "parallel_memory_order": "not checked"
       },
-      "note": "Serial atomics do not validate GPU contention or floating-point accumulation order; deeper-layer backward kernels remain pending."
+      "note": "This baseline covers first-layer gradients. Four deeper backward variants are registered separately in papers/traceability/gslide-backward.json. Serial atomics do not validate GPU contention or floating-point accumulation order; production backward/reset wiring remains pending."
     },
     {
       "id": "GSLIDE-ADAM-CPU",

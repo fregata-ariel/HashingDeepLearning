@@ -62,7 +62,11 @@ not claim reproduction of the historical CUDA/APEX throughput results.
 
 G-SLIDE now has CPU-first serial emulation of selected actual CUDA bodies,
 independent arithmetic/state oracles, an exact upstream archive check and
-ASan/UBSan checks in traceability CI. Full CUDA compilation, production
+ASan/UBSan checks in traceability CI. G2 extends this into five suites: baseline,
+deeper backward variants, Softmax variants, candidates/rebuild and a composed
+two-update training fixture. All five pass hosted plain and ASan/UBSan checks.
+Production hidden-delta reset is tracked separately in Issue #43.
+Full CUDA compilation, production
 train/save/teardown and parallel GPU execution remain pending. See
 [the coverage checkpoint](g-slide/CPU_VALIDATION.md) for precise boundaries.
 

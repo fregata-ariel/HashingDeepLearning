@@ -150,3 +150,13 @@ are explicit. `LSH::fastfill` is a support defect characterization, not a parity
 success: it omits table contents and leaks temporary allocations (repair #66).
 [Contract](../ports/magicpig/LSH_CPU_CONTRACT.md) records supported preconditions
 and borrowed-view lifetime; actual Torch ABI and OpenMP are unverified.
+
+## Probability/domain support (#57)
+
+`transform_kernel` maps as support to §4.3 Equations9–11: exhaustive independent
+bit outcomes and FP64 positive-binomial inclusion verify two-table sampling
+math, then compare actual +1e-4 regularized correction. Finite ratio-estimator
+bias is explicitly synthetic/conditional-on-nonempty, not a geometric candidate
+independence or unbiased-attention claim. Endpoint/invalid-domain and tiny
+inclusion behavior is characterized; repairs #67/#68 remain open.
+[Contract](../ports/magicpig/PROBABILITY_VALIDATION.md) records ranges/tolerances.

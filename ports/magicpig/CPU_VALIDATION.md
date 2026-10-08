@@ -153,3 +153,21 @@ record `not_checked`. Fastfill remains unsupported under [repair #66](https://gi
 not a passing alternative fill. Source arithmetic and immutable archive remain
 unchanged. Default portable suites at this checkpoint are baseline, simhash
 and lsh_retrieval; probability integrates separately in #57.
+
+## Probability/domain checkpoint (#57)
+
+`probability` executes the unchanged transform body with independent exhaustive
+bit/table outcomes and FP64 positive-binomial sums: 15108 states,141 corrections,
+14 domain cases and670 assertions. [Contract](PROBABILITY_VALIDATION.md) gives
+conditioned error budgets, endpoint/zero-norm/invalid-parameter characterization
+and a finite self-normalized bias example scoped to synthetic independent
+candidate processes. +1e-4 is a source variant; tiny-inclusion cancellation and
+input-domain checks remain repairs #68/#67, not claims of exact/unbiased output.
+Default portable suites are now baseline,simhash,lsh_retrieval,probability.
+Actual native modes remain capability-gated; Python adapters remain outside
+native sanitizer claims. GPU/full-extension/model execution is still unverified.
+
+#55/#56/#57 are scoped mechanism verification with explicit follow-up defects;
+#58 sparse-attention/BF16/Softmax coverage is the next dependent task. It must
+respect these tested domains and track repairs separately rather than treating
+characterized invalid/unstable behavior as production correctness.

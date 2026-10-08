@@ -182,7 +182,14 @@ void qk_kernel_full(
  * finite, cosine in [-1,1], sqrt_dim positive, K positive and L at least two.
  * Mutates borrowed scores; the released +1e-4 regularizer is a variant.
  * Selected-body CPU bootstrap calls this unchanged arithmetic before Softmax;
- * exhaustive probability/domain characterization remains Issue #57.
+ * Independent exhaustive bit/table events and FP64 binomial mass characterize
+ * +1e-4 smoothing and finite self-normalized bias, not an unbiased attention
+ * estimator. Cosine outside [-1,1] or zero norms produces NaN; K/L/scaling
+ * are unvalidated (Issue #67). Tiny inclusion probabilities suffer FP32
+ * cancellation (Issue #68); both repairs are separate from characterization.
+ * @par Traceability relation
+ * Support: probability/domain characterization;
+ * TRACE_TEST_ID: MAGICPIG-PROBABILITY-CPU.
  */
 void transform_kernel(
 float *score, 

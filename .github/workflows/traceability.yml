@@ -23,6 +23,28 @@ on:
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
       - ".github/workflows/traceability.yml"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "papers/**"
+      - "tools/validate_traceability.py"
+      - "tools/audit_traceability_docs.py"
+      - "tools/check_gslide_cpu.py"
+      - "third_party/g-slide/**"
+      - "ports/g-slide/**"
+      - "SOURCE_MANIFEST.tsv"
+      - "tests/traceability/**"
+      - "ports/slide-original/SLIDE/LSH.*"
+      - "ports/slide-original/SLIDE/Bucket.*"
+      - "ports/slide-original/SLIDE/*.cpp"
+      - "ports/slide-original/SLIDE/*.h"
+      - "ports/slide-optimized-avx512/SLIDE/*.cpp"
+      - "ports/slide-optimized-avx512/SLIDE/*.h"
+      - "ports/mongoose/lsh_lib/LSH.*"
+      - "ports/mongoose/lsh_lib/clsh.pyx"
+      - "ports/mongoose/lsh_lib/clsh.pyi"
+      - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
+      - ".github/workflows/traceability.yml"
   workflow_dispatch:
 
 jobs:

@@ -8,6 +8,12 @@ on:
       - ".github/workflows/ports-sanitizers.yml"
       - "ports/slide-original/**"
       - "ports/slide-optimized-avx512/**"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - ".github/workflows/ports-sanitizers.yml"
+      - "ports/slide-original/**"
+      - "ports/slide-optimized-avx512/**"
   workflow_dispatch:
 
 jobs:

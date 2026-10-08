@@ -9,6 +9,14 @@ on:
       - "ports/slide-optimized-avx512/SLIDE/Layer.cpp"
       - "ports/slide-optimized-avx512/SLIDE/Bfloat16.h"
       - ".github/workflows/hardware-oracles.yml"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "tests/traceability/test_optimized_avx_*.cpp"
+      - "tests/traceability/test_bfloat16_native.cpp"
+      - "ports/slide-optimized-avx512/SLIDE/Layer.cpp"
+      - "ports/slide-optimized-avx512/SLIDE/Bfloat16.h"
+      - ".github/workflows/hardware-oracles.yml"
   workflow_dispatch:
 
 jobs:

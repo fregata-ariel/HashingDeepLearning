@@ -15,6 +15,20 @@ on:
       - "tools/audit_traceability_docs.py"
       - "tests/traceability/test_slide_python_examples.py"
       - ".github/workflows/python-typing.yml"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "mypy.ini"
+      - "ports/**/*.py"
+      - "ports/mongoose/lsh_lib/clsh.pyi"
+      - "typings/**"
+      - "papers/traceability.json"
+      - "tools/audit_python_annotations.py"
+      - "tools/check_reformer_attention_types.py"
+      - "tools/validate_traceability.py"
+      - "tools/audit_traceability_docs.py"
+      - "tests/traceability/test_slide_python_examples.py"
+      - ".github/workflows/python-typing.yml"
   workflow_dispatch:
 
 jobs:

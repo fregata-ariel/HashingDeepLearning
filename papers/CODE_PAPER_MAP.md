@@ -120,6 +120,15 @@ Torch/FBGEMM linkage and GPU execution remain pending. Details and tolerances:
 [CPU contract](../ports/magicpig/CPU_VALIDATION.md). Remaining mappings and task
 dependencies: [integration record](../docs/MAGICPIG_INTEGRATION.md).
 
+### SimHash/centering support (#55)
+
+Selected immutable `LSHSparseAttnServer` packing/fill/decode AST statements map
+as support to §4.3 angular hashing and empirical centering. Literal independent
+projection/code expectations and integer enumeration cover 4094 codes K1..11.
+The FP64 list adapter does not validate native Torch/BF16/GPU execution. Equation
+8 augmentation is not claimed. [Contract](../docs/MAGICPIG_SIMHASH_CPU.md);
+packing outside the exact domain is tracked in repair #65.
+
 ## Annotation conventions
 
 1. C/C++ functions use Doxygen `/** ... */` blocks with `@par Paper mapping`,

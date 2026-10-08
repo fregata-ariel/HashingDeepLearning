@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-SIMHASH-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 angular LSH; Section 5.1 implementation choice omitting Equation 8 augmented MIPS",
+      "mechanism": "Fixed projection SimHash, little-endian bit packing and empirical offloaded-mean key centering from actual pinned Python statement blocks.",
+      "relation": "support",
+      "implementation": {
+        "file": "third_party/magicpig/models/attnserver.py",
+        "symbol": "fill"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_simhash_cpu.py",
+        "id": "MAGICPIG-SIMHASH-CPU"
+      },
+      "conditions": {
+        "execution": "AST-selected archived packing/fill/decode assignments execute on explicit restricted CPU list-tensor adapter",
+        "blocks": [
+          "packing",
+          "centering",
+          "fill_hash",
+          "decode_hash",
+          "append_centering"
+        ],
+        "seed": "fixed literal projections and synthetic keys, no RNG",
+        "oracle": "Independent literal dot/sign/code tables; dense FP64 attention before and after common translation; integer bit-code enumeration",
+        "ordering": "K/L=(3,2),(2,3), two KV heads and two query batches, strict-positive zero ties, repeated runs and partial chunk",
+        "centering": "offloaded-key mean also subtracted from retained sink/local and newly appended keys; two heads and two append batches",
+        "packing": "4094 exact bit codes across K=1..11; all-one K12..15 examples lose exactness in binary16; K15 rounded 32768 exceeds positive int16",
+        "adapter_arithmetic": "FP64 projection/mean/norm; struct binary16 sum rounding; only nonnegative in-range int16 casts",
+        "gpu_execution": "postponed",
+        "torch_runtime": "not executed"
+      },
+      "note": "Support characterization of actual pinned assignment blocks, not the full attention server or GPU/PyTorch BF16 rounding. Empirical mean-centering is not Equation 8 augmented MIPS. Packing loss is documented without repairing immutable historical behavior; zero-norm queries and empty offload ranges are outside this fixture."
+    }
+  ]
+}

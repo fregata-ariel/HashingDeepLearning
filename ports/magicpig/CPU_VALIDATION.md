@@ -1,4 +1,4 @@
-# MagicPIG CPU validation contract (#54)
+# MagicPIG CPU validation contract
 
 The maintained source starts from selected v0.2 commit
 `ac9aa36c866330ca6ad2ce342a7848d7df6f49bb`. Numerical tests extract actual
@@ -97,8 +97,9 @@ Each task owns a uniquely named JSON descriptor in
 `papers/traceability/magicpig-<task>.json`. Descriptor keys are `name`,
 `test_file`, `definitions` and optional `adapter_file`; name matches filename.
 Fixtures stay under `tests/traceability/`. Definitions select unique symbols
-from approved maintained LSH/sparse-attention sources. The extractor currently
-supports `void`, `int` and `__m512` definitions; root owns necessary extensions.
+from approved maintained LSH/sparse-attention sources. The extractor supports `void`, `int`, `__m512`, `torch::Tensor`, qualified
+constructors/destructors and static-inline helpers. Optional `native_avx512`
+enrolls an independently gated native suite; root owns shared extensions.
 Root also integrates overlapping native annotations and shared driver changes.
 
 Every MagicPIG ledger ID ending `-CPU` must map to an enrolled fixture; every
@@ -110,3 +111,25 @@ oracles and adapters must not copy the production formula as their expectation.
 #55, #56 and #57 may proceed in separate branches after #54 merges. #58 still
 requires #57; later cache/composition/typing tasks follow the integration graph.
 Actual GPU work remains explicitly postponed.
+
+## SimHash and centering checkpoint (#55)
+
+The separate `magicpig_python_suites/simhash.json` descriptor executes actual
+archived AST blocks through the stdlib-only list-tensor fixture. The five blocks
+cover packing, fill centering/hash, query normalization/hash and append centering.
+Independent literal ordering/tie tests and 4094 integer codes K1..11 pass; common
+key translation preserves dense FP64 attention, with distinct batch means.
+[The contract](../../docs/MAGICPIG_SIMHASH_CPU.md) records FP64/BF16/Torch
+substitutions and [packing defect #65](https://github.com/fregata-ariel/HashingDeepLearning/issues/65).
+
+Python descriptors require name/test_file/source_file/class_name/blocks; source
+and class are explicitly approved. Root reconstructs the recorded AST statement
+hashes against the pinned source, records fixture/descriptor hashes and enforces
+ledger enrollment. Python adapter execution is not an ASan/UBSan native test;
+it is recorded as `not_applicable_python_adapter` in both plain/sanitized runs.
+Default execution includes enrolled C++ and Python suites; focused `--suite`
+selection covers both. Maintained production Python inventory remains 31 files.
+
+The driver also supplies isolated expected-defect probe validation for future
+LSH enrollment: exact wrong-result marker, fatal sanitizer outcome, allocation
+site and count must match. Generic crashes or other UB do not satisfy it.

@@ -1,0 +1,13 @@
+{
+  "name": "simhash",
+  "test_file": "tests/traceability/test_magicpig_simhash_cpu.py",
+  "source_file": "third_party/magicpig/models/attnserver.py",
+  "class_name": "LSHSparseAttnServer",
+  "blocks": [
+    "packing",
+    "centering",
+    "fill_hash",
+    "decode_hash",
+    "append_centering"
+  ]
+}

@@ -19,6 +19,16 @@ struct GPUMultiLinkedHashTable {
 
     filter(int threshold) : threshold(threshold) {}
 
+/**
+ * @brief Keep candidates whose frequency reaches the configured threshold.
+ * @par Paper mapping G-SLIDE Section 4.3, candidate collection/filtering.
+ * @par Ownership Count passed by value; predicate neither allocates nor mutates
+ * storage. Caller owns the surrounding scan/copy and table lifetime.
+ * @par Traceability relation Direct threshold predicate: CPU tests exercise
+ * below/at/above threshold, sample isolation, labels and bounded ring results.
+ * Host scan/copy traversal substitutes for Thrust; GPU execution is pending.
+ * TRACE_TEST_ID: GSLIDE-CANDIDATE-FILTER-CPU
+ */
     __device__ bool operator()(const int cnt) { return cnt >= threshold; }
   };
 

@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-CANDIDATE-FILTER-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.3; assistant data structures and candidate filtering",
+      "mechanism": "Per-sample frequency cutoff, label promotion and active-set materialization with the maintained predicate.",
+      "relation": "direct",
+      "implementation": {
+        "file": "ports/g-slide/include/GPUMultiLinkedHashTable.h",
+        "symbol": "operator()"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_candidates_cpu.cpp",
+        "id": "GSLIDE-CANDIDATE-FILTER-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial execution of selected maintained CUDA bodies and actual header predicate",
+        "shared_kernel_threads_per_block": 1,
+        "threshold": 2,
+        "samples": 3,
+        "linked_buckets_per_sample": 1,
+        "overflow_pool_capacity_per_sample": 12,
+        "oracle": "Independent frequency maps, filtered sets and explicit sample offsets before and after repeated label promotion; fresh query table and empty sample.",
+        "scan_and_copy": "Host prefix scan and serial copy/filter traversal adapters; Thrust execution pending",
+        "allocation_and_reset": "Host arrays and independently recreated OwnedTable; CUDA init_tbls/cudaMemset pending",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "The maintained filter operator tests cnt >= threshold below/at/above cutoff. Actual d_block_reduce_cnt and nonrandom d_activate_labels_seq run with ample capacity before insertion. Serial chain order is checked independently of active-set membership; GPU insertion order, lock contention, fences, random padding, pool exhaustion and production get_act_nodes remain untested."
+    },
+    {
+      "id": "GSLIDE-INDEX-REBUILD-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.3; Figure 6 and hash-table maintenance",
+      "mechanism": "WTA index snapshots remain stale after an explicit parameter change until zeroed bucket counts and hash insertion recompute addresses.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/g-slide/src/lshKnl.cu",
+        "symbol": "init_hash_no_sw_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_candidates_cpu.cpp",
+        "id": "GSLIDE-INDEX-REBUILD-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial execution of maintained insertion/query/gather bodies",
+        "shared_kernel_threads_per_block": 1,
+        "input_dimension": 8,
+        "nodes": 3,
+        "tables": 3,
+        "K": 2,
+        "tables_per_tile": 2,
+        "bucket_capacity": 3,
+        "oracle": "Explicit before/after bucket addresses, physical payloads, query lengths, CSC offsets and gathered candidates after moving node 0's maximum from dimension 0 to 2.",
+        "parameter_change": "Direct host fixture mutation; optimizer execution not claimed",
+        "scan_and_reset": "Host offsets and bucket/count reset adapters; CUDA/Thrust lifecycle and LSH rebuild scheduling pending",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Preserves floor(ln(8))=2 packing and the released (0,4)/(1,0) alias rather than paper ceil(log2) concatenation. Explicit addresses independently verify rebuild results and stale pre-rebuild membership. Alternate init_hash_tt_knl/init_hash_knl are outside this suite: their int smem declarations conflict with the existing char shared-memory adapter."
+    },
+    {
+      "id": "GSLIDE-BUCKET-RING-CPU",
+      "paper": "g-slide-2022",
+      "paper_location": "Section 4.3; bounded candidate-bucket storage (implementation support)",
+      "mechanism": "Safe bounded-ring bucket overwrite, unclamped insertion counts, query count clamping and downstream frequency filtering.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/lshKnl.cu",
+        "symbol": "init_hash_no_sw_knl"
+      },
+      "test": {
+        "file": "tests/traceability/test_gslide_candidates_cpu.cpp",
+        "id": "GSLIDE-BUCKET-RING-CPU"
+      },
+      "conditions": {
+        "execution": "CPU serial execution of maintained hash/query/gather/count bodies and actual filter predicate",
+        "shared_kernel_threads_per_block": 1,
+        "nodes": 5,
+        "tables": 3,
+        "bucket_capacity": 2,
+        "maximum_insertions_into_one_bucket": 4,
+        "samples": 3,
+        "oracle": "Explicit ring payloads and insertion counts at every address, guarded bucket allocation, clamped query lengths, host scan offsets, gathered lists, frequency maps and filtered sets including an empty query.",
+        "scan_and_copy": "Host prefix scan and serial copy/filter traversal adapters; Thrust execution pending",
+        "gpu_execution": "pending",
+        "parallel_memory_order": "not checked"
+      },
+      "note": "Bounded bucket overflow is safe modulo-capacity behavior, distinct from linked overflow-pool exhaustion which is never provoked. Expected retained nodes use CPU serial insertion order; GPU concurrent writes can retain a different subset and remain pending. This is implementation support rather than a claim that the paper specifies these exact ring payloads. Natural-log packing remains unchanged."
+    }
+  ]
+}

@@ -14,7 +14,17 @@ MARKER = "TRACE_TEST_ID:"
 
 def load() -> dict[str, Any]:
     with LEDGER.open(encoding="utf-8") as f:
-        return json.load(f)
+        data = json.load(f)
+    if not isinstance(data, dict) or not isinstance(data.get("experiments"), list):
+        raise ValueError("root ledger needs an experiment list")
+    # Independent task PRs own independent fragments. The emitted artifact
+    # includes the fully merged ledger; validate() still rejects duplicate IDs.
+    for path in sorted((ROOT / "papers/traceability").glob("*.json")):
+        fragment = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(fragment, dict) or set(fragment) != {"schema_version", "experiments"} or fragment["schema_version"] != 1 or not isinstance(fragment["experiments"], list):
+            raise ValueError(f"invalid experiment fragment: {path}")
+        data["experiments"].extend(fragment["experiments"])
+    return data
 
 def digest(path: Path) -> str:
     h = hashlib.sha256()

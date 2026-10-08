@@ -138,10 +138,13 @@ For each relevant function/class:
   `papers/magicpig-upstream-manifest.tsv`; the source pin is
   `papers/magicpig-source-pin.json`.
 - Root license: Apache-2.0. Selected FBGEMM/cpuinfo BSD licenses are preserved.
-- Maintained baseline: four unchanged native files under `ports/magicpig/`.
-- Source identity gate only: build, numerical runtime, GPU and model benchmark
-  execution are pending. Native source/include closure does not establish
-  cpuinfo/Torch link closure. CPU tests are the next step; GPU tests postponed.
+- Maintained baseline: four native files under `ports/magicpig/`; #54 adds
+  numerical support contracts without changing their arithmetic.
+- Selected-body CPU baseline: portable correction/Softmax with independent FP64
+  expectations, optional actual AVX-512 polynomial and BF16 QK tile tests.
+  [Coverage and substitutions](../ports/magicpig/CPU_VALIDATION.md) are explicit.
+- Full extension, cpuinfo/Torch link/ABI closure, model benchmarks and GPU
+  execution remain unverified; actual GPU tests are postponed.
 
 Source choice, paper/code intake relations, dependency obligations and recovery
 tasks: [MagicPIG integration record](../docs/MAGICPIG_INTEGRATION.md).

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-BASELINE-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 Equations 9-11; Section 4.4 attention support",
+      "mechanism": "Selected probability-correction and Softmax bodies against dense FP64 expectations on supplied subsets.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "softmax_kernel"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_cpu_baseline.cpp",
+        "id": "MAGICPIG-BASELINE-CPU"
+      },
+      "conditions": {
+        "execution": "portable software FP32 lanes, optional native AVX512F/FMA selected-body execution",
+        "cases": 42,
+        "candidate_checks": 684,
+        "seed": "fixed literal deterministic fixture, no RNG",
+        "oracle": "Independent dense FP64 Q/K/V math; binomial sum for at-least-two-hit probability, source regularizer +1e-4, normalization and host weighted output.",
+        "qk_wv": "host substitutes, not selected native kernels",
+        "portable_exponential": "host std::exp(float) replaces native polynomial",
+        "native_exponential": "actual polynomial and constants extracted and hashed; finite moderate shifted logits only",
+        "native_capabilities": "AVX512F and FMA plus confirmed GCC identity; parent CPU/OS probe precedes native binary",
+        "normalizer": "base-2 log-sum-exp",
+        "gpu_execution": "postponed",
+        "torch_extension": "not built"
+      },
+      "note": "Bootstrap support contract, not complete sampling/attention coverage. Actual transform and Softmax execute; supplied candidates and host QK/WV do not validate LSH or production dispatch. Portable and polynomial approximation tolerances are distinct."
+    },
+    {
+      "id": "MAGICPIG-BF16-SELECTED-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Sections 4.3 and 4.4; implementation-specific BF16 arithmetic support",
+      "mechanism": "Actual selected BF16 QK body on one complete tile against independently computed dense dots.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "qk_kernel_bf16_impl"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_bf16_cpu.cpp",
+        "id": "MAGICPIG-BF16-SELECTED-CPU"
+      },
+      "conditions": {
+        "execution": "capability-gated native CPU body",
+        "capabilities": "AVX512F, AVX512BW, AVX512BF16 and GCC >= 11 confirmed before execution",
+        "rows": 16,
+        "head_dim": 32,
+        "oracle": "Dense FP64 dots of fixed exactly BF16-representable operands, unsorted row IDs and canaries; absolute tolerance 1e-6.",
+        "storage_adapter": "uint16_t alias matching archived FBGEMM Types.h; FBGEMM/Torch runtime unexecuted",
+        "unsupported_cpu": "explicit skip, not numerical pass",
+        "gpu_execution": "postponed"
+      },
+      "note": "Restricted full-tile fixture, not arbitrary tails/dimensions, BF16 conversion validation, full server dispatch or extension ABI/link validation."
+    }
+  ]
+}

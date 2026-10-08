@@ -66,6 +66,19 @@ const int nnz)
   }
 }
 #ifdef __AVX512BF16__
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: BF16 dot-product support.
+ * @par Implementation note
+ * Borrowed keys/query use uint16_t BF16 storage; caller owns all buffers.
+ * The bootstrap verifies one full tile: nnz=16, HEAD_DIM=32, valid row IDs,
+ * capacity for 16 scores. Generic padded tails and dimensions are pending.
+ * Native execution requires AVX512F/BW/BF16 and GCC >=11, checked before the
+ * SIMD binary starts. Storage alias replaces the FBGEMM header only; no
+ * Torch/FBGEMM extension or conversion/dispatch/ownership claim is made.
+ * @par Traceability relation
+ * Support: actual restricted native body; TRACE_TEST_ID: MAGICPIG-BF16-SELECTED-CPU.
+ */
 void qk_kernel_bf16_impl(
 const bfloat16 *key, 
 const int *ind,
@@ -161,6 +174,16 @@ void qk_kernel_full(
 
 
 
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Section 4.3 Equations 9-11: probability correction.
+ * @par Implementation note
+ * score and indices contain nnz valid entries; norms must be positive and
+ * finite, cosine in [-1,1], sqrt_dim positive, K positive and L at least two.
+ * Mutates borrowed scores; the released +1e-4 regularizer is a variant.
+ * Selected-body CPU bootstrap calls this unchanged arithmetic before Softmax;
+ * exhaustive probability/domain characterization remains Issue #57.
+ */
 void transform_kernel(
 float *score, 
 const int nnz,
@@ -183,6 +206,20 @@ const int *indices) {
     }
 }
 
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: normalized attention support.
+ * @par Implementation note
+ * Borrowed score buffer has nnz finite logits and nnz must be positive.
+ * Mutates scores to probabilities; max_value[0] is the base-2 maximum and
+ * expsum[0] is base-2 log-sum-exp, not a raw sum. Buffers remain caller-owned.
+ * CPU fixture uses host QK/WV; portable SIMD lanes replace polynomial exp
+ * with host exp. Native AVX512F/FMA runs the actual polynomial on bounded
+ * shifted logits with a separate approximation tolerance. No Torch extension,
+ * LSH sampling, OpenMP scheduling or GPU execution is inferred.
+ * @par Traceability relation
+ * Support: selected arithmetic bootstrap; TRACE_TEST_ID: MAGICPIG-BASELINE-CPU.
+ */
 void softmax_kernel(
 float *score, 
 const int nnz,

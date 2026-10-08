@@ -9,7 +9,7 @@ from typing import Any
 from validate_traceability import load
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCUMENTED_SUFFIXES = {".cpp", ".h", ".pyx", ".cu", ".cuh"}
+DOCUMENTED_SUFFIXES = {".cpp", ".cc", ".h", ".pyx", ".cu", ".cuh"}
 
 
 def _load() -> dict[str, Any]:

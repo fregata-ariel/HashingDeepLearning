@@ -1,0 +1,7 @@
+{
+  "name": "bf16_tile",
+  "test_file": "tests/traceability/test_magicpig_bf16_cpu.cpp",
+  "definitions": {
+    "library/sparse_attention/sparse_attention.cc": ["qk_kernel_bf16_impl"]
+  }
+}

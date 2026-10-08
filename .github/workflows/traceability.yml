@@ -9,6 +9,7 @@ on:
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
+      - "tools/check_magicpig_cpu.py"
       - "third_party/magicpig/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
@@ -34,6 +35,7 @@ on:
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
+      - "tools/check_magicpig_cpu.py"
       - "third_party/magicpig/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
@@ -85,6 +87,13 @@ jobs:
         run: |
           python3 tests/traceability/test_magicpig_source_contracts.py
           python3 tools/check_magicpig_sources.py --emit-dir traceability-artifact/magicpig-source
+
+      - name: MagicPIG portable CPU oracles and capability-gated native bodies
+        run: |
+          python3 tests/traceability/test_magicpig_capabilities.py
+          python3 tests/traceability/test_magicpig_cpu_contracts.py
+          python3 tools/check_magicpig_cpu.py --native --build-dir traceability-artifact/magicpig-cpu/plain
+          python3 tools/check_magicpig_cpu.py --native --sanitize --build-dir traceability-artifact/magicpig-cpu/sanitized
 
       - name: G-SLIDE CPU serial CUDA-body oracles and sanitizers
         run: |

@@ -5,7 +5,16 @@ on:
     branches:
       - research/lsh-lineage-vendor
     paths:
-      - "ports/**"
+      - "ports/slide-original/**"
+      - "ports/slide-optimized-avx512/**"
+      - "tests/traceability/test_slide_*.cpp"
+      - "tests/traceability/test_optimized_*.cpp"
+      - ".github/workflows/ports-smoke.yml"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "ports/slide-original/**"
+      - "ports/slide-optimized-avx512/**"
       - "tests/traceability/test_slide_*.cpp"
       - "tests/traceability/test_optimized_*.cpp"
       - ".github/workflows/ports-smoke.yml"

@@ -8,6 +8,12 @@ on:
       - "ports/mongoose/**"
       - "tests/traceability/test_mongoose_*.py"
       - ".github/workflows/mongoose-reformer-smoke.yml"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "ports/mongoose/**"
+      - "tests/traceability/test_mongoose_*.py"
+      - ".github/workflows/mongoose-reformer-smoke.yml"
   workflow_dispatch:
 
 jobs:

@@ -8,6 +8,13 @@ on:
       - "tests/traceability/test_mongoose_native_lsh.cpp"
       - "tests/traceability/test_mongoose_cython_lsh.py"
       - ".github/workflows/mongoose-native.yml"
+  pull_request:
+    branches: [research/lsh-lineage-vendor]
+    paths:
+      - "ports/mongoose/lsh_lib/**"
+      - "tests/traceability/test_mongoose_native_lsh.cpp"
+      - "tests/traceability/test_mongoose_cython_lsh.py"
+      - ".github/workflows/mongoose-native.yml"
   workflow_dispatch:
 
 jobs:

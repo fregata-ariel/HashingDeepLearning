@@ -86,12 +86,20 @@ Examples:
 Avoid `push` with no path filter unless the workflow truly protects the entire
 repository.
 
-The current seven workflows use path-filtered pushes to
-`research/lsh-lineage-vendor` plus `workflow_dispatch`; they do not currently
-declare `pull_request` triggers. When this work is moved to another branch
+The current seven workflows use path-filtered pushes and pull requests targeting
+`research/lsh-lineage-vendor`, plus `workflow_dispatch`. Task branches are
+validated through their PRs before integration. SLIDE smoke paths cover only
+the two SLIDE ports, so a G-SLIDE-only change does not launch Intel containers.
+When this work is moved to another branch
 or repository, update branch filters and decide which checks must run on PRs.
 Preserving a workflow file without updating those filters does not establish
 CI coverage for the new destination.
+
+For PR checks, the default checkout tests the merge candidate; its SHA may
+differ from the task branch HEAD. Record both in the task's PR. Review the
+checks relevant to changed paths; a workflow not triggered by path scope is
+not a numerical test pass. Keep hardware-based skips separate from execution
+success. See `docs/GSLIDE_ORCHESTRATION.md` for resumable task ownership.
 
 ## 4. Traceability artifacts
 

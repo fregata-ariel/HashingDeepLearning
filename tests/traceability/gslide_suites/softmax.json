@@ -1,0 +1,10 @@
+{
+  "name": "softmax",
+  "test_file": "tests/traceability/test_gslide_softmax_variants_cpu.cpp",
+  "definitions": {
+    "src/kernel.cu": [
+      "softmax_fwd_bp_rowmajor_slide_in_knl",
+      "softmax_fwd_bp_rowmajor_slide_out_knl"
+    ]
+  }
+}

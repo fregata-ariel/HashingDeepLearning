@@ -105,13 +105,22 @@ The [coverage checkpoint](../ports/g-slide/CPU_VALIDATION.md) describes adapter
 substitutions and the pending production/GPU baseline. The immutable archive is
 unchanged; G2 adds tests/contracts without changing production CUDA arithmetic.
 
-## Annotation conventions
+## MagicPIG selected CPU support
 
-MagicPIG's arXiv v4 / selected v0.2 code is registered as a provenance-only
-intake. No new numerical experiment is marked verified. Its planned mappings,
-implementation variants and task dependencies are in
-[the intake record](../docs/MAGICPIG_INTEGRATION.md). Numerical code contracts
-will be enrolled after the corresponding CPU oracles pass.
+Paper baseline: arXiv v4; selected source: v0.2.
+
+| Maintained symbol | Paper location | Verified boundary |
+| --- | --- | --- |
+| `transform_kernel`, `softmax_kernel` | §4.3 Eq.9–11, §4.4 support | Independent dense FP64 correction, probabilities, host weighted output and base-2 LSE on supplied subsets; portable lanes replace exponential evaluation, native mode checks the actual polynomial |
+| `qk_kernel_bf16_impl` | §4.3–4.4, implementation support | Capability-gated actual BF16 QK body, one complete 16-row × 32-coordinate tile |
+
+These two ledger records are support mappings, not complete sampling/attention
+or paper benchmark reproduction. QK/WV in the baseline are host substitutes;
+Torch/FBGEMM linkage and GPU execution remain pending. Details and tolerances:
+[CPU contract](../ports/magicpig/CPU_VALIDATION.md). Remaining mappings and task
+dependencies: [integration record](../docs/MAGICPIG_INTEGRATION.md).
+
+## Annotation conventions
 
 1. C/C++ functions use Doxygen `/** ... */` blocks with `@par Paper mapping`,
    `@par Implementation note`, and, only when appropriate,

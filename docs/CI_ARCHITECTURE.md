@@ -75,9 +75,16 @@ infrequent user-provided GPU milestone session. See
 MagicPIG's initial source gate is part of `traceability.yml`: it protects the
 41-file selected archive and validates the complete upstream Git tree inventory.
 Changes to its source pin, inventory, checker, mutation tests and archive trigger
-this gate. It emits source-only evidence with build/numerical/GPU execution
-explicitly unvalidated. CPU numerical/native capability checks are subsequent
-work; no additional permanent workflow or recurring GPU job is introduced.
+this gate. Its source evidence remains separate from selected-body numerical evidence.
+Issue #54 adds portable CPU oracles, capability selection and driver regression
+tests, followed by plain and ASan/UBSan runs in the same workflow. UBSan errors
+are fatal; hosted LeakSanitizer remains enabled. Native SIMD is executed only
+after CPU/OS/compiler checks and otherwise records an explicit skip. All
+enrolled portable suites run by default, including future per-task descriptors.
+Source/fixture/adapter/descriptor hashes, compiler flags and results are uploaded
+with the existing artifact. Full extension/GPU execution remains unvalidated.
+See [the CPU contract](../ports/magicpig/CPU_VALIDATION.md); no new permanent
+workflow or recurring GPU job is introduced.
 
 Permanent workflows should trigger only when their protected contract could
 have changed.

@@ -57,12 +57,16 @@ excluded-blob inventory tampering and unsafe paths. These are provenance tests.
 
 Four native `.cc`/`.h` originals form the editable `ports/magicpig/` baseline.
 No arithmetic/ABI change or new maintained Python source is introduced here.
-Future code documentation follows verified numerical tests; no mechanism is
-registered as passed in the experiment ledger at this provenance checkpoint.
+Issue #54 adds two support records and Doxygen contracts after selected-body
+CPU oracles pass. The immutable archive is unchanged.
+[CPU_VALIDATION.md](../ports/magicpig/CPU_VALIDATION.md) records substitutions,
+capability skips, tolerances and the common suite interface.
 
 ## Paper-to-code intake map
 
-The mappings below schedule verification; they are not executed test evidence.
+The mappings below schedule mechanism-level verification. Issue #54 establishes
+restricted correction/Softmax and BF16 QK support tests; it does not complete the
+remaining mechanism tasks.
 
 | Paper location | Reference code | Relation / verification boundary |
 | --- | --- | --- |
@@ -115,11 +119,11 @@ and next action. Task branch/PR/Issue records survive communication interruption
 
 ## CPU and postponed GPU policy
 
-#54 establishes a portable scalar path or restricted actual-body adapter with
-an independent FP64 oracle. It must work without CUDA, FlashInfer, downloaded
-model weights or large datasets. Native extensions require AVX-512F; BF16
-dispatch additionally depends on CPU/compiler capability. Capability absence
-is a skip for native SIMD, not evidence of native correctness.
+#54 establishes a restricted actual-body adapter with independent FP64 oracles.
+Its portable suite runs without CUDA, FlashInfer, Torch, downloaded model weights
+or large datasets. Native selected-body AVX-512 and BF16 checks are separate and
+capability-gated; capability absence is a skip, not numerical evidence. Full
+extension linkage and runtime ownership are deferred to later integration.
 
 Archived `install.sh` is historical provenance, not a CPU setup instruction:
 it installs CUDA PyTorch and unpinned FlashInfer packages. Source identity does
@@ -128,5 +132,5 @@ not establish modern install/build compatibility.
 Actual GPU tests are explicitly postponed. G-SLIDE #34/#43 remain open;
 MagicPIG #62 is deferred, with no date or recurring GPU job. CPU composition
 must not claim production Llama generation, GPU scheduling/device ownership,
-paper accuracy or throughput. The next runnable work is #54 after #53's PR
-and provenance CI pass.
+paper accuracy or throughput. After #54 integration, #55/#56/#57 can proceed
+in parallel using its per-task suite/ledger interface; #58 still depends on #57.

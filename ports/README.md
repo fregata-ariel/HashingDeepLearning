@@ -60,11 +60,13 @@ not claim reproduction of the historical CUDA/APEX throughput results.
 
 ## Current verification
 
-MagicPIG has a pinned selected source archive and four unchanged native working
-copies. Its source identity/inventory gate is present; build, numerical runtime,
-typed Python integration and GPU generation remain pending. See
-[the intake plan](../docs/MAGICPIG_INTEGRATION.md). CPU-first work starts with
-Issue #54 after provenance Issue #53; actual GPU tests are postponed.
+MagicPIG has a pinned selected archive and four maintained native working
+copies. Issue #54 adds portable selected correction/Softmax bodies, independent
+FP64 oracles, optional capability-gated native AVX-512/BF16 checks and sanitizers
+to traceability CI. [The CPU contract](magicpig/CPU_VALIDATION.md) states the
+restricted numerical scope and software substitutions. Full Torch/FBGEMM
+extension, typed Python integration and model generation remain pending;
+actual GPU tests are postponed. See [the task plan](../docs/MAGICPIG_INTEGRATION.md).
 
 G-SLIDE now has CPU-first serial emulation of selected actual CUDA bodies,
 independent arithmetic/state oracles, an exact upstream archive check and

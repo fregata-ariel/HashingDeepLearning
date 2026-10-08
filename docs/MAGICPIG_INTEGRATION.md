@@ -155,3 +155,13 @@ Actual native copy is separately capability-gated; unsupported CPUs skip it.
 Fastfill parity is reproduced as a defect, not reported as passing; repair #66
 owns table population/temporary allocation repair. #57 remains separate and #58
 still requires its probability contract. GPU work remains postponed.
+
+## MP2 selected-CPU checkpoint: probability (#57)
+
+#57 adds independent exhaustive/binomial correction expectations (15108 states,
+141 corrections,14 domain cases,670 assertions), explicit +1e-4 variant and
+finite-estimator bias/domain characterization. [Contract](../ports/magicpig/PROBABILITY_VALIDATION.md)
+records conditioning budgets and excluded end-to-end claims. Repairs #67/#68
+remain separate. After #55/#56/#57 integration, #58 can proceed using all four
+portable suites and respecting known unsupported domains; parent MP2 remains
+open until its remaining work completes. GPU work remains postponed.

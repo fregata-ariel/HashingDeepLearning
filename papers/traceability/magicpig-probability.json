@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-PROBABILITY-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 Equations 9-11",
+      "mechanism": "At-least-two-table inclusion and regularized correction; finite estimator bias and input-domain characterization.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "transform_kernel"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_probability_cpu.cpp",
+        "id": "MAGICPIG-PROBABILITY-CPU"
+      },
+      "conditions": {
+        "execution": "portable selected scalar body, no Torch/CUDA/model dependencies",
+        "seed": "fixed literal deterministic fixture, no RNG",
+        "oracle": "Exhaustive independent bit/table outcomes and FP64 binomial mass; finite estimator expectations.",
+        "regularizer": "+1e-4 source variant",
+        "gpu_execution": "postponed",
+        "correction_absolute_tolerance": "2e-5 + 6e-7 / (FP64 inclusion + 1e-4); ceiling 0.00602",
+        "correction_cases": 141,
+        "domain_cases": 14,
+        "exhaustive_bit_states": 15108,
+        "assertions": 670,
+        "estimator_model": "64 exhaustive outcomes for two synthetic independent candidate table-hit processes; conditional on nonempty set, not shared geometric LSH hyperplanes",
+        "invalid_domains": "Existing NaN/Inf or acceptance characterized using valid bounded arrays; no out-of-range index accesses",
+        "observed_local_maximum_absolute_error": 0.00416361416368
+      },
+      "note": "Support: supplied logits only, not end-to-end unbiased self-normalized attention. Invalid domains characterize existing defects with valid buffers."
+    }
+  ]
+}

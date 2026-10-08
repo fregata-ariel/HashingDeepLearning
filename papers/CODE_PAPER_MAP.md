@@ -92,10 +92,18 @@ actual bodies with a serial adapter; parallel GPU behavior remains unverified.
 | `src/kernel.cu::softmax_fwd_bp_rowmajor_all_sm_knl` | §4.4, training support | Stable probabilities and label deltas; maintained negative-logit fix |
 | `src/kernel.cu::bp_first_layer_knl` | §4.2, §4.4 | First-layer column-major gradients and biases |
 | `src/kernel.cu::update_weights_knl` | §4.4, optimizer support | Two Adam state updates, reset and tail guard |
+| `src/kernel.cu::bp_knl`, `bp_rowmajor_knl`, `bp_rowmajor_no_sm_knl`, `bp_rowmajor_slide_knl` | §4.2, §4.4, sparse training support | Four deeper backward variants, both layouts, sparse gradients and activation gating; caller state reset remains explicit |
+| `src/kernel.cu::softmax_fwd_bp_rowmajor_slide_in_knl`, `softmax_fwd_bp_rowmajor_slide_out_knl` | §4.4, training support | Additional Softmax bodies against dense FP64 expectations; scalar reduction substitutes |
+| `src/GPUMultiLinkedHashTable.cu::d_block_reduce_cnt` with candidate fixture | §4.3, candidate selection | Serial threshold/label selection, host active-set conversion, ring capacity and stale/rebuilt memberships |
+| `src/lshKnl.cu` selected hash/query bodies with training fixture | §4.3, index maintenance | Actual Adam change alters three WTA addresses; host reconstruction required by the deterministic fixture |
+| `src/kernel.cu::update_weights_knl`, `bp_rowmajor_knl` with training fixture | §4.4, composed training support | Two connected updates and independent dense math; explicit host delta reset and stale-state regression (#43) |
 
-The six `GSLIDE-*-CPU` ledger records specify independent oracles and execution
-limits. The [coverage checkpoint](../ports/g-slide/CPU_VALIDATION.md) describes
-the adapter substitutions and pending production/GPU baseline.
+Six baseline and eleven fragment `GSLIDE-*-CPU` ledger records specify independent
+oracles and execution limits across five suites. These mappings include direct,
+support and variant relations; the ledger and native contracts distinguish them.
+The [coverage checkpoint](../ports/g-slide/CPU_VALIDATION.md) describes adapter
+substitutions and the pending production/GPU baseline. The immutable archive is
+unchanged; G2 adds tests/contracts without changing production CUDA arithmetic.
 
 ## Annotation conventions
 

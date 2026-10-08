@@ -133,3 +133,23 @@ selection covers both. Maintained production Python inventory remains 31 files.
 The driver also supplies isolated expected-defect probe validation for future
 LSH enrollment: exact wrong-result marker, fatal sanitizer outcome, allocation
 site and count must match. Generic crashes or other UB do not satisfy it.
+
+## Retrieval/lifetime checkpoint (#56)
+
+`lsh_retrieval` adds actual constructor/destructor, allocation, sorted fill,
+retrieval, clear and get_mask bodies with a non-owning contiguous Tensor shim.
+The independent literal collision oracle passes 2688 batched head comparisons;
+GQA/batch/layer isolation, query mask reset, canaries and owner lifetime are
+covered. Portable integer copy is explicit; opt-in native execution extracts
+and hashes the actual AVX512F copy helper before running it. OpenMP remains
+serial. [Contract](LSH_CPU_CONTRACT.md) records alloc-once, per-table index
+uniqueness, borrowed-view lifetime and Torch ABI exclusions.
+
+The isolated fastfill probe reproduces expected {0,1,2,3} versus actual {0}.
+Full hosted sanitizer mode must positively detect 64 bytes/four allocations
+at LSH::fastfill; exact marker/result/site/count and exit status are checked,
+rejecting generic crashes or other sanitizer errors. Local leak-disabled runs
+record `not_checked`. Fastfill remains unsupported under [repair #66](https://github.com/fregata-ariel/HashingDeepLearning/issues/66),
+not a passing alternative fill. Source arithmetic and immutable archive remain
+unchanged. Default portable suites at this checkpoint are baseline, simhash
+and lsh_retrieval; probability integrates separately in #57.

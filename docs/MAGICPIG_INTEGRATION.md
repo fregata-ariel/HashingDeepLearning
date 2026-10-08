@@ -144,3 +144,14 @@ codes pass. [Coverage](MAGICPIG_SIMHASH_CPU.md) names substitutions and excludes
 Torch/BF16/GPU runtime. Packing loss at K12+ is reproduced, with repair #65.
 Task #56/#57 mechanism integration proceeds in separate task PRs; #58 continues
 to depend on #57. No full production extension or model inference is claimed.
+
+## MP2 selected-CPU checkpoint: retrieval (#56)
+
+#56 verifies sorted-fill retrieval/lifecycle with 2688 independent batched head
+comparisons, including at-least-two distinct tables, deduplication, masks and
+GQA/batch/layer routing. [Contract](../ports/magicpig/LSH_CPU_CONTRACT.md) marks
+Tensor/serial/copy substitutions, owner/view lifetime and alloc-once limits.
+Actual native copy is separately capability-gated; unsupported CPUs skip it.
+Fastfill parity is reproduced as a defect, not reported as passing; repair #66
+owns table population/temporary allocation repair. #57 remains separate and #58
+still requires its probability contract. GPU work remains postponed.

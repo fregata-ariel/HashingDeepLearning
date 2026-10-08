@@ -19,6 +19,12 @@
       "source_url": "https://openreview.net/forum?id=wWK7yXkULyh",
       "local_file": null
     },
+    "magicpig-2024": {
+      "title": "MagicPIG: LSH Sampling for Efficient LLM Generation",
+      "version": "arXiv:2410.16179v4; selected reference v0.2 provenance checkpoint only",
+      "source_url": "https://arxiv.org/html/2410.16179v4",
+      "local_file": null
+    },
     "g-slide-2022": {
       "title": "G-SLIDE: A GPU-Based Sub-Linear Deep Learning Engine via LSH Sparsification",
       "version": "TPDS 33(11), 3015-3027 (2022); mechanism review uses author-hosted manuscript",

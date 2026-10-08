@@ -123,3 +123,25 @@ For each relevant function/class:
 3. use Doxygen for C/C++ and docstrings for Python;
 4. document measured effects separately from the mechanism;
 5. explicitly distinguish paper claims from implementation inference.
+
+## 5. MagicPIG — arXiv v4 (selected source intake)
+
+- Paper: *MagicPIG: LSH Sampling for Efficient LLM Generation*, explicit version
+  https://arxiv.org/html/2410.16179v4. No local PDF is claimed.
+- Reference: https://github.com/Infini-AI-Lab/MagicPIG.
+- Selected `v0.2` commit: `ac9aa36c866330ca6ad2ce342a7848d7df6f49bb`.
+- Git tree: `87f5403c5d453af27bd03f1ec243f8c2098c0c80`.
+- Historical main comparison: `dc682a3d98bc4beddbb71e6679df1bdd69e341dd`;
+  kept distinct, not imported.
+- Archive: `third_party/magicpig/`, explicitly **41-file selected subset**.
+  All upstream paths, modes, hashes and exclusions are recorded in
+  `papers/magicpig-upstream-manifest.tsv`; the source pin is
+  `papers/magicpig-source-pin.json`.
+- Root license: Apache-2.0. Selected FBGEMM/cpuinfo BSD licenses are preserved.
+- Maintained baseline: four unchanged native files under `ports/magicpig/`.
+- Source identity gate only: build, numerical runtime, GPU and model benchmark
+  execution are pending. Native source/include closure does not establish
+  cpuinfo/Torch link closure. CPU tests are the next step; GPU tests postponed.
+
+Source choice, paper/code intake relations, dependency obligations and recovery
+tasks: [MagicPIG integration record](../docs/MAGICPIG_INTEGRATION.md).

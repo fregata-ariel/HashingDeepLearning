@@ -60,6 +60,12 @@ not claim reproduction of the historical CUDA/APEX throughput results.
 
 ## Current verification
 
+MagicPIG has a pinned selected source archive and four unchanged native working
+copies. Its source identity/inventory gate is present; build, numerical runtime,
+typed Python integration and GPU generation remain pending. See
+[the intake plan](../docs/MAGICPIG_INTEGRATION.md). CPU-first work starts with
+Issue #54 after provenance Issue #53; actual GPU tests are postponed.
+
 G-SLIDE now has CPU-first serial emulation of selected actual CUDA bodies,
 independent arithmetic/state oracles, an exact upstream archive check and
 ASan/UBSan checks in traceability CI. G2 extends this into five suites: baseline,

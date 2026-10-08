@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/Infini-AI-Lab/MagicPIG",
+  "branch": "v0.2",
+  "commit": "ac9aa36c866330ca6ad2ce342a7848d7df6f49bb",
+  "tree": "87f5403c5d453af27bd03f1ec243f8c2098c0c80",
+  "paper": {
+    "title": "MagicPIG: LSH Sampling for Efficient LLM Generation",
+    "version": "arXiv:2410.16179v4",
+    "source_url": "https://arxiv.org/html/2410.16179v4",
+    "local_file": null
+  },
+  "scope": "selected-source-subset",
+  "scope_reason": "25 first-party reference/build/test/example files plus 16 FBGEMM/cpuinfo source-include closure and license files; omitted artwork/data/evaluation wrappers/dependency remainder are enumerated in the full inventory.",
+  "upstream_inventory": "papers/magicpig-upstream-manifest.tsv",
+  "upstream_entries": 7675,
+  "upstream_blobs": 7227,
+  "archive_root": "third_party/magicpig",
+  "selected_blobs": {
+    "LICENSE": {
+      "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "mode": "100644",
+      "size": 11357
+    },
+    "README.md": {
+      "sha": "0ec01062e660b66710370a917547af8d1828e97e",
+      "mode": "100644",
+      "size": 7722
+    },
+    "examples/batch_generation.py": {
+      "sha": "eb1e66e4d899ab74fac1637d19bde370feeb20f7",
+      "mode": "100644",
+      "size": 2197
+    },
+    "examples/bench.py": {
+      "sha": "9884a9a64785beea074e78051621581db6fe4d44",
+      "mode": "100644",
+      "size": 2204
+    },
+    "examples/bench.sh": {
+      "sha": "779ad3aed12799258cde4ac746c8183e5c035f98",
+      "mode": "100644",
+      "size": 132
+    },
+    "examples/generation.py": {
+      "sha": "a325be096d5b089b888a062a6ac82e85a3c838a7",
+      "mode": "100644",
+      "size": 1936
+    },
+    "install.sh": {
+      "sha": "3e982b3e57a2db46b3e3b15c34971008428f7267",
+      "mode": "100644",
+      "size": 360
+    },
+    "library/lsh/lsh.cc": {
+      "sha": "121a3df0e685ef84541df7f01496d9b18bf8db89",
+      "mode": "100644",
+      "size": 11299
+    },
+    "library/lsh/lsh.h": {
+      "sha": "661e0ee9cec83553a4726e30efa1244715e3064b",
+      "mode": "100644",
+      "size": 1482
+    },
+    "library/lsh/setup.py": {
+      "sha": "daf3630431fc3ac01ab8be6df56875c52a537e0d",
+      "mode": "100644",
+      "size": 398
+    },
+    "library/lsh/test.py": {
+      "sha": "919cf7d9f3823a23426e3fae7c1820cc4befaed4",
+      "mode": "100644",
+      "size": 3112
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/LICENSE": {
+      "sha": "1c8dd93e668d0fee72d84557dd239e5bfde52a6c",
+      "mode": "100644",
+      "size": 1535
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/ConvUtils.h": {
+      "sha": "0d0c43cbcfd69a5e1534ac547b166af1b702d1bc",
+      "mode": "100644",
+      "size": 6245
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/FbgemmBuild.h": {
+      "sha": "838fe28b7731e98229a5fe42e5188c4b062bbb4f",
+      "mode": "100644",
+      "size": 3106
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/FbgemmConvert.h": {
+      "sha": "298d539a9b2bc83d79a60a0e6dacee9713581831",
+      "mode": "100644",
+      "size": 4274
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/FbgemmI8Spmdm.h": {
+      "sha": "45f64a4e848cff990f64aeba52f02e9e82e1bed2",
+      "mode": "100644",
+      "size": 3393
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/Types.h": {
+      "sha": "9d3f9b4b07d79fe295ddd196cda99cbf4b61b4ab",
+      "mode": "100644",
+      "size": 7870
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/Utils.h": {
+      "sha": "69b2e6d94ffa4b9a83e23a9e792fac3db0f7c100",
+      "mode": "100644",
+      "size": 11850
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/UtilsAvx2.h": {
+      "sha": "761e4bba1b428089f2cd6af17555b11ad23e2272",
+      "mode": "100644",
+      "size": 2287
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/src/FbgemmBfloat16Convert.cc": {
+      "sha": "fafd325c4700106ed642e0cdd9720b887bf42fc9",
+      "mode": "100644",
+      "size": 1946
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/src/FbgemmBfloat16ConvertAvx2.cc": {
+      "sha": "b044dd44603e96c9c775367a4030bc6fa8d5759b",
+      "mode": "100644",
+      "size": 2239
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/src/FbgemmBfloat16ConvertAvx512.cc": {
+      "sha": "b74d9466f31a1df127404710b70b207ae98efcd3",
+      "mode": "100644",
+      "size": 1934
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/src/RefImplementations.cc": {
+      "sha": "0399750b275da6a767da16f682c55194cdc6da81",
+      "mode": "100644",
+      "size": 81251
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/src/RefImplementations.h": {
+      "sha": "f01aa57d5a197237b0050d2847d4a2cfd5f9b901",
+      "mode": "100644",
+      "size": 12450
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/src/Utils.cc": {
+      "sha": "bd970432ade8200571fe1a45da2e28af32d6fbb8",
+      "mode": "100644",
+      "size": 26150
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/third_party/cpuinfo/LICENSE": {
+      "sha": "3f9a4f020cec01f29e5b9dce6630e02d82f2118d",
+      "mode": "100644",
+      "size": 1424
+    },
+    "library/sparse_attention/3rdparty/FBGEMM/third_party/cpuinfo/include/cpuinfo.h": {
+      "sha": "275c83f9695d99925260a43098453de8d1c947dd",
+      "mode": "100644",
+      "size": 50149
+    },
+    "library/sparse_attention/README.md": {
+      "sha": "0cb988692cc9004236cd6a1971e512689ed31726",
+      "mode": "100644",
+      "size": 18
+    },
+    "library/sparse_attention/bench.py": {
+      "sha": "668af4b7e84e2d774c1e07a9effa502ee630b0d8",
+      "mode": "100644",
+      "size": 3279
+    },
+    "library/sparse_attention/setup.py": {
+      "sha": "80fa1e1de47671eb7c17681e61ad1daded8573cf",
+      "mode": "100644",
+      "size": 1848
+    },
+    "library/sparse_attention/sparse_attention.cc": {
+      "sha": "416d5a36aa18d17794d5dacf9158cd658cc7c813",
+      "mode": "100644",
+      "size": 42624
+    },
+    "library/sparse_attention/sparse_attention.h": {
+      "sha": "cf2dad9fa4b2ad4ac98b6ce4614174d370762762",
+      "mode": "100644",
+      "size": 3143
+    },
+    "library/sparse_attention/test.py": {
+      "sha": "c8ac5d5dd3198bb968ee8f320679e5e934703d80",
+      "mode": "100644",
+      "size": 6835
+    },
+    "library/sparse_attention/test_dense.py": {
+      "sha": "593839994d4ce8aab76b12edead0234fced235cd",
+      "mode": "100644",
+      "size": 2907
+    },
+    "library/sparse_attention/test_sparse.py": {
+      "sha": "afffaac448b90675ca594b8b6af22582faca73cf",
+      "mode": "100644",
+      "size": 4173
+    },
+    "models/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0
+    },
+    "models/attnserver.py": {
+      "sha": "d09bc3e72574eeca3807790d1c7ad79eff2f8893",
+      "mode": "100644",
+      "size": 26278
+    },
+    "models/llama.py": {
+      "sha": "5f328986842e2ed524710843870946492e7a64fd",
+      "mode": "100644",
+      "size": 16104
+    },
+    "models/template.py": {
+      "sha": "32d64c7b6a50a0aefc6d9e79330069c4b3a685da",
+      "mode": "100644",
+      "size": 829
+    },
+    "models/utils.py": {
+      "sha": "feadbead22a6b3b540df4ceef93d74d8c330270d",
+      "mode": "100644",
+      "size": 3550
+    },
+    "requirements.txt": {
+      "sha": "8b892cbecf8bffe3990aa2534df20f88d7bcf251",
+      "mode": "100644",
+      "size": 62
+    }
+  },
+  "licenses": [
+    "LICENSE",
+    "library/sparse_attention/3rdparty/FBGEMM/LICENSE",
+    "library/sparse_attention/3rdparty/FBGEMM/third_party/cpuinfo/LICENSE"
+  ],
+  "dependency_source_files": [
+    "library/sparse_attention/3rdparty/FBGEMM/src/FbgemmBfloat16Convert.cc",
+    "library/sparse_attention/3rdparty/FBGEMM/src/FbgemmBfloat16ConvertAvx2.cc",
+    "library/sparse_attention/3rdparty/FBGEMM/src/FbgemmBfloat16ConvertAvx512.cc",
+    "library/sparse_attention/3rdparty/FBGEMM/src/RefImplementations.cc",
+    "library/sparse_attention/3rdparty/FBGEMM/src/Utils.cc",
+    "library/sparse_attention/3rdparty/FBGEMM/src/RefImplementations.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/FbgemmConvert.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/FbgemmBuild.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/Utils.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/Types.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/ConvUtils.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/FbgemmI8Spmdm.h",
+    "library/sparse_attention/3rdparty/FBGEMM/include/fbgemm/UtilsAvx2.h",
+    "library/sparse_attention/3rdparty/FBGEMM/LICENSE",
+    "library/sparse_attention/3rdparty/FBGEMM/third_party/cpuinfo/LICENSE",
+    "library/sparse_attention/3rdparty/FBGEMM/third_party/cpuinfo/include/cpuinfo.h"
+  ],
+  "dependency_subtrees": [
+    {
+      "path": "library/sparse_attention/3rdparty/FBGEMM",
+      "sha": "8a30c6128d8e63ee3f44a77001ce6687824647b7",
+      "scope": "selected subset; remaining blobs excluded in inventory"
+    },
+    {
+      "path": "library/sparse_attention/3rdparty/FBGEMM/third_party/cpuinfo",
+      "sha": "62cae83bdd7895ff07a0df7a48d976049d2be06e",
+      "scope": "selected subset; remaining blobs excluded in inventory"
+    }
+  ],
+  "external_link_obligations": [
+    "Torch extension headers/libraries, wheel ABI compatibility and cpuinfo_initialize/cpuinfo_get_packages symbol provision are unvalidated. The selected cpuinfo header/license do not supply its implementation.",
+    "Native setup enables AVX512F/OpenMP, conditionally AVX512BF16, and compiles five FBGEMM sources. Do not claim source/include closure establishes build/link success.",
+    "Historical install.sh requires CUDA PyTorch/FlashInfer and contains unpinned packages; it is archived unchanged, not run in routine CPU CI."
+  ],
+  "historical_main": {
+    "commit": "dc682a3d98bc4beddbb71e6679df1bdd69e341dd",
+    "tree": "3d4893ca4ce1eac406e2b28d3c8bd899bc59a28a",
+    "archived": false
+  },
+  "maintained_baselines": [
+    {
+      "path": "ports/magicpig/library/lsh/lsh.cc",
+      "upstream_path": "library/lsh/lsh.cc",
+      "initial_blob_sha": "121a3df0e685ef84541df7f01496d9b18bf8db89"
+    },
+    {
+      "path": "ports/magicpig/library/lsh/lsh.h",
+      "upstream_path": "library/lsh/lsh.h",
+      "initial_blob_sha": "661e0ee9cec83553a4726e30efa1244715e3064b"
+    },
+    {
+      "path": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+      "upstream_path": "library/sparse_attention/sparse_attention.cc",
+      "initial_blob_sha": "416d5a36aa18d17794d5dacf9158cd658cc7c813"
+    },
+    {
+      "path": "ports/magicpig/library/sparse_attention/sparse_attention.h",
+      "upstream_path": "library/sparse_attention/sparse_attention.h",
+      "initial_blob_sha": "cf2dad9fa4b2ad4ac98b6ce4614174d370762762"
+    }
+  ],
+  "validation_scope": {
+    "provenance": true,
+    "build": false,
+    "numerical_runtime": false,
+    "gpu": false
+  }
+}

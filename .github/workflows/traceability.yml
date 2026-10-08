@@ -8,6 +8,9 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_magicpig_sources.py"
+      - "third_party/magicpig/**"
+      - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
       - "SOURCE_MANIFEST.tsv"
@@ -30,6 +33,9 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_magicpig_sources.py"
+      - "third_party/magicpig/**"
+      - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
       - "SOURCE_MANIFEST.tsv"
@@ -74,6 +80,11 @@ jobs:
       - name: Audit verified C++, CUDA and Cython documentation
         run: |
           python3 tools/audit_traceability_docs.py
+
+      - name: MagicPIG scoped source identity and inventory contracts
+        run: |
+          python3 tests/traceability/test_magicpig_source_contracts.py
+          python3 tools/check_magicpig_sources.py --emit-dir traceability-artifact/magicpig-source
 
       - name: G-SLIDE CPU serial CUDA-body oracles and sanitizers
         run: |

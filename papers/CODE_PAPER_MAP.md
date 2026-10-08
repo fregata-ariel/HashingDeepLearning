@@ -107,6 +107,12 @@ unchanged; G2 adds tests/contracts without changing production CUDA arithmetic.
 
 ## Annotation conventions
 
+MagicPIG's arXiv v4 / selected v0.2 code is registered as a provenance-only
+intake. No new numerical experiment is marked verified. Its planned mappings,
+implementation variants and task dependencies are in
+[the intake record](../docs/MAGICPIG_INTEGRATION.md). Numerical code contracts
+will be enrolled after the corresponding CPU oracles pass.
+
 1. C/C++ functions use Doxygen `/** ... */` blocks with `@par Paper mapping`,
    `@par Implementation note`, and, only when appropriate,
    `@par Reported effect`.

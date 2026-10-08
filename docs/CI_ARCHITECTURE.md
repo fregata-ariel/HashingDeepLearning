@@ -72,6 +72,13 @@ infrequent user-provided GPU milestone session. See
 
 ## 3. Trigger design
 
+MagicPIG's initial source gate is part of `traceability.yml`: it protects the
+41-file selected archive and validates the complete upstream Git tree inventory.
+Changes to its source pin, inventory, checker, mutation tests and archive trigger
+this gate. It emits source-only evidence with build/numerical/GPU execution
+explicitly unvalidated. CPU numerical/native capability checks are subsequent
+work; no additional permanent workflow or recurring GPU job is introduced.
+
 Permanent workflows should trigger only when their protected contract could
 have changed.
 

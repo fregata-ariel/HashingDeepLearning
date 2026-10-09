@@ -53,7 +53,8 @@ def select(source: str) -> dict[str, list[ast.stmt]]:
     assert all('.copy_(' in ast.unparse(n) for n in sparse_cache[:2])
     dense_fill = sparse.body
     assert len(dense_fill) == 3 and target(dense_fill[-1]) == 'self.dense_kv_last_page_len[request_id]'
-    append = [n for n in decode.orelse if target(n) == 'key_states']
+    append = [n for n in decode.orelse if target(n) == 'key_states'
+              and 'self.avg_k[layer_idx]' in ast.unparse(n)]
     assert len(append) == 1 and 'self.avg_k[layer_idx]' in ast.unparse(append[0])
     merge = [n for n in decode.orelse if isinstance(n, ast.Assign)
              and isinstance(n.value, ast.Call) and isinstance(n.value.func, ast.Attribute)

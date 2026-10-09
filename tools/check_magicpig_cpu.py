@@ -99,7 +99,12 @@ def load_python_suites() -> dict[str, dict[str, object]]:
             raise ValueError("invalid Python suite descriptor")
         if data["source_file"] != "third_party/magicpig/models/attnserver.py" or data["class_name"] != "LSHSparseAttnServer":
             raise ValueError("unapproved Python source/class")
-        if data["blocks"] != ["packing", "centering", "fill_hash", "decode_hash", "append_centering"]:
+        approved_blocks = {
+            "simhash": ["packing", "centering", "fill_hash", "decode_hash", "append_centering"],
+            "cache_merge": ["partition", "centering", "center_store", "sparse_cache",
+                            "dense_fill", "append_centering", "plan", "merge", "clear"],
+        }
+        if data["name"] not in approved_blocks or data["blocks"] != approved_blocks[data["name"]]:
             raise ValueError("invalid Python block selection")
         fixture_path(data["test_file"], ".py")
         data["descriptor"] = path

@@ -182,3 +182,19 @@ sets/native underflow, QK padding, dimension/group checks and varying GQA length
 routing. Closing the scoped MP2 verification tasks does not close these repairs
 or claim unrestricted correctness, whole-extension execution or GPU validation.
 The next dependent task is #59 (cache/normalizer merge); #60/#61 remain separate.
+
+
+## MP3 cache/merge work in progress (#59)
+
+Task branch: `research/magicpig-mp3-cache-merge`, cut from reviewed
+integration `53f816e3577f3e471876dcfce723a168a11b02b6`.
+#59 adds a selected-Python-statement CPU host contract and independent
+FP64 corrected-union merge oracle. The [cache/merge contract]
+(../ports/magicpig/CACHE_MERGE_CPU_CONTRACT.md) records source
+provenance, disjoint static/offload/new-token partitions, base-2 LSE
+and the **unverified** Torch/FlashInfer/device boundary.
+
+This work does not change `third_party/magicpig` or production arithmetic.
+Before #59 closes, record exact PR head/CI/reviewed merge candidate here
+and in #59. #60 and #61 stay separate. CPU-only fixtures do not
+override known repairs or the postponed GPU milestone.

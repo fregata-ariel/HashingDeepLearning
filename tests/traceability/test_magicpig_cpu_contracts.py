@@ -124,6 +124,30 @@ class DriverContracts(unittest.TestCase):
                 with self.subTest(key=key), self.assertRaises(ValueError):
                     driver.load_python_suites()
 
+    def test_cache_merge_descriptor_rejects_wrong_block_order_and_source(self) -> None:
+        fixture = self.root / "tests/traceability/test_magicpig_cache_merge_cpu.py"
+        fixture.write_text("pass\n")
+        descriptor = self.root / "tests/traceability/magicpig_python_suites/cache_merge.json"
+        allowed = {
+            "name": "cache_merge",
+            "test_file": str(fixture.relative_to(self.root)),
+            "source_file": "third_party/magicpig/models/attnserver.py",
+            "class_name": "LSHSparseAttnServer",
+            "blocks": ["partition", "centering", "center_store", "sparse_cache",
+                       "dense_fill", "append_centering", "plan", "merge", "clear"],
+        }
+        with patch.object(driver, "ROOT", self.root):
+            descriptor.write_text(json.dumps(allowed))
+            self.assertEqual(set(driver.load_python_suites()), {"cache_merge"})
+            for name, value in (("blocks", allowed["blocks"][:-1]),
+                                ("blocks", list(reversed(allowed["blocks"]))),
+                                ("source_file", "third_party/magicpig/models/other.py"),
+                                ("name", "other"), ("class_name", "AttnServer")):
+                bad = {**allowed, name: value}
+                descriptor.write_text(json.dumps(bad))
+                with self.subTest(name=name, value=str(value)), self.assertRaises(ValueError):
+                    driver.load_python_suites()
+
     def test_python_evidence_requires_source_and_actual_statement_hashes(self) -> None:
         source = self.root / "third_party/magicpig/models/attnserver.py"
         source.parent.mkdir(parents=True)

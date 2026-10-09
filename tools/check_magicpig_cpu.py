@@ -34,6 +34,7 @@ class Suite:
     descriptor: Path
     adapter_file: Path | None = None
     native_avx512: bool = False
+    probes: tuple[dict[str, str], ...] = ()
 
 
 def fixture_path(relative: str, suffix: str) -> Path:
@@ -48,7 +49,7 @@ def load_suites() -> dict[str, Suite]:
     for descriptor in sorted((ROOT / "tests/traceability/magicpig_suites").glob("*.json")):
         data = json.loads(descriptor.read_text())
         required = {"name", "test_file", "definitions"}
-        if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {"adapter_file", "native_avx512"}:
+        if not isinstance(data, dict) or not required <= set(data) or set(data) - required - {"adapter_file", "native_avx512", "probes"}:
             raise ValueError(f"invalid descriptor: {descriptor}")
         name = data["name"]
         if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9_-]*", name) or name != descriptor.stem or name in suites:
@@ -64,7 +65,17 @@ def load_suites() -> dict[str, Suite]:
         native = data.get("native_avx512", False)
         if not isinstance(native, bool):
             raise ValueError(f"invalid native selection: {descriptor}")
-        suites[name] = Suite(name, test, definitions, descriptor, adapter, native)
+        probes = data.get("probes", [])
+        if not isinstance(probes, list):
+            raise ValueError(f"invalid probes: {descriptor}")
+        arguments = set()
+        for probe in probes:
+            if not isinstance(probe, dict) or set(probe) != {"argument", "marker", "diagnostic", "symbol"} or not all(isinstance(v, str) for v in probe.values()):
+                raise ValueError(f"invalid probe: {descriptor}")
+            if not re.fullmatch(r"--probe-[a-z-]+", probe["argument"]) or probe["argument"] in arguments or not probe["marker"] or "\n" in probe["marker"] or probe["diagnostic"] not in {"asan_heap_buffer_overflow", "ubsan_null_load"} or probe["symbol"] not in {s for symbols in definitions.values() for s in symbols}:
+                raise ValueError(f"invalid probe contract: {descriptor}")
+            arguments.add(probe["argument"])
+        suites[name] = Suite(name, test, definitions, descriptor, adapter, native, tuple(probes))
     if "baseline" not in suites:
         raise ValueError("baseline suite is not enrolled")
     return suites
@@ -211,6 +222,43 @@ def validate_fastfill_probe(probe: subprocess.CompletedProcess[str], sanitize: b
     return "not_checked"
 
 
+def validate_boundary_probe(probe: subprocess.CompletedProcess[str], contract: dict[str, str], records: list[dict[str, object]], translation: Path, executable: Path) -> dict[str, object]:
+    """Accept only the specified diagnostic at the selected production body."""
+    if probe.returncode != 1 or probe.stdout.strip() != contract["marker"]:
+        raise RuntimeError("unexpected boundary probe exit or marker")
+    diagnostic = probe.stderr
+    if contract["diagnostic"] not in {"asan_heap_buffer_overflow", "ubsan_null_load"}:
+        raise RuntimeError("unknown boundary probe diagnostic")
+    if contract["diagnostic"] == "asan_heap_buffer_overflow":
+        if diagnostic.count("ERROR: AddressSanitizer:") != 1 or diagnostic.count("SUMMARY: AddressSanitizer:") != 1 or "ERROR: AddressSanitizer: heap-buffer-overflow" not in diagnostic or "SUMMARY: AddressSanitizer: heap-buffer-overflow" not in diagnostic or "runtime error:" in diagnostic or "LeakSanitizer:" in diagnostic:
+            raise RuntimeError("unexpected boundary probe sanitizer category")
+    elif diagnostic.count("runtime error:") != 1 or "runtime error: load of null pointer of type 'float'" not in diagnostic or "AddressSanitizer:" in diagnostic or "LeakSanitizer:" in diagnostic:
+        raise RuntimeError("unexpected boundary probe sanitizer category")
+    selected = [r for r in records if r.get("symbol") == contract["symbol"]]
+    if len(selected) != 1:
+        raise RuntimeError("boundary probe symbol is not uniquely selected")
+    record = selected[0]
+    # UBSan reports a source location directly. ASan's selected caller may be
+    # inlined into its intrinsic shim, so retain all exact-executable frames.
+    method = "diagnostic_source_location"
+    location_text = "\n".join(line for line in diagnostic.splitlines() if "runtime error:" in line)
+    if contract["diagnostic"] == "asan_heap_buffer_overflow":
+        frames = re.findall(r"(?m)^\s*#\d+\s+(0x[0-9a-fA-F]+)\b", diagnostic)
+        if not frames:
+            raise RuntimeError("boundary probe has no stack frames")
+        # Some local sandboxes lack /proc/self/exe and ASan cannot symbolize.
+        # Non-PIE addresses are resolved against this exact compiled artifact.
+        resolved = checked(["addr2line", "-f", "-C", "-i", "-e", str(executable), *frames])
+        location_text = "\n".join(location for function, location in zip(resolved.splitlines()[0::2], resolved.splitlines()[1::2]) if function.split("(", 1)[0] == contract["symbol"])
+        method = "exact_executable_addr2line"
+        if not location_text:
+            raise RuntimeError("boundary probe diagnostic has no selected caller")
+    locations = re.findall(re.escape(str(translation)) + r":(\d+)\b", location_text)
+    if not any(int(record["translation_start_line"]) <= int(line) <= int(record["translation_end_line"]) for line in locations):
+        raise RuntimeError("boundary probe diagnostic is outside selected body")
+    return {"status": "known_defect_reproduced", "contract": contract, "returncode": probe.returncode, "stdout": probe.stdout, "stderr": diagnostic, "site_resolution": method, "resolved_locations": location_text if method == "exact_executable_addr2line" else None}
+
+
 def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, disable_leaks: bool) -> dict[str, object]:
     directory = build / mode / suite.name
     directory.mkdir(parents=True, exist_ok=True)
@@ -235,7 +283,7 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         adapters.append(suite.adapter_file)
     pieces = [prelude]
     records = []
-    if mode == "avx512" and suite.name == "baseline":
+    if mode == "avx512" and (suite.name == "baseline" or any(s.startswith("softmax_kernel") for s in definitions.get(SOURCE, []))):
         source = (PORT / SOURCE).read_bytes().decode()
         constants = re.findall(r"(?ms)^const __m512\s+(?:LOG2E_VEC|MAGIC_FLOAT_BIAS|ONE_VEC|LN2_PART_VEC|EXP_POLY_COEFFS)\b.*?;", source)
         if len(constants) != 5:
@@ -243,7 +291,8 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         constant_block = "\n".join(constants)
         pieces.append(constant_block)
         records.append({"symbol": "polynomial_constants", "sha256": hashlib.sha256(constant_block.encode()).hexdigest()})
-        definitions.setdefault(SOURCE, []).insert(0, "avx512_exp_ps")
+        if "avx512_exp_ps" not in definitions.setdefault(SOURCE, []):
+            definitions[SOURCE].insert(0, "avx512_exp_ps")
     if mode == "avx512" and suite.name == "lsh_retrieval":
         definitions.setdefault("library/lsh/lsh.cc", []).insert(0, "fast_memcpy_avx512")
     for relative, symbols in definitions.items():
@@ -252,8 +301,9 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         sources[str(source_file.relative_to(ROOT))] = digest(source_file)
         for symbol in symbols:
             body, line = extract_definition(source, symbol)
+            translation_line = ("\n".join(pieces) + "\n").count("\n") + 1
             pieces.append(body)
-            records.append({"source": relative, "symbol": symbol, "line": line, "sha256": hashlib.sha256(body.encode()).hexdigest()})
+            records.append({"source": relative, "symbol": symbol, "line": line, "translation_start_line": translation_line, "translation_end_line": translation_line + body.count("\n"), "sha256": hashlib.sha256(body.encode()).hexdigest()})
     pieces.append('#include ' + json.dumps(str(suite.test_file)) + '\n')
     translation = directory / "selected_bodies.cpp"
     translation.write_text("\n".join(pieces))
@@ -280,9 +330,18 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         leak_status = validate_fastfill_probe(probe, sanitize, disable_leaks)
         defect_probe = {"status": "known_defect_reproduced", "leak_status": leak_status, "returncode": probe.returncode, "stdout": probe.stdout, "stderr": probe.stderr}
         print(f"MAGICPIG_FASTFILL_CHARACTERIZED mode={mode} leak_status={leak_status}")
+    boundary_probes = []
+    if sanitize and mode == "portable":
+        for contract in suite.probes:
+            probe = subprocess.run([str(executable), contract["argument"]], capture_output=True, text=True, env=env)
+            boundary_probes.append(validate_boundary_probe(probe, contract, records, translation, executable))
+        if boundary_probes:
+            print(f"MAGICPIG_BOUNDARIES_CHARACTERIZED suite={suite.name} count={len(boundary_probes)}")
     headers = {str(p.relative_to(ROOT)): digest(p) for p in sorted(PORT.rglob("*.h"))}
     evidence = {"suite": suite.name, "mode": mode, "status": "pass", "sanitize": sanitize, "leak_check_explicitly_disabled": disable_leaks, "compiler_command": command, "translation_sha256": digest(translation), "source_sha256": sources, "recorded_native_header_sha256": headers, "definitions": records, "fixture": str(suite.test_file.relative_to(ROOT)), "fixture_sha256": digest(suite.test_file), "descriptor_sha256": digest(suite.descriptor), "adapter_sha256": {str(p.relative_to(ROOT)): digest(p) for p in adapters}, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
     evidence["defect_probe"] = defect_probe
+    evidence["boundary_probes"] = boundary_probes
+    evidence["boundary_probe_execution"] = "portable_sanitized" if sanitize and mode == "portable" else "not_checked_in_this_mode"
     evidence_path.write_text(json.dumps(evidence, indent=2) + "\n")
     return evidence
 

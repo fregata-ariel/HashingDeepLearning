@@ -1,0 +1,17 @@
+{
+  "name": "attention",
+  "test_file": "tests/traceability/test_magicpig_attention_cpu.cpp",
+  "adapter_file": "tests/traceability/magicpig_attention_adapter.hpp",
+  "native_avx512": true,
+  "definitions": {
+    "library/sparse_attention/sparse_attention.cc": [
+      "qk_kernel", "qk_kernel_full", "transform_kernel", "softmax_kernel", "softmax_kernel_full",
+      "softmax_kernel_optimized", "wv_kernel", "wv_kernel_dim128_full",
+      "SparseAttentionServer::SparseAttentionServer", "SparseAttentionServer::~SparseAttentionServer",
+      "SparseAttentionServer::alloc", "SparseAttentionServer::fill", "SparseAttentionServer::clear",
+      "SparseAttentionServer::attention", "SparseAttentionServer::dynamic_attention", "SparseAttentionServer::full_attention",
+      "SparseAttentionServer::get_key_cache", "SparseAttentionServer::get_value_cache",
+      "SparseAttentionServer::get_key_norm", "SparseAttentionServer::get_score"
+    ]
+  }
+}

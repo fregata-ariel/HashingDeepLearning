@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-ATTENTION-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 Equations 9-11; Section 4.4 attention execution support",
+      "mechanism": "Actual selected sparse/full QK, probability correction, Softmax, weighted-value and server bodies against independent dense FP64 expectations on supplied candidate multisets.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "SparseAttentionServer::attention"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_attention_cpu.cpp",
+        "id": "MAGICPIG-ATTENTION-CPU"
+      },
+      "conditions": {
+        "execution": "portable software FP32 lanes; optional capability-gated actual AVX512F/FMA selected arithmetic",
+        "compositions": 682,
+        "probability_checks": 13312,
+        "output_coordinate_checks": 47168,
+        "ownership_checks": 432,
+        "seed": "fixed deterministic literal formulas, no RNG",
+        "sparse": "two layers, two batches, two KV heads, two query groups; dimensions 16/32/128; nnz 1/15/16/17/31/32; valid capacity 32 and initialized padding; distinct unsorted or repeated candidate IDs",
+        "full": "dimension 128 only; query groups 1/4/8; uniform nnz 16/32 per KV/query head; two batches and two KV heads",
+        "oracle": "Independent arithmetic BF16 decoding, dense FP64 dots/norms, explicitly enumerated Binomial(4,p) >=2 with K=3, released +1e-4 regularizer, normalization, weighted V and base-2 maximum/LSE.",
+        "bf16_adapter": "Explicit finite-value software dependency model: pinned FBGEMM uint32 bits+0x8000 then >>16, not ties-even. Actual FBGEMM intrinsics, dispatch and linkage untested.",
+        "tensor_adapter": "Explicit non-owning contiguous std-only buffers; queries already FP32; Tensor.to is identity. No Torch dtype conversion, ABI or allocation claim.",
+        "threading": "OpenMP pragmas execute serially without OpenMP runtime; production scheduling/races untested",
+        "tolerances": "pre-Softmax corrected scores 3e-5 on both modes; portable probability 3e-5, output 0.004 including BF16 quantization, base2 metadata 5e-5; native probability 0.002, output 0.008, metadata 0.03 as existing polynomial bootstrap budget",
+        "native_capabilities": "AVX512F and FMA with confirmed GCC CPU/OS gate before execution",
+        "gpu_execution": "postponed",
+        "torch_extension": "not built",
+        "corrected_score_checks": 32
+      },
+      "note": "Support characterization, not exact paper replication or end-to-end LSH/model validation. Actual same-data all-candidate corrected sparse and dense pipelines each match their own oracle and differ as expected because inclusion correction remains. fill copies storage; getter views alias live server; clear is observed through existing views; alloc called once per server and destructor sanitizer checked."
+    },
+    {
+      "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Sections 4.3-4.4; released CPU kernel capacity/dimension support boundaries",
+      "mechanism": "Defined-memory characterization of rounded QK score writes, full-Softmax padded mutation, unsupported dimension tails and full-WV query groups.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "qk_kernel"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_attention_cpu.cpp",
+        "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU"
+      },
+      "conditions": {
+        "cases": 11,
+        "nnz": "1/15/16/17/31/32",
+        "capacity": "Both indices and scores allocated to round_up(nnz,16); initialized score padding and valid row IDs; guards after capacity",
+        "padding_observation": "qk_kernel zeros only nnz but accumulates through round_up(nnz,16), preserving prior padding value; softmax_kernel_full scales/normalizes padded slots while valid probabilities remain correct",
+        "dimension_observation": "QK dimension17 ignores a nonzero last coordinate; WV dimension17 leaves last output untouched",
+        "full_group_observation": "wv_kernel_dim128_full group2 returns silently without output writes; supported full server tests restrict groups1/4/8 and dimension128",
+        "empty_candidates": "not called here; unsafe empty behavior is characterized separately",
+        "invalid_parameters": "not validated by maintained server; unsupported capacity, dimension, layer/request, divisibility, reallocation and expired views are not claimed safe",
+        "gpu_execution": "postponed",
+        "varying_gqa_lengths_observation": "Actual full server with groups4/KVheads2 and query lengths [16,16,16,16,32,32,32,32], zero logits and BF16 values1 produces head4 output0.5 versus independent dense1. KV-indexed nnz in QK/WV differs from query-indexed nnz in Softmax; verified full support remains uniform lengths only."
+      },
+      "note": "Reports observed restrictions rather than a repair. Maintained arithmetic remains unchanged. Padded capacity is a caller precondition; nnz-sized buffers are not asserted safe. Corrected sparse all-candidate support differs from dense full attention."
+    }
+  ]
+}

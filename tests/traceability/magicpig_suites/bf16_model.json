@@ -1,0 +1,8 @@
+{
+  "name": "bf16_model",
+  "test_file": "tests/traceability/test_magicpig_bf16_model_cpu.cpp",
+  "adapter_file": "tests/traceability/magicpig_bf16_model_adapter.hpp",
+  "definitions": {
+    "library/sparse_attention/sparse_attention.cc": ["wv_kernel"]
+  }
+}

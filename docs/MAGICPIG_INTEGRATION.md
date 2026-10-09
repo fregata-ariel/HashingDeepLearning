@@ -165,3 +165,20 @@ records conditioning budgets and excluded end-to-end claims. Repairs #67/#68
 remain separate. After #55/#56/#57 integration, #58 can proceed using all four
 portable suites and respecting known unsupported domains; parent MP2 remains
 open until its remaining work completes. GPU work remains postponed.
+
+## MP2 selected-CPU checkpoint: attention/Softmax/BF16 (#58)
+
+#58 adds actual selected sparse/full attention composition and server lifetime,
+separate Softmax/base-2 metadata and BF16 quantization/accumulation tests.
+[CPU contract](../ports/magicpig/CPU_VALIDATION.md) links the three detailed
+contracts. Seven portable suites run by default; AVX512F/FMA and native BF16
+remain capability-gated with explicit skips. The conversion model is distinct
+from actual BF16 dot-product execution and real FBGEMM linkage.
+
+682 head compositions, 32 corrected logits, Softmax SIMD-boundary fixtures and
+four strictly validated portable sanitizer diagnostics document both accepted
+domains and existing defects. New repairs #72–#77 cover Softmax tails/empty
+sets/native underflow, QK padding, dimension/group checks and varying GQA length
+routing. Closing the scoped MP2 verification tasks does not close these repairs
+or claim unrestricted correctness, whole-extension execution or GPU validation.
+The next dependent task is #59 (cache/normalizer merge); #60/#61 remain separate.

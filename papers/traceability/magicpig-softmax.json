@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-SOFTMAX-BOUNDARY-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.4 attention support; implementation-specific softmax and base-2 metadata",
+      "mechanism": "Selected sparse, full and complete-tile optimized softmax against independent dense FP64 normalization and base-2 metadata.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "softmax_kernel"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_softmax_cpu.cpp",
+        "id": "MAGICPIG-SOFTMAX-BOUNDARY-CPU"
+      },
+      "conditions": {
+        "execution": "portable sixteen-FP32 software lanes; capability-gated native AVX512F/FMA with actual extracted polynomial",
+        "seed": "fixed literal arithmetic sequence; no RNG",
+        "lengths": [
+          1,
+          2,
+          15,
+          16,
+          17,
+          31,
+          32,
+          33
+        ],
+        "common_shifts": [
+          0,
+          -32,
+          -128
+        ],
+        "sqrt_dimensions": [
+          1,
+          2,
+          4
+        ],
+        "sparse_cases": 72,
+        "full_rounded_allocation_cases": 72,
+        "optimized_complete_tile_cases": 18,
+        "oracle": "Independent host FP64 exp/log; raw float32 inputs divided by sqrt dimension before oracle, sparse receives already-scaled scores",
+        "known_literal": "Sixteen zero logits: every probability 1/16, base-2 max zero and base-2 LSE four",
+        "portable_probability_absolute_tolerance": 2e-06,
+        "native_probability_absolute_tolerance": 0.005,
+        "native_probability_relative_tolerance": 0.02,
+        "normalization_tolerance": 2e-05,
+        "metadata_tolerance": "2e-6*(1+abs(FP64 base2 maximum)); native polynomial LSE adds 0.03",
+        "full_buffer": "Allocation rounded up to sixteen; tail writes are separately asserted as existing defects",
+        "portable_exponential": "host std::exp(float), not the native polynomial",
+        "scalar_header_adapter": "expf32/log2f32 use host std::exp(float)/std::log2(float) in both modes",
+        "native_exponential": "actual selected avx512_exp_ps and constants; supported numerical matrix has finite moderate relative logits",
+        "gpu_execution": "postponed",
+        "torch_extension": "not built"
+      },
+      "note": "Support only, not end-to-end attention. Sparse bounds preserve logical guard lanes; full tails require legal rounded allocations and do not establish logical bounds correctness. Optimized numerical support is restricted to lengths16 and32. Host scalar header substitutes do not validate original header linkage."
+    },
+    {
+      "id": "MAGICPIG-SOFTMAX-DEFECT-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.4 attention support; implementation-specific softmax and base-2 metadata",
+      "mechanism": "Characterize full/optimized tail writes, optimized padded-lane probability contamination, empty domains and native extreme polynomial failure.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "softmax_kernel_optimized"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_softmax_cpu.cpp",
+        "id": "MAGICPIG-SOFTMAX-DEFECT-CPU"
+      },
+      "conditions": {
+        "execution": "Valid padded default buffers; exact-sized bad calls only in isolated sanitizer subprocesses",
+        "seed": "same fixed literal matrix, no RNG",
+        "padded_tail_defect_cases": 108,
+        "tail_observations": "Full scales/normalizes padding; optimized includes padding as candidates and writes positive padded probabilities. Optimized valid-subset sum is below one.",
+        "exact_capacity_probes": [
+          "--probe-full-tail",
+          "--probe-optimized-tail"
+        ],
+        "exact_capacity_expected": "Portable AddressSanitizer heap-buffer-overflow; fail if diagnostic is missing or differs, never turn unexpected return into success",
+        "empty_probes": [
+          "--probe-sparse-empty",
+          "--probe-full-empty"
+        ],
+        "empty_expected": "Fatal UBSan load of null pointer, arising from dereferencing max_element on empty range",
+        "optimized_empty": "No score writes; max and LSE are both -Inf without status",
+        "extreme_logits": "Three 32-score rows: sixteen zero and sixteen -90, -100 or -1000; native polynomial must exhibit nonfinite/negative or >0.005 FP64 probability error in each row; portable host exp underflow succeeds",
+        "native_masked_memory_safety": "Native masked intrinsic sanitizer instrumentation is not established; exact-capacity diagnostic gates use portable lanes",
+        "gpu_execution": "postponed",
+        "repair": "none; immutable archived source unchanged",
+        "extreme_cases": 3
+      },
+      "note": "Existing-defect characterization, not correctness support for partial optimized tiles, empty candidates or all finite logits. Full n1/sqrt_dim1 invalid padding writes may preserve bits; exact allocation probes independently expose bounds violation."
+    }
+  ]
+}

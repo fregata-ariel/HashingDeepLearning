@@ -168,6 +168,52 @@ Actual native modes remain capability-gated; Python adapters remain outside
 native sanitizer claims. GPU/full-extension/model execution is still unverified.
 
 #55/#56/#57 are scoped mechanism verification with explicit follow-up defects;
-#58 sparse-attention/BF16/Softmax coverage is the next dependent task. It must
-respect these tested domains and track repairs separately rather than treating
-characterized invalid/unstable behavior as production correctness.
+#58 adds selected sparse-attention/BF16/Softmax composition below. These tested
+domains and follow-up repairs remain separate from unrestricted correctness.
+
+## Attention, Softmax and BF16 checkpoint (#58)
+
+Default execution now runs seven portable suites: baseline, simhash,
+lsh_retrieval, probability, attention, softmax and bf16_model. The execution-mode
+table above describes the original bootstrap. The attention suite additionally
+executes actual QK/WV and server bodies; native attention/softmax use the actual
+exponential polynomial and constants, hashed independently of the test adapter.
+
+| Contract | Verified scope |
+| --- | --- |
+| [Attention](ATTENTION_CPU_CONTRACT.md) | 682 head compositions, 13,312 probability and 47,168 output checks, 432 ownership checks, 32 corrected logits and 11 boundary cases |
+| [Softmax](SOFTMAX_CPU_CONTRACT.md) | 72 sparse, 72 padded full and 18 complete optimized cases; base-2 maximum/LSE literal checks; 108 tail and three native extreme characterizations |
+| [BF16](BF16_CPU_CONTRACT.md) | Conversion model: 24 cases/1,408 coordinates plus22 bit literals; actual native QK:18 complete/24 padded cases,864 scores and three unsupported dimensions |
+
+The independent FP64 oracle uses the same supplied candidate multiset and
+quantized inputs. BF16 input conversion, FP32 accumulation and BF16 output
+rounding are distinguished from attention inclusion correction. The software
+conversion follows pinned raw uint32 bits+0x8000 then shift16; it is not
+ties-even or evidence of real FBGEMM conversion/dispatch. Queries are already
+FP32; the Tensor shim and serial OpenMP pragmas do not establish production
+Torch ABI/conversion/scheduling. Native BF16 QK remains independently gated
+on AVX512F/BW/BF16, without requiring FMA.
+
+Four descriptor-enrolled negative probes run only in portable sanitizer mode:
+full/optimized exact-tail allocations require ASan heap-buffer-overflow;
+sparse/full empty sets require fatal UBSan null-float load. Exit1, exact marker,
+diagnostic category and selected production-body source site must all agree.
+ASan addresses are resolved using addr2line against the exact non-PIE executable;
+the selected function and line must be paired. Extra errors, generic crashes,
+wrong sites or absent diagnostics fail the run. Native masked-intrinsic
+instrumentation is not inferred. The evidence records these separately as
+known_defect_reproduced, and clears prior successful evidence before validation.
+`test_magicpig_boundary_contracts.py` covers rejection and stale-evidence cases.
+
+Repairs remain open: [#72 tails](https://github.com/fregata-ariel/HashingDeepLearning/issues/72),
+[#73 empty sets](https://github.com/fregata-ariel/HashingDeepLearning/issues/73),
+[#74 native exponent](https://github.com/fregata-ariel/HashingDeepLearning/issues/74),
+[#75 QK padding](https://github.com/fregata-ariel/HashingDeepLearning/issues/75),
+[#76 dimensions/groups](https://github.com/fregata-ariel/HashingDeepLearning/issues/76),
+and [#77 varying GQA lengths](https://github.com/fregata-ariel/HashingDeepLearning/issues/77).
+Full server correctness support uses uniform lengths, dim128 and groups1/4/8;
+the varying-length witness returns0.5 versus independent1.0 and remains a defect.
+The immutable archive and maintained arithmetic are unchanged. Routine fixtures
+need no model/data downloads; GPU, full-extension and generation tests remain
+postponed/unverified. Hosted CI keeps LeakSanitizer enabled; the local sandbox
+requires the explicit `--sanitize --disable-leak-check` exception only.

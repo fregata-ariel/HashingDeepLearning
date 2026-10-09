@@ -217,3 +217,21 @@ The immutable archive and maintained arithmetic are unchanged. Routine fixtures
 need no model/data downloads; GPU, full-extension and generation tests remain
 postponed/unverified. Hosted CI keeps LeakSanitizer enabled; the local sandbox
 requires the explicit `--sanitize --disable-leak-check` exception only.
+
+
+## Cache/normalizer merge CPU checkpoint (#59, in progress)
+
+The new `cache_merge` Python descriptor runs nine pinned `attnserver.py`
+statement blocks through restricted CPU substitutes. See
+[the scoped cache/merge contract](CACHE_MERGE_CPU_CONTRACT.md). It checks
+16 partition cases, 312 GQA query-head output/LSE merges (156 full-selection
+dense comparisons), source page-length/copy/clear decisions and sensitivity
+to omitted correction, inconsistent centering and LSE base mismatch.
+
+This is explicitly a **source-selected Python/host FP64 support model**, not
+Torch, real FlashInfer `merge_state`, native GPU/async copy, or a complete
+LSH-to-attention Python runtime. AST runs are
+`not_applicable_python_adapter` in sanitizer mode. Short contexts with
+empty offload remain unsupported and separate source repairs remain open.
+#60 must connect the verified individual mechanisms before full composition
+is claimed.

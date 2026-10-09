@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-CACHE-MERGE-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.4, CPU/GPU attention partition and output/normalizer merge",
+      "mechanism": "Execute pinned LSHSparseAttnServer.fill, plan, decode and clear AST statements using CPU surrogates, and compare partition/centering, disjoint normalized output and LSE merging with an independently enumerated FP64 union-attention oracle.",
+      "relation": "support",
+      "implementation": {
+        "file": "third_party/magicpig/models/attnserver.py",
+        "symbol": "decode"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_cache_merge_cpu.py",
+        "id": "MAGICPIG-CACHE-MERGE-CPU"
+      },
+      "conditions": {
+        "execution": "Nine exact AST-selected pinned source regions; Python stdlib and previously verified restricted list-Tensor substitute. No source arithmetic changes.",
+        "seed": "fixed literal key/value/query formulas; no random projections or model inputs",
+        "scope": "sink/local/offloaded/new token disjointness; two requests, two KV heads, short valid sequences; dense/sparse fill copy and length state; append centering; plan increments; clear/reuse; GQA group sizes 1,4,8",
+        "partition_cases": 16,
+        "merge_head_checks": 312,
+        "full_selection_dense_checks": 156,
+        "oracle": "Independent FP64 dot products and direct union exponent normalization; p=1 for static/new tokens, 0.4/0.65 for sampled offload, p=1 for full selection; base-2 LSE checked alongside outputs",
+        "sensitivity": "Omitted sparse probability correction, inconsistent/stale centering and natural-log/base-2 LSE mixing each produce an observable numerical discrepancy",
+        "short_input_limit": "seq_len <= sink + local produces an empty offload reduction in the pinned source and is explicitly unsupported here; two such negative characterization cases are not correctness passes",
+        "capacity": "Host bounds assert plan length within configured page size; native capacity checks and stream/transfer ordering are unverified",
+        "adapter_arithmetic": "FP64 tensor, no BF16/Torch conversion; selected cache copies are a host copy surrogate; host FlashInfer merge_state replacement computes stable base-2 weighted average",
+        "gpu_execution": "postponed",
+        "torch_runtime": "not executed",
+        "flashinfer_runtime": "not executed",
+        "sanitizers": "Python AST substitute is not an ASan/UBSan/LSan test; existing C++ suites provide separate native sanitizer evidence"
+      },
+      "note": "Scoped source-behavior and CPU numerical contract, not production Torch/FlashInfer integration or native GPU scheduling. Real FBGEMM dispatch, pinning, asynchronous transfers, thread races and end-to-end model generation are unexecuted. Keep existing #65-#68 and #72-#77 repairs open; do not promote characterized invalid sizes or empty offload to production support."
+    }
+  ]
+}

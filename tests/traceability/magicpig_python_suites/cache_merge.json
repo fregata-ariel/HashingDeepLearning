@@ -1,0 +1,17 @@
+{
+  "name": "cache_merge",
+  "test_file": "tests/traceability/test_magicpig_cache_merge_cpu.py",
+  "source_file": "third_party/magicpig/models/attnserver.py",
+  "class_name": "LSHSparseAttnServer",
+  "blocks": [
+    "partition",
+    "centering",
+    "center_store",
+    "sparse_cache",
+    "dense_fill",
+    "append_centering",
+    "plan",
+    "merge",
+    "clear"
+  ]
+}

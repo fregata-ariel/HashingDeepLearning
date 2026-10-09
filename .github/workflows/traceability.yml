@@ -92,6 +92,7 @@ jobs:
         run: |
           python3 tests/traceability/test_magicpig_capabilities.py
           python3 tests/traceability/test_magicpig_cpu_contracts.py
+          python3 tests/traceability/test_magicpig_boundary_contracts.py
           python3 tools/check_magicpig_cpu.py --native --build-dir traceability-artifact/magicpig-cpu/plain
           python3 tools/check_magicpig_cpu.py --native --sanitize --build-dir traceability-artifact/magicpig-cpu/sanitized
 

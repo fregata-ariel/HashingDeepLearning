@@ -1,0 +1,39 @@
+{
+  "name": "softmax",
+  "test_file": "tests/traceability/test_magicpig_softmax_cpu.cpp",
+  "adapter_file": "tests/traceability/magicpig_softmax_adapter.hpp",
+  "native_avx512": true,
+  "definitions": {
+    "library/sparse_attention/sparse_attention.cc": [
+      "softmax_kernel",
+      "softmax_kernel_full",
+      "softmax_kernel_optimized"
+    ]
+  },
+  "probes": [
+    {
+      "argument": "--probe-full-tail",
+      "marker": "MAGICPIG-SOFTMAX-PROBE full-tail",
+      "diagnostic": "asan_heap_buffer_overflow",
+      "symbol": "softmax_kernel_full"
+    },
+    {
+      "argument": "--probe-optimized-tail",
+      "marker": "MAGICPIG-SOFTMAX-PROBE optimized-tail",
+      "diagnostic": "asan_heap_buffer_overflow",
+      "symbol": "softmax_kernel_optimized"
+    },
+    {
+      "argument": "--probe-sparse-empty",
+      "marker": "MAGICPIG-SOFTMAX-PROBE sparse-empty",
+      "diagnostic": "ubsan_null_load",
+      "symbol": "softmax_kernel"
+    },
+    {
+      "argument": "--probe-full-empty",
+      "marker": "MAGICPIG-SOFTMAX-PROBE full-empty",
+      "diagnostic": "ubsan_null_load",
+      "symbol": "softmax_kernel_full"
+    }
+  ]
+}

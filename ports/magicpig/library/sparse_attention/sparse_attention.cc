@@ -35,6 +35,16 @@ __m512 avx512_exp_ps(__m512 x) {
     return _mm512_mul_ps(int_exp, poly);
 }
 
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
+ * @par Implementation note
+ * Borrowed BF16 keys/FP32 query; dim divisible by16. Supplied IDs form a
+ * multiset. Both IDs and initialized scores require round_up(nnz,16) capacity;
+ * padded scores accumulate prior values. #75/#76 track logical tail/dimension
+ * repairs. Independent same-quantized FP64 QK and defined-memory witnesses.
+ * Support: TRACE_TEST_ID: MAGICPIG-ATTENTION-BOUNDARIES-CPU.
+ */
 void qk_kernel(
 const bfloat16 *key, 
 const int *ind,
@@ -71,13 +81,15 @@ const int nnz)
  * MagicPIG arXiv v4, Sections 4.3 and 4.4: BF16 dot-product support.
  * @par Implementation note
  * Borrowed keys/query use uint16_t BF16 storage; caller owns all buffers.
- * The bootstrap verifies one full tile: nnz=16, HEAD_DIM=32, valid row IDs,
- * capacity for 16 scores. Generic padded tails and dimensions are pending.
+ * Preserves bootstrap nnz=16/dim32 and covers dim32/64/128, nnz0/16/32.
+ * Partial tiles require valid indices and initialized score capacity rounded
+ * to16. Unsupported dimensions16/48/80 truncate; repairs #75/#76 track this.
  * Native execution requires AVX512F/BW/BF16 and GCC >=11, checked before the
  * SIMD binary starts. Storage alias replaces the FBGEMM header only; no
  * Torch/FBGEMM extension or conversion/dispatch/ownership claim is made.
  * @par Traceability relation
  * Support: actual restricted native body; TRACE_TEST_ID: MAGICPIG-BF16-SELECTED-CPU.
+ * TRACE_TEST_ID: MAGICPIG-BF16-BOUNDARY-CPU.
  */
 void qk_kernel_bf16_impl(
 const bfloat16 *key, 
@@ -220,12 +232,14 @@ const int *indices) {
  * Borrowed score buffer has nnz finite logits and nnz must be positive.
  * Mutates scores to probabilities; max_value[0] is the base-2 maximum and
  * expsum[0] is base-2 log-sum-exp, not a raw sum. Buffers remain caller-owned.
- * CPU fixture uses host QK/WV; portable SIMD lanes replace polynomial exp
+ * Bootstrap uses host QK/WV; #58 also composes actual selected QK/WV bodies.
+ * Empty candidates remain unsupported (repair #73). Portable lanes replace exp
  * with host exp. Native AVX512F/FMA runs the actual polynomial on bounded
  * shifted logits with a separate approximation tolerance. No Torch extension,
  * LSH sampling, OpenMP scheduling or GPU execution is inferred.
  * @par Traceability relation
  * Support: selected arithmetic bootstrap; TRACE_TEST_ID: MAGICPIG-BASELINE-CPU.
+ * TRACE_TEST_ID: MAGICPIG-SOFTMAX-BOUNDARY-CPU.
  */
 void softmax_kernel(
 float *score, 
@@ -283,6 +297,17 @@ float *expsum) {
     expsum[0] = log2f(exp_sum) + max_value[0];
 }
 
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
+ * @par Implementation note
+ * Complete tiles only for correctness support; partial-tile masking includes
+ * padding in maximum/sum and writes beyond logical length (repair #72).
+ * Empty metadata is -Inf without status (#73); native extreme exponential
+ * fails (#74). Metadata uses base-2 units. Portable isolated sanitizer probes
+ * require the exact diagnostic and selected caller; native masked diagnostics
+ * are not inferred. Support: TRACE_TEST_ID: MAGICPIG-SOFTMAX-DEFECT-CPU.
+ */
 void softmax_kernel_optimized(
     float *score,
     const int nnz,
@@ -330,6 +355,16 @@ void softmax_kernel_optimized(
 }
 
 
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
+ * @par Implementation note
+ * Positive nnz, finite moderate logits, dimension scale positive. Borrowed
+ * scores need rounded-to16 physical capacity: source scales and normalizes
+ * padding (#72). Empty max dereference remains unsupported (#73). Returned
+ * max and LSE use base2; no raw exponential sum or natural-log claim.
+ * Support: see MAGICPIG-SOFTMAX-BOUNDARY-CPU in the sparse Softmax contract.
+ */
 void softmax_kernel_full(
 float *score, 
 const int nnz,
@@ -362,6 +397,17 @@ float *expsum
   expsum[0] = log2f32(exp_sum) + max_value[0];
 }
 
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
+ * @par Implementation note
+ * Borrowed BF16 values, supplied candidate multiset and FP32 probabilities;
+ * output dimension divisible by16. FP32 FMA accumulation precedes BF16
+ * conversion. Dependency model adds raw FP32 bits0x8000 before shifting16;
+ * it is not ties-even, nor evidence of real FBGEMM linkage/dispatch.
+ * Independent FP64 oracle separates quantization, accumulation and rounding.
+ * Support: TRACE_TEST_ID: MAGICPIG-BF16-MODEL-CPU.
+ */
 void wv_kernel(
 const bfloat16 *value, 
 const int *ind,
@@ -908,6 +954,20 @@ torch::Tensor nnz_pt)
 
 }
 #endif
+/**
+ * @par Paper mapping
+ * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
+ * @par Implementation note
+ * CPU selected-body composition only: alloc once, fill within capacity, valid
+ * layer/head/request IDs, rounded candidate capacity, server outlives borrowed
+ * getter views. Static/dynamic queries are already FP32 in the Tensor shim;
+ * no Torch conversion/ABI or OpenMP scheduling is established. Supported
+ * sparse dimensions16/32/128 and candidate multisets are compared with an
+ * independent dense FP64 oracle on the same supplied subset. Full path uses
+ * dim128/groups1/4/8/uniform nnz; varying GQA lengths reproduce repair #77.
+ * All-candidate corrected sparse differs from uncorrected dense by design.
+ * Support: TRACE_TEST_ID: MAGICPIG-ATTENTION-CPU.
+ */
 void SparseAttentionServer::attention(
 int layer_id, 
 int K,

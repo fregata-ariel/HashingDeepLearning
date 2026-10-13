@@ -34,7 +34,7 @@ bool close_prob(float actual,double expected,bool polynomial) {
     return std::isfinite(actual) && actual>=0 && std::abs(actual-expected)<=2e-6;
 #endif
 }
-void compare(const std::vector<float>& actual,const Oracle& expected,float max2,float lse2,bool polynomial) {
+void compare(const float* actual,const Oracle& expected,float max2,float lse2,bool polynomial) {
     double sum=0;
     for (std::size_t i=0;i<expected.p.size();++i) {
         require(close_prob(actual[i],expected.p[i],polynomial),"probability differs from dense FP64 oracle");
@@ -51,22 +51,11 @@ void compare(const std::vector<float>& actual,const Oracle& expected,float max2,
     require(std::isfinite(max2) && std::abs(max2-expected.max2)<=float_roundoff,"base-2 maximum differs");
     require(std::isfinite(lse2) && std::abs(lse2-expected.lse2)<=float_roundoff+approximation,"base-2 log-sum-exp differs");
 }
-void isolated_probe(const std::string& option) {
-    float maximum=0, lse=0;
-    if (option=="--probe-full-tail" || option=="--probe-optimized-tail") {
-        // Exactly one element: rounded-vector reads have no legal padding.
-        std::unique_ptr<float[]> scores(new float[1]); scores[0]=0;
-        std::cout<<"MAGICPIG-SOFTMAX-PROBE "<<option.substr(8)<<std::endl;
-        if (option=="--probe-full-tail") softmax_kernel_full(scores.get(),1,2,&maximum,&lse);
-        else softmax_kernel_optimized(scores.get(),1,2,&maximum,&lse);
-    } else throw std::runtime_error("unknown isolated probe");
-    throw std::runtime_error("unsafe source call unexpectedly returned");
-}
 int run() {
     const std::array<int,8> lengths{1,2,15,16,17,31,32,33};
     const std::array<float,3> shifts{0,-32,-128};
     const std::array<float,3> scales{1,2,4};
-    std::size_t sparse_cases=0,full_cases=0,optimized_cases=0,tail_defects=0;
+    std::size_t sparse_cases=0,full_cases=0,optimized_cases=0,exact_cases=0;
     double largest_error=0;
     for (int n:lengths) for (float shift:shifts) for (float scale:scales) {
         std::vector<float> raw(n);
@@ -77,38 +66,31 @@ int run() {
         for (int i=0;i<n;++i) sparse[i]=raw[i]/scale;
         float maximum=0,lse=0;
         softmax_kernel(sparse.data(),n,&maximum,&lse);
-        compare(sparse,expected,maximum,lse,true);
+        compare(sparse.data(),expected,maximum,lse,true);
         require(sparse[n]==sentinel && sparse[n+1]==sentinel,"sparse wrote outside logical length");
         ++sparse_cases;
-        // Full actually rounds up its scaling/normalizing writes. Supply legal
-        // allocation padding, then assert that the unexpected writes occurred.
-        const int rounded=(n+15)&~15;
-        std::vector<float> full(rounded+2,sentinel);
+        // Guard lanes detect logical writes even in ordinary builds.
+        std::vector<float> full(n+2,sentinel),optimized(n+2,sentinel);
         std::copy(raw.begin(),raw.end(),full.begin());
-        softmax_kernel_full(full.data(),n,scale,&maximum,&lse);
-        compare(full,expected,maximum,lse,false);
-        require(full[rounded]==sentinel && full[rounded+1]==sentinel,"full crossed rounded allocation");
-        if (n!=rounded) {
-            // For n=1/scale=1 the two invalid writes can preserve the bits.
-            if (scale!=1 || n!=1) require(full[n]!=sentinel,"full-tail defect disappeared; revise contract");
-            ++tail_defects;
-        }
-        ++full_cases;
-        // Optimized is supported only for complete tiles. Partial tiles below
-        // are a separate deterministic defect characterization whose padding
-        // carries the same common shift, keeping relative logits moderate.
-        std::vector<float> optimized(rounded+2,shift);
-        optimized[rounded]=optimized[rounded+1]=sentinel;
         std::copy(raw.begin(),raw.end(),optimized.begin());
+        softmax_kernel_full(full.data(),n,scale,&maximum,&lse);
+        compare(full.data(),expected,maximum,lse,false);
+        require(full[n]==sentinel && full[n+1]==sentinel,"full wrote beyond logical length");
+        ++full_cases;
         softmax_kernel_optimized(optimized.data(),n,scale,&maximum,&lse);
-        require(optimized[rounded]==sentinel && optimized[rounded+1]==sentinel,"optimized crossed rounded allocation");
-        if (n==rounded) { compare(optimized,expected,maximum,lse,true); ++optimized_cases; }
-        else {
-            double actual_sum=0;
-            for (int i=0;i<n;++i) actual_sum+=optimized[i];
-            require(std::isfinite(actual_sum) && actual_sum<0.999,"optimized-tail defect disappeared; revise contract");
-            require(optimized[n]>0 && std::isfinite(optimized[n]),"optimized did not include invalid padded lane");
-            ++tail_defects;
+        compare(optimized.data(),expected,maximum,lse,true);
+        require(optimized[n]==sentinel && optimized[n+1]==sentinel,"optimized wrote beyond logical length");
+        ++optimized_cases;
+        // Exactly nnz floats: sanitizer redzones reject any rounded tail read
+        // or write; independent oracle checks every valid probability and LSE.
+        for (int variant=0;variant<3;++variant) {
+            std::unique_ptr<float[]> exact(new float[n]);
+            for (int i=0;i<n;++i) exact[i]=variant==0 ? raw[i]/scale : raw[i];
+            if (variant==0) softmax_kernel(exact.get(),n,&maximum,&lse);
+            else if (variant==1) softmax_kernel_full(exact.get(),n,scale,&maximum,&lse);
+            else softmax_kernel_optimized(exact.get(),n,scale,&maximum,&lse);
+            compare(exact.get(),expected,maximum,lse,variant!=1);
+            ++exact_cases;
         }
         for (int i=0;i<n;++i) largest_error=std::max(largest_error,std::abs(double(sparse[i])-expected.p[i]));
     }
@@ -152,7 +134,7 @@ int run() {
                  <<" shifted_probability="<<extreme[16]<<" base2_lse="<<lse<<'\n';
 #else
         require(!mismatch,"host exponential underflow baseline failed");
-        compare(extreme,extreme_expected,maximum,lse,false);
+        compare(extreme.data(),extreme_expected,maximum,lse,false);
 #endif
         ++extreme_cases;
     }
@@ -160,15 +142,15 @@ int run() {
     std::cout<<"MAGICPIG-SOFTMAX-DEFECT polynomial-extreme not executed in software mode\n";
 #endif
     require(extreme_cases==3,"extreme fixture matrix incomplete");
-    require(sparse_cases==72 && full_cases==72 && optimized_cases==18 && tail_defects==108,"coverage matrix incomplete");
-    std::cout<<std::setprecision(12)<<"MAGICPIG-SOFTMAX-BOUNDARY-CPU sparse="<<sparse_cases<<" full_padded="<<full_cases<<" optimized_full_tile="<<optimized_cases<<" expected_tail_defects="<<tail_defects<<" max_probability_error="<<largest_error<<"\n";
+    require(sparse_cases==72 && full_cases==72 && optimized_cases==72 && exact_cases==216,"coverage matrix incomplete");
+    std::cout<<std::setprecision(12)<<"MAGICPIG-SOFTMAX-BOUNDARY-CPU sparse="<<sparse_cases<<" full="<<full_cases<<" optimized="<<optimized_cases<<" exact_capacity="<<exact_cases<<" max_probability_error="<<largest_error<<"\n";
     return 0;
 }
 } // namespace magicpig_softmax_test
 int main(int argc,char** argv) {
     try {
-        if (argc==2) magicpig_softmax_test::isolated_probe(argv[1]);
-        else if (argc!=1) throw std::runtime_error("expected zero or one probe option");
+        (void)argv;
+        if (argc!=1) throw std::runtime_error("expected no probe options");
         return magicpig_softmax_test::run();
     } catch (const std::exception& error) { std::cerr<<error.what()<<'\n'; return 1; }
 }

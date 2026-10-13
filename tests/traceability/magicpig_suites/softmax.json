@@ -10,18 +10,5 @@
       "softmax_kernel_optimized"
     ]
   },
-  "probes": [
-    {
-      "argument": "--probe-full-tail",
-      "marker": "MAGICPIG-SOFTMAX-PROBE full-tail",
-      "diagnostic": "asan_heap_buffer_overflow",
-      "symbol": "softmax_kernel_full"
-    },
-    {
-      "argument": "--probe-optimized-tail",
-      "marker": "MAGICPIG-SOFTMAX-PROBE optimized-tail",
-      "diagnostic": "asan_heap_buffer_overflow",
-      "symbol": "softmax_kernel_optimized"
-    }
-  ]
+  "probes": []
 }

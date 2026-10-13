@@ -7,6 +7,7 @@
     "library/sparse_attention/sparse_attention.cc": [
       "qk_kernel",
       "qk_kernel_full",
+      "magicpig_inclusion_log_probability",
       "transform_kernel",
       "softmax_kernel",
       "softmax_kernel_full",

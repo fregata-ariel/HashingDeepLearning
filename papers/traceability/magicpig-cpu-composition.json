@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-COMPOSITION-BRIDGE-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Sections 4.3 and 4.4, SimHash sampling, correction and split attention merge",
+      "mechanism": "Actual maintained LSH retrieval feeds SparseAttentionServer correction/attention and dense selected-body attention through a persistent checked CPU protocol.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/lsh/lsh.cc",
+        "symbol": "batch_retrieve"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_composition_bridge.cpp",
+        "id": "MAGICPIG-COMPOSITION-BRIDGE-CPU"
+      },
+      "conditions": {
+        "execution": "CPU-only actual selected bodies; dim128, one KV head, GQA1/4/8, bounded padded buffers and uniform nonempty lengths",
+        "seed": "fixed literal dyadic coordinates/projections, no RNG",
+        "scope": "Persistent C++ owner and selected Python host cache; sorted fill, exact selected sets, actual correction logits/probabilities/output/LSE, two append steps, clear and refill; immutable provenance gate",
+        "oracle": "Independent FP64 raw key/value/query union enumerator, K1/L2 inclusion enumeration with released +1e-4; p1 explicit dense baseline full mode",
+        "gpu_execution": "postponed",
+        "torch_runtime": "not executed",
+        "flashinfer_runtime": "not executed",
+        "sanitizers": "C++ bridge self-test and connected bridge calls are ASan/UBSan/LSan instrumented by --sanitize; Python host adapter not instrumented",
+        "dense_path": "Actual qk_kernel_full\u2192softmax_kernel_full\u2192wv_kernel_dim128_full selected-body surrogate for unexecuted FlashInfer; original server optimized-tail path remains unsupported (#72)"
+      },
+      "note": "Literal projection conditioning is a deterministic mechanism fixture, not empirical inclusion-probability or accuracy verification. Portable SIMD/copy/Tensor/BF16 dependency models and serial execution replace dependencies. Native SIMD, scheduler/threads, Torch, FBGEMM linkage, CUDA, FlashInfer, model weights and datasets unexecuted. Full retrieval is routed explicitly to actual qk/full-softmax/wv without correction; all-candidate sparse path remains corrected and differs from dense. Known repairs remain open."
+    },
+    {
+      "id": "MAGICPIG-CPU-COMPOSITION-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Sections 4.3 and 4.4, SimHash sampling, correction and split attention merge",
+      "mechanism": "Actual pinned SimHash/centering/host cache AST and maintained C++ retrieval/probability/attention compose across two decode steps and clear/reuse; independent FP64 union attention and actual executed mutation sensitivity.",
+      "relation": "support",
+      "implementation": {
+        "file": "third_party/magicpig/models/attnserver.py",
+        "symbol": "decode"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_cpu_composition.py",
+        "id": "MAGICPIG-CPU-COMPOSITION-CPU"
+      },
+      "conditions": {
+        "execution": "CPU-only actual selected bodies; dim128, one KV head, GQA1/4/8, bounded padded buffers and uniform nonempty lengths",
+        "seed": "fixed literal dyadic coordinates/projections, no RNG",
+        "scope": "Persistent C++ owner and selected Python host cache; sorted fill, exact selected sets, actual correction logits/probabilities/output/LSE, two append steps, clear and refill; immutable provenance gate",
+        "oracle": "Independent FP64 raw key/value/query union enumerator, K1/L2 inclusion enumeration with released +1e-4; p1 explicit dense baseline full mode",
+        "gpu_execution": "postponed",
+        "torch_runtime": "not executed",
+        "flashinfer_runtime": "not executed",
+        "sanitizers": "C++ bridge self-test and connected bridge calls are ASan/UBSan/LSan instrumented by --sanitize; Python host adapter not instrumented",
+        "dense_path": "Actual qk_kernel_full\u2192softmax_kernel_full\u2192wv_kernel_dim128_full selected-body surrogate for unexecuted FlashInfer; original server optimized-tail path remains unsupported (#72)",
+        "head_checks": 104,
+        "full_selection_dense_checks": 52,
+        "decode_steps": 24,
+        "clear_cycles": 12,
+        "mutation_cases": {
+          "omit_correction": 12,
+          "stale_lookup": 6,
+          "stale_cache": 6,
+          "stale_centering": 12
+        }
+      },
+      "note": "Literal projection conditioning is a deterministic mechanism fixture, not empirical inclusion-probability or accuracy verification. Portable SIMD/copy/Tensor/BF16 dependency models and serial execution replace dependencies. Native SIMD, scheduler/threads, Torch, FBGEMM linkage, CUDA, FlashInfer, model weights and datasets unexecuted. Full retrieval is routed explicitly to actual qk/full-softmax/wv without correction; all-candidate sparse path remains corrected and differs from dense. Known repairs remain open."
+    }
+  ]
+}

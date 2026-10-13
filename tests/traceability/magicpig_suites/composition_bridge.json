@@ -1,0 +1,36 @@
+{
+  "name": "composition_bridge",
+  "test_file": "tests/traceability/test_magicpig_composition_bridge.cpp",
+  "adapter_file": "tests/traceability/magicpig_composition_adapter.hpp",
+  "native_avx512": false,
+  "definitions": {
+    "library/sparse_attention/sparse_attention.cc": [
+      "qk_kernel",
+      "qk_kernel_full",
+      "transform_kernel",
+      "softmax_kernel",
+      "softmax_kernel_full",
+      "wv_kernel",
+      "wv_kernel_dim128_full",
+      "SparseAttentionServer::SparseAttentionServer",
+      "SparseAttentionServer::~SparseAttentionServer",
+      "SparseAttentionServer::alloc",
+      "SparseAttentionServer::fill",
+      "SparseAttentionServer::clear",
+      "SparseAttentionServer::attention",
+      "SparseAttentionServer::get_key_cache",
+      "SparseAttentionServer::get_value_cache",
+      "SparseAttentionServer::get_key_norm",
+      "SparseAttentionServer::get_score"
+    ],
+    "library/lsh/lsh.cc": [
+      "LSH::LSH",
+      "LSH::~LSH",
+      "LSH::alloc",
+      "LSH::fill",
+      "LSH::retrieve",
+      "LSH::batch_retrieve",
+      "LSH::clear"
+    ]
+  }
+}

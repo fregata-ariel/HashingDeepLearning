@@ -318,8 +318,9 @@ float *expsum) {
  * @par Paper mapping
  * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
  * @par Implementation note
- * Complete tiles only for correctness support; partial-tile masking includes
- * padding in maximum/sum and writes beyond logical length (repair #72).
+ * Borrowed raw scores require exactly nnz floats: complete SIMD tiles and a
+ * scalar tail use only logical candidates in maximum, sum and writes.
+ * Positive finite head_dim_scale is sqrt(head_dim); metadata uses base-2.
  * Empty support performs no score access and reports -Inf metadata; native extreme exponential
  * fails (#74). Metadata uses base-2 units. Portable isolated sanitizer probes
  * require the exact diagnostic and selected caller; native masked diagnostics
@@ -340,39 +341,40 @@ void softmax_kernel_optimized(
     }
 
 
-    int nnz_16 = (nnz + 15) & ~15; // Round up to the nearest multiple of 16
+    const int full_lanes = (nnz / 16) * 16;
+    const float inverse_scale = 1.0f / head_dim_scale;
+    __m512 scale_vec = _mm512_set1_ps(inverse_scale);
 
-    // Scale the scores by 1/sqrt(head_dim)
-    __m512 scale_vec = _mm512_set1_ps(1.0f / head_dim_scale);
-
-    // Step 1: Compute max value using AVX512
+    // Only complete tiles enter SIMD; the logical tail never reads padding.
     __m512 max_vec = _mm512_set1_ps(-INFINITY);
-    for (int i = 0; i < nnz_16; i += 16) {
-        __m512 s_vec = _mm512_maskz_loadu_ps(i < nnz ? 0xFFFF : ((1 << (nnz % 16)) - 1), score + i);
-        s_vec = _mm512_mul_ps(s_vec, scale_vec); // Scale scores
+    for (int i = 0; i < full_lanes; i += 16) {
+        __m512 s_vec = _mm512_mul_ps(_mm512_loadu_ps(score + i), scale_vec);
         max_vec = _mm512_max_ps(max_vec, s_vec);
     }
     float max_scalar = _mm512_reduce_max_ps(max_vec);
+    for (int i = full_lanes; i < nnz; ++i)
+        max_scalar = std::max(max_scalar, score[i] * inverse_scale);
 
-    // Step 2: Compute exponential and sum using AVX512
-    __m512 exp_sum_vec = _mm512_set1_ps(0.0f);
+    __m512 exp_sum_vec = _mm512_setzero_ps();
     __m512 max_scalar_vec = _mm512_set1_ps(max_scalar);
-    for (int i = 0; i < nnz_16; i += 16) {
-        __m512 s_vec = _mm512_maskz_loadu_ps(i < nnz ? 0xFFFF : ((1 << (nnz % 16)) - 1), score + i);
-        s_vec = _mm512_mul_ps(s_vec, scale_vec); // Scale scores
-        __m512 exp_vec = avx512_exp_ps(_mm512_sub_ps(s_vec, max_scalar_vec)); // Subtract max before exp
-        _mm512_mask_storeu_ps(score + i, i < nnz ? 0xFFFF : ((1 << (nnz % 16)) - 1), exp_vec);
+    for (int i = 0; i < full_lanes; i += 16) {
+        __m512 s_vec = _mm512_mul_ps(_mm512_loadu_ps(score + i), scale_vec);
+        __m512 exp_vec = avx512_exp_ps(_mm512_sub_ps(s_vec, max_scalar_vec));
+        _mm512_storeu_ps(score + i, exp_vec);
         exp_sum_vec = _mm512_add_ps(exp_sum_vec, exp_vec);
     }
     float exp_sum_scalar = _mm512_reduce_add_ps(exp_sum_vec);
-
-    // Step 3: Normalize the scores
-    __m512 exp_sum_scalar_vec = _mm512_set1_ps(exp_sum_scalar);
-    for (int i = 0; i < nnz_16; i += 16) {
-        __m512 s_vec = _mm512_maskz_loadu_ps(i < nnz ? 0xFFFF : ((1 << (nnz % 16)) - 1), score + i);
-        __m512 norm_vec = _mm512_div_ps(s_vec, exp_sum_scalar_vec);
-        _mm512_mask_storeu_ps(score + i, i < nnz ? 0xFFFF : ((1 << (nnz % 16)) - 1), norm_vec);
+    for (int i = full_lanes; i < nnz; ++i) {
+        score[i] = expf(score[i] * inverse_scale - max_scalar);
+        exp_sum_scalar += score[i];
     }
+
+    __m512 sum_vec = _mm512_set1_ps(exp_sum_scalar);
+    for (int i = 0; i < full_lanes; i += 16) {
+        __m512 normalized = _mm512_div_ps(_mm512_loadu_ps(score + i), sum_vec);
+        _mm512_storeu_ps(score + i, normalized);
+    }
+    for (int i = full_lanes; i < nnz; ++i) score[i] /= exp_sum_scalar;
 
     // Save max_value and expsum
     max_value[0] = max_scalar * M_LOG2E;
@@ -384,9 +386,9 @@ void softmax_kernel_optimized(
  * @par Paper mapping
  * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
  * @par Implementation note
- * Positive nnz, finite moderate logits, dimension scale positive. Borrowed
- * scores need rounded-to16 physical capacity: source scales and normalizes
- * padding (#72). Empty support never touches scores and reports -Inf metadata. Returned
+ * Nonnegative nnz, finite moderate logits, dimension scale positive. Borrowed
+ * scores require exactly nnz floats; scalar tails do not read/write padding.
+ * Empty support never touches scores and reports -Inf metadata. Returned
  * max and LSE use base2; no raw exponential sum or natural-log claim.
  * Support: see MAGICPIG-SOFTMAX-BOUNDARY-CPU in the sparse Softmax contract.
  */
@@ -405,13 +407,14 @@ float *expsum
         return;
     }
 
-  int nnz_16 = (nnz % 16 == 0) ? (nnz): (nnz + 16 - nnz % 16);
+  const int full_tiles = nnz / 16;
   __m512 hdiv = _mm512_set1_ps(sqrt_dim);
-  for (int i = 0; i < nnz_16 / 16; ++i){
+  for (int i = 0; i < full_tiles; ++i){
         __m512 s_i = _mm512_loadu_ps(score + 16 * i);
         s_i = _mm512_div_ps(s_i, hdiv);
         _mm512_storeu_ps(score + 16 * i, s_i);
     }
+  for (int i = full_tiles * 16; i < nnz; ++i) score[i] /= sqrt_dim;
   float m = *std::max_element(score,score+nnz);
   float exp_sum = 0.f;
   for (int i = 0; i < nnz; ++i){
@@ -420,11 +423,13 @@ float *expsum
     }
 
   __m512 sum = _mm512_set1_ps(exp_sum);
-  for (int i = 0; i < nnz_16 / 16; ++i){
+  for (int i = 0; i < full_tiles; ++i){
         __m512 s_i = _mm512_loadu_ps(score + 16 * i);
         s_i = _mm512_div_ps(s_i, sum);
         _mm512_storeu_ps(score + 16 * i, s_i);
     }
+  
+  for (int i = full_tiles * 16; i < nnz; ++i) score[i] /= exp_sum;
 
   max_value[0] = m * M_LOG2E;
   expsum[0] = log2f32(exp_sum) + max_value[0];

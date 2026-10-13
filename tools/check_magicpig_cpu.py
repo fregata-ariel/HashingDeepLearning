@@ -399,7 +399,9 @@ def run_python(suite: dict[str, object], build: Path) -> dict[str, object]:
     data = json.loads(path.read_text())
     validate_python_evidence(suite, data)
     if bridge_identity is not None:
-        if data.get("bridge_executable_sha256") != bridge_identity["executable_sha256"]:
+        if (data.get("bridge_executable_sha256") != bridge_identity["executable_sha256"]
+                or data.get("bridge_fixture_sha256") != bridge_identity["fixture_sha256"]
+                or data.get("bridge_path") != str(bridge.resolve())):
             raise ValueError("CPU composition did not execute the enrolled bridge")
     evidence = {"suite": suite["name"], "mode": "portable_python", "status": "pass", "sanitizer": "not_applicable_python_adapter", "fixture_sha256": digest(fixture), "descriptor_sha256": digest(suite["descriptor"]), "command": command, "selected_body_evidence": data, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
     if bridge_identity is not None:

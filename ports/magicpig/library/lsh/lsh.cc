@@ -232,6 +232,17 @@ torch::Tensor query_pt)
 }
 
 
+/**
+ * @par CPU composition support
+ * Borrowed contiguous int32 query codes [batch*query_heads,L], output IDs
+ * [batch*query_heads,max_length], and counts [batch*query_heads]. The caller
+ * owns buffers; each query head borrows its grouped KV tables. The connected
+ * CPU fixture passes these actual IDs/counts into selected attention bodies
+ * across append/query steps and clear/refill, with an independent union oracle.
+ * Serial copy/Tensor/BF16 models and a host merge replace dependencies; this
+ * does not verify Torch ABI, OpenMP scheduling, FlashInfer, or GPU transfers.
+ * Support: TRACE_TEST_ID: MAGICPIG-COMPOSITION-BRIDGE-CPU.
+ */
 void LSH::batch_retrieve(
 int layer_id, 
 torch::Tensor query_pt, 

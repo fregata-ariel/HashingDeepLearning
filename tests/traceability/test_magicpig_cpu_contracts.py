@@ -173,6 +173,54 @@ class DriverContracts(unittest.TestCase):
                 driver.validate_fastfill_probe(result, True, False)
         self.assertEqual(driver.validate_fastfill_probe(subprocess.CompletedProcess([], 0, output, ""), True, True), "not_checked")
 
+    def test_composition_rejects_missing_or_replaced_bridge_before_python(self) -> None:
+        fixture = self.root / "tests/traceability/composition.py"
+        fixture.write_text("pass\n")
+        suite = {"name": "cpu_composition", "test_file": str(fixture.relative_to(self.root))}
+        with patch.object(driver, "ROOT", self.root), patch.object(driver, "checked") as checked:
+            with self.assertRaisesRegex(ValueError, "not validated"):
+                driver.run_python(suite, self.root / "build")
+            checked.assert_not_called()
+
+    def test_composition_identity_rejects_unbound_workload(self) -> None:
+        source = self.root / "third_party/magicpig/models/attnserver.py"
+        source.parent.mkdir(parents=True)
+        source.write_text("a = 1\n")
+        fixture = self.root / "tests/traceability/composition.py"
+        fixture.write_text("pass\n")
+        descriptor = self.root / "tests/traceability/composition.json"
+        descriptor.write_text("{}\n")
+        native_fixture = self.root / "tests/traceability/test_magicpig_cpu_baseline.cpp"
+        native_suite = driver.Suite("composition_bridge", native_fixture, {}, descriptor)
+        suite = {"name": "cpu_composition", "test_file": str(fixture.relative_to(self.root)),
+                 "source_file": str(source.relative_to(self.root)), "blocks": ["merge"], "descriptor": descriptor}
+        build = self.root / "build"
+        bridge = build / "portable/composition_bridge/oracle"
+        bridge.parent.mkdir(parents=True)
+        bridge.write_bytes(b"validated artifact")
+        record = {"status": "pass", "mode": "portable", "sanitize": True,
+                  "fixture_sha256": driver.digest(native_fixture), "descriptor_sha256": driver.digest(descriptor),
+                  "executable_sha256": driver.digest(bridge), "source_sha256": {str(source.relative_to(self.root)): driver.digest(source)}}
+        (bridge.parent / "evidence.json").write_text(json.dumps(record))
+        valid = {"source": suite["source_file"], "gpu_execution": False, "torch_runtime": False,
+                 "name": "cpu_composition", "status": "passed", "source_sha256": driver.digest(source),
+                 "selected_blocks": {"merge": {"start_line": 1, "end_line": 1,
+                    "sha256": hashlib.sha256(b"a = 1").hexdigest()}},
+                 "bridge_executable_sha256": driver.digest(bridge), "bridge_fixture_sha256": driver.digest(native_fixture),
+                 "bridge_path": str(bridge.resolve())}
+        with patch.object(driver, "ROOT", self.root), patch.object(driver, "load_suites", return_value={"composition_bridge": native_suite}):
+            for field in ("bridge_executable_sha256", "bridge_fixture_sha256", "bridge_path"):
+                bad = {**valid, field: "unbound artifact"}
+                def simulate(command: list[str]) -> str:
+                    Path(command[command.index("--evidence") + 1]).write_text(json.dumps(bad))
+                    return ""
+                with self.subTest(field=field), patch.object(driver, "checked", side_effect=simulate), self.assertRaisesRegex(ValueError, "did not execute"):
+                    driver.run_python(suite, build)
+            bridge.write_bytes(b"replacement artifact")
+            with patch.object(driver, "checked") as checked, self.assertRaisesRegex(ValueError, "replaced"):
+                driver.run_python(suite, build)
+            checked.assert_not_called()
+
     def test_ubsan_error_is_fatal_and_cannot_publish_pass_evidence(self) -> None:
         port = self.root / "ports/magicpig"
         shutil.copytree(ROOT / "ports/magicpig", port)

@@ -231,21 +231,22 @@ def workload(path: Path, blocks: dict[str,list[ast.stmt]], groups: int, sampled:
                 # Mutation sensitivity uses actual bridge execution and the same
                 # selected merge AST, then the unchanged independent union oracle.
                 if sampled:
+                    original_union = union_oracle(queries[0],keys,vals,[i+1 for i in expected_selected],dense_ids,mean,True)['output']
                     bad=bridge.call('QUERY',2,len(dense_ids),qcodes,sum(queries,[]),dense_keys,dense_vals)
                     bad_merge,_=merge(blocks['merge'],bad,groups)
-                    diff=maximum(bad_merge[0],union_oracle(queries[0],keys,vals,[i+1 for i in expected_selected],dense_ids,mean,True)['output'])
+                    diff=maximum(bad_merge[0],original_union)
                     require(diff>.01,'omitted correction must fail oracle tolerance');metrics['mutations']['omit_correction']+=1
                     if step:
                         stale=bridge.call('QUERY',0,len(dense_ids),old_codes,sum(queries,[]),dense_keys,dense_vals)
                         require(stale['selected']!=result['selected'],'stale query lookup must fail exact set');metrics['mutations']['stale_lookup']+=1
                         stale_cache=bridge.call('QUERY',0,len(dense_ids)-1,qcodes,sum(queries,[]),*old_dense)
                         stale_merge,_=merge(blocks['merge'],stale_cache,groups)
-                        require(maximum(stale_merge[0],merged[0])>.01,'stale resident cache must fail output');metrics['mutations']['stale_cache']+=1
+                        require(maximum(stale_merge[0],original_union)>.01,'stale resident cache must fail independent oracle');metrics['mutations']['stale_cache']+=1
                     shifted=list(dense_keys)
                     shifted[-D]+=4.0
                     stale_center=bridge.call('QUERY',0,len(dense_ids),qcodes,sum(queries,[]),shifted,dense_vals)
                     centered_merge,_=merge(blocks['merge'],stale_center,groups)
-                    require(maximum(centered_merge[0],merged[0])>.004,'stale append centering must fail output');metrics['mutations']['stale_centering']+=1
+                    require(maximum(centered_merge[0],original_union)>.004,'stale append centering must fail independent oracle');metrics['mutations']['stale_centering']+=1
                 if previous_step_output is not None:
                     require(maximum(previous_step_output,merged[0])>.01,'decode step observable output')
                 previous_step_output=merged[0]

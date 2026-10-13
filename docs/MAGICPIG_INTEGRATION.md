@@ -89,7 +89,7 @@ packing ranges and vector tails are questions, not confirmed defects here.
 Integration branch: `research/lsh-lineage-vendor`.
 Initial MagicPIG base: `0c4d05887edfd0dbc2625653bace913679a2da93`.
 The formal milestones are MP1 #9, MP2 #10, MP3 #11 and deferred MP4 #12;
-MP5 #13 tracks CPU repairs #65–#68/#72–#77. MP1/MP2 are closed. Parent #52
+MP5 #13 covers CPU repairs #65–#68/#72–#77/#86. MP1/MP2/MP5 are closed. Parent #52
 remains open while #61 closeout and its applicable gates are pending.
 Current assignments/status are in the linked GitHub issues.
 

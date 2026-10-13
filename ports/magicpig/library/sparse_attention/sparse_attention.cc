@@ -308,11 +308,12 @@ const int *indices) {
  * @par Paper mapping
  * MagicPIG arXiv v4, Sections 4.3 and 4.4: normalized attention support.
  * @par Implementation note
- * Borrowed score buffer has nnz finite logits and nnz must be positive.
+ * Borrowed score buffer has nnz finite logits, nnz >= 0. At zero, score may
+ * be null: no writes, maximum and base-2 LSE are both -Inf (zero mass).
  * Mutates scores to probabilities; max_value[0] is the base-2 maximum and
  * expsum[0] is base-2 log-sum-exp, not a raw sum. Buffers remain caller-owned.
  * Bootstrap uses host QK/WV; #58 also composes actual selected QK/WV bodies.
- * Empty candidates remain unsupported (repair #73). Portable lanes replace exp
+ * Nonempty candidates require finite logits. Portable lanes replace exp
  * with host exp. Native AVX512F/FMA runs the actual polynomial on bounded
  * shifted logits with a separate approximation tolerance. No Torch extension,
  * LSH sampling, OpenMP scheduling or GPU execution is inferred.
@@ -324,7 +325,15 @@ void softmax_kernel(
 float *score, 
 const int nnz,
 float *max_value,
-float *expsum) { 
+float *expsum) {
+    // Empty support is the zero-mass domain: no score access, no probabilities.
+    // Keep the ABI; -Inf base-2 metadata tells the caller this row has no mass.
+    if (nnz == 0) {
+        max_value[0] = -INFINITY;
+        expsum[0] = -INFINITY;
+        return;
+    }
+
   
   const int nnz_16 = (nnz % 16 == 0) ? nnz : nnz + 16 - nnz % 16;
 
@@ -382,7 +391,7 @@ float *expsum) {
  * @par Implementation note
  * Complete tiles only for correctness support; partial-tile masking includes
  * padding in maximum/sum and writes beyond logical length (repair #72).
- * Empty metadata is -Inf without status (#73); native extreme exponential
+ * Empty support performs no score access and reports -Inf metadata; native extreme exponential
  * fails (#74). Metadata uses base-2 units. Portable isolated sanitizer probes
  * require the exact diagnostic and selected caller; native masked diagnostics
  * are not inferred. Support: TRACE_TEST_ID: MAGICPIG-SOFTMAX-DEFECT-CPU.
@@ -393,6 +402,14 @@ void softmax_kernel_optimized(
     const float head_dim_scale, // sqrt(head_dim)
     float *max_value,
     float *expsum) {
+    // Empty support is the zero-mass domain: no score access, no probabilities.
+    // Keep the ABI; -Inf base-2 metadata tells the caller this row has no mass.
+    if (nnz == 0) {
+        max_value[0] = -INFINITY;
+        expsum[0] = -INFINITY;
+        return;
+    }
+
 
     int nnz_16 = (nnz + 15) & ~15; // Round up to the nearest multiple of 16
 
@@ -440,7 +457,7 @@ void softmax_kernel_optimized(
  * @par Implementation note
  * Positive nnz, finite moderate logits, dimension scale positive. Borrowed
  * scores need rounded-to16 physical capacity: source scales and normalizes
- * padding (#72). Empty max dereference remains unsupported (#73). Returned
+ * padding (#72). Empty support never touches scores and reports -Inf metadata. Returned
  * max and LSE use base2; no raw exponential sum or natural-log claim.
  * Support: see MAGICPIG-SOFTMAX-BOUNDARY-CPU in the sparse Softmax contract.
  */
@@ -450,7 +467,15 @@ const int nnz,
 float sqrt_dim,
 float *max_value,
 float *expsum
-) { 
+) {
+    // Empty support is the zero-mass domain: no score access, no probabilities.
+    // Keep the ABI; -Inf base-2 metadata tells the caller this row has no mass.
+    if (nnz == 0) {
+        max_value[0] = -INFINITY;
+        expsum[0] = -INFINITY;
+        return;
+    }
+
   int nnz_16 = (nnz % 16 == 0) ? (nnz): (nnz + 16 - nnz % 16);
   __m512 hdiv = _mm512_set1_ps(sqrt_dim);
   for (int i = 0; i < nnz_16 / 16; ++i){

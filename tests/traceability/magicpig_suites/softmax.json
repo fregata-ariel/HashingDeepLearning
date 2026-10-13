@@ -22,18 +22,6 @@
       "marker": "MAGICPIG-SOFTMAX-PROBE optimized-tail",
       "diagnostic": "asan_heap_buffer_overflow",
       "symbol": "softmax_kernel_optimized"
-    },
-    {
-      "argument": "--probe-sparse-empty",
-      "marker": "MAGICPIG-SOFTMAX-PROBE sparse-empty",
-      "diagnostic": "ubsan_null_load",
-      "symbol": "softmax_kernel"
-    },
-    {
-      "argument": "--probe-full-empty",
-      "marker": "MAGICPIG-SOFTMAX-PROBE full-empty",
-      "diagnostic": "ubsan_null_load",
-      "symbol": "softmax_kernel_full"
     }
   ]
 }

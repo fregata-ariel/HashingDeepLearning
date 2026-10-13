@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PORT = ROOT / "ports/magicpig"
 SOURCE = "library/sparse_attention/sparse_attention.cc"
 ALLOWED_SOURCES = {SOURCE, "library/lsh/lsh.cc"}
-PRELUDE = "#include <algorithm>\n#include <cmath>\n#include <cstdint>\n#include <cstring>\n#include <iostream>\n#include <vector>\n"
+PRELUDE = "#include <algorithm>\n#include <cmath>\n#include <cstdint>\n#include <cstring>\n#include <iostream>\n#include <limits>\n#include <stdexcept>\n#include <vector>\n"
 
 
 @dataclass(frozen=True)
@@ -103,6 +103,9 @@ def load_python_suites() -> dict[str, dict[str, object]]:
             "simhash": ["packing", "centering", "fill_hash", "decode_hash", "append_centering"],
             "cache_merge": ["partition", "centering", "center_store", "sparse_cache",
                             "dense_fill", "append_centering", "plan", "merge", "clear"],
+            "cpu_composition": ["packing", "centering", "fill_hash", "decode_hash",
+                                "append_centering", "partition", "center_store",
+                                "sparse_cache", "plan", "merge", "clear"],
         }
         if data["name"] not in approved_blocks or data["blocks"] != approved_blocks[data["name"]]:
             raise ValueError("invalid Python block selection")
@@ -343,7 +346,7 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         if boundary_probes:
             print(f"MAGICPIG_BOUNDARIES_CHARACTERIZED suite={suite.name} count={len(boundary_probes)}")
     headers = {str(p.relative_to(ROOT)): digest(p) for p in sorted(PORT.rglob("*.h"))}
-    evidence = {"suite": suite.name, "mode": mode, "status": "pass", "sanitize": sanitize, "leak_check_explicitly_disabled": disable_leaks, "compiler_command": command, "translation_sha256": digest(translation), "source_sha256": sources, "recorded_native_header_sha256": headers, "definitions": records, "fixture": str(suite.test_file.relative_to(ROOT)), "fixture_sha256": digest(suite.test_file), "descriptor_sha256": digest(suite.descriptor), "adapter_sha256": {str(p.relative_to(ROOT)): digest(p) for p in adapters}, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
+    evidence = {"suite": suite.name, "mode": mode, "status": "pass", "sanitize": sanitize, "leak_check_explicitly_disabled": disable_leaks, "compiler_command": command, "translation_sha256": digest(translation), "executable_sha256": digest(executable), "source_sha256": sources, "recorded_native_header_sha256": headers, "definitions": records, "fixture": str(suite.test_file.relative_to(ROOT)), "fixture_sha256": digest(suite.test_file), "descriptor_sha256": digest(suite.descriptor), "adapter_sha256": {str(p.relative_to(ROOT)): digest(p) for p in adapters}, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
     evidence["defect_probe"] = defect_probe
     evidence["boundary_probes"] = boundary_probes
     evidence["boundary_probe_execution"] = "portable_sanitized" if sanitize and mode == "portable" else "not_checked_in_this_mode"
@@ -373,10 +376,34 @@ def run_python(suite: dict[str, object], build: Path) -> dict[str, object]:
     path.unlink(missing_ok=True)
     fixture = fixture_path(suite["test_file"], ".py")
     command = [os.sys.executable, str(fixture), "--root", str(ROOT), "--evidence", str(path)]
+    bridge_identity = None
+    if suite["name"] == "cpu_composition":
+        bridge = build / "portable/composition_bridge/oracle"
+        bridge_evidence = bridge.parent / "evidence.json"
+        if not bridge.is_file() or not bridge_evidence.is_file():
+            raise ValueError("CPU composition bridge was not validated")
+        record = json.loads(bridge_evidence.read_text())
+        enrolled = load_suites()["composition_bridge"]
+        if record.get("status") != "pass" or record.get("mode") != "portable" or record.get("fixture_sha256") != digest(enrolled.test_file):
+            raise ValueError("CPU composition bridge evidence is stale")
+        if record.get("executable_sha256") != digest(bridge) or record.get("descriptor_sha256") != digest(enrolled.descriptor):
+            raise ValueError("CPU composition bridge artifact was replaced")
+        if any(digest(ROOT / source) != sha for source, sha in record["source_sha256"].items()):
+            raise ValueError("CPU composition bridge source changed after validation")
+        bridge_identity = {"executable": str(bridge), "executable_sha256": digest(bridge),
+                           "fixture_sha256": record["fixture_sha256"],
+                           "descriptor_sha256": digest(enrolled.descriptor),
+                           "sanitize": record["sanitize"]}
+        command.extend(["--bridge", str(bridge)])
     output = checked(command)
     data = json.loads(path.read_text())
     validate_python_evidence(suite, data)
+    if bridge_identity is not None:
+        if data.get("bridge_executable_sha256") != bridge_identity["executable_sha256"]:
+            raise ValueError("CPU composition did not execute the enrolled bridge")
     evidence = {"suite": suite["name"], "mode": "portable_python", "status": "pass", "sanitizer": "not_applicable_python_adapter", "fixture_sha256": digest(fixture), "descriptor_sha256": digest(suite["descriptor"]), "command": command, "selected_body_evidence": data, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
+    if bridge_identity is not None:
+        evidence["bridge"] = bridge_identity
     (directory / "evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
     print(output, end="" if output.endswith("\n") else "\n")
     return evidence
@@ -398,6 +425,11 @@ def run(build: Path, cxx: str, sanitize: bool, native: bool, suites_requested: l
         raise ValueError("unknown or duplicate requested suite")
     selected = [suites[n] for n in suites_requested if n in suites] if suites_requested else list(suites.values())
     selected_python = [python_suites[n] for n in suites_requested if n in python_suites] if suites_requested else list(python_suites.values())
+    if any(s["name"] == "cpu_composition" for s in selected_python):
+        if "composition_bridge" not in suites:
+            raise ValueError("CPU composition bridge is not enrolled")
+        if all(s.name != "composition_bridge" for s in selected):
+            selected.append(suites["composition_bridge"])
     # Preserve the independent immutable-source gate before any numerical test.
     checked([os.sys.executable, str(ROOT / "tools/check_magicpig_sources.py")])
     cap = capabilities(cxx, build, native)

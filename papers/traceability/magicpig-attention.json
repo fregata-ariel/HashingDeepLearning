@@ -63,7 +63,8 @@
         "invalid_parameters": "Full server dimension/group, layer, count-vector rank/length and all logical counts validated before writes; unsupported shapes/ABI/dtype beyond model remain untested.",
         "gpu_execution": "postponed",
         "varying_gqa_lengths_observation": "Repair #77 original [16,16,16,16,32,32,32,32] regression produces dense1.0; general varying GQA lengths checked against FP64 probability/output/base2 metadata in two layers/batches.",
-        "caller_domain_validation": "Repair #67 shared scratch staging of actual QK+transform before exposed writes/OpenMP;26 later-head/domain regressions in static/dynamic calls preserve all score/output/metadata buffers. BF16/scheduled paths reuse but native server dispatch unexecuted."
+        "caller_domain_validation": "Repair #67 shared scratch staging of actual QK+transform before exposed writes/OpenMP;26 later-head/domain regressions in static/dynamic calls preserve all score/output/metadata buffers. BF16/scheduled paths reuse but native server dispatch unexecuted.",
+        "local_simd_reduction_storage": "Repair #86: softmax_kernel local16-float reduction array explicitly aligned64bytes; existing nnz1 native attention fixture exercises store with zero complete score tiles. Summation order/tolerances unchanged. GCC13 cause and native sanitizer repair result pending actual Hosted disassembly/execution."
       },
       "note": "Repairs #73/#75/#76/#77 enforce empty server policy, logical QK bounds, supported dimensions/groups and query-head nnz routing. Softmax tails remain tracked by #74."
     }

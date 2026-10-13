@@ -6,6 +6,11 @@
 #include <numeric>
 #include <sstream>
 namespace magicpig_attention_fixture {
+#ifdef _OPENMP
+constexpr const char* threading_mode = "runtime";
+#else
+constexpr const char* threading_mode = "serial";
+#endif
 struct Metrics {
     int compositions = 0, probability_checks = 0, output_checks = 0;
     int ownership_checks = 0, boundary_cases = 0, corrected_score_checks = 0;
@@ -320,6 +325,57 @@ void empty_server(bool full, bool dynamic, int groups, Metrics& metrics) {
         require(output[heads * dim] == 0x3f80 && output[heads * dim + 1] == 0x3f80 && metadata[2 * heads] == 77 && metadata[2 * heads + 1] == 77, "empty mixed-head canaries");
     }
 }
+void caller_atomic_rejection(bool dynamic, Metrics& metrics) {
+    constexpr int dim = 32, heads = 4, kvheads = 2, capacity = 32;
+    SparseAttentionServer server;
+    server.alloc(1, heads, kvheads, dim, 1, capacity);
+    std::vector<bfloat16> keys(kvheads * capacity * dim), values(keys.size(), 0x3f80);
+    for (std::size_t i = 0; i < keys.size(); ++i) keys[i] = magicpig_attention_model::encode(float((int(i) % 11) - 5) / 32);
+    std::vector<float> norms(kvheads * capacity);
+    for (int row = 0; row < kvheads * capacity; ++row) norms[row] = float(norm(keys.data() + row * dim, dim));
+    server.fill(0, 0, torch::Tensor(keys.data(), {kvheads, capacity, dim}),
+                torch::Tensor(values.data(), {kvheads, capacity, dim}), torch::Tensor(norms.data(), {kvheads, capacity}));
+    auto* cached_norms = static_cast<float*>(server.get_key_norm(0).data_ptr());
+    auto* scores = static_cast<float*>(server.get_score().data_ptr());
+    std::vector<float> query(heads * dim, .125f), qnorm(heads, float(norm(query.data(), dim))), metadata(2 * heads + 2, 77);
+    std::vector<bfloat16> output(heads * dim + 2, 0x3f80);
+    std::vector<int> ids(heads * capacity, 0), counts(heads, 1);
+    const float valid_qnorm = qnorm.back(), valid_knorm = cached_norms[capacity];
+    for (int fault = 0; fault < 13; ++fault) {
+        qnorm.back() = valid_qnorm; cached_norms[capacity] = valid_knorm;
+        query.back() = .125f; ids[(heads - 1) * capacity] = 0; counts.back() = 1;
+        int K = 3, L = 4;
+        switch (fault) {
+            case 0: qnorm.back() = 0; break;
+            case 1: qnorm.back() = -1; break;
+            case 2: qnorm.back() = NAN; break;
+            case 3: qnorm.back() = INFINITY; break;
+            case 4: cached_norms[capacity] = 0; break;
+            case 5: cached_norms[capacity] = NAN; break;
+            case 6: qnorm.back() = 1e-20f; break; // Inconsistent cosine outside domain.
+            case 7: query.back() = NAN; break;
+            case 8: ids[(heads - 1) * capacity] = -1; break;
+            case 9: ids[(heads - 1) * capacity] = capacity; break;
+            case 10: counts.back() = capacity + 1; break;
+            case 11: K = 0; break;
+            case 12: L = 1; break;
+        }
+        std::fill_n(scores, heads * capacity, 91);
+        bool rejected = false;
+        try {
+            if (dynamic) server.dynamic_attention(0, K, L, torch::Tensor(output.data(), {heads, dim}), torch::Tensor(metadata.data(), {2, heads}),
+                   torch::Tensor(query.data(), {heads, dim}), torch::Tensor(qnorm.data(), {heads}),
+                   torch::Tensor(ids.data(), {heads, capacity}), torch::Tensor(counts.data(), {heads}));
+            else server.attention(0, K, L, torch::Tensor(output.data(), {heads, dim}), torch::Tensor(metadata.data(), {2, heads}),
+                   torch::Tensor(query.data(), {heads, dim}), torch::Tensor(qnorm.data(), {heads}),
+                   torch::Tensor(ids.data(), {heads, capacity}), torch::Tensor(counts.data(), {heads}));
+        } catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected && std::all_of(scores, scores + heads * capacity, [](auto x){return x == 91;}) &&
+                std::all_of(output.begin(), output.end(), [](auto x){return x == 0x3f80;}) &&
+                std::all_of(metadata.begin(), metadata.end(), [](auto x){return x == 77;}), "later-head invalid domain preserves all scores/output/metadata");
+        ++metrics.boundary_cases;
+    }
+}
 void low_level_boundaries(Metrics& metrics) {
     constexpr int dim = 32, capacity = 32;
     std::vector<bfloat16> key(capacity * dim), value(key.size());
@@ -530,6 +586,8 @@ int run() {
     empty_server(false, false, 2, metrics);
     empty_server(false, true, 2, metrics);
     for (int groups : {1, 4, 8}) empty_server(true, false, groups, metrics);
+    caller_atomic_rejection(false, metrics);
+    caller_atomic_rejection(true, metrics);
     low_level_boundaries(metrics);
     std::cout << std::setprecision(12)
               << "MAGICPIG-ATTENTION-CPU: PASS compositions=" << metrics.compositions
@@ -538,7 +596,7 @@ int run() {
               << " max_corrected_score_error=" << metrics.corrected_score_error << " max_probability_error=" << metrics.probability_error
               << " max_output_error=" << metrics.output_error << " max_metadata_error=" << metrics.metadata_error << '\n'
               << "MAGICPIG-ATTENTION-BOUNDARIES-CPU: PASS cases=" << metrics.boundary_cases
-              << " qk_exact_nnz=verified softmax_logical_tail=verified unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty_server=zero_output_negative_infinity_metadata OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
+              << " qk_exact_nnz=verified softmax_logical_tail=verified unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty_server=zero_output_negative_infinity_metadata OpenMP=" << threading_mode << " model_conversion=FBGEMM_bits_add_0x8000\n";
     return 0;
 }
 }

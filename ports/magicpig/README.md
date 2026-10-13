@@ -10,8 +10,8 @@ tests/examples and selected dependency inputs remain in `third_party/magicpig/`.
 Issue #54 adds a dependency-free selected-body CPU driver and independent FP64
 oracles. Portable software lanes always run; native AVX-512/FMA and BF16 bodies
 run only after parent-process CPU/OS/compiler capability checks. Native-source
-changes are Doxygen contracts, with arithmetic unchanged. Full Torch/FBGEMM
-extension linkage, ABI, OpenMP scheduling and CPU-only Llama generation remain
+changes now include reviewed arithmetic/domain/ownership repairs and Doxygen contracts. Full Torch/FBGEMM
+extension linkage, ABI, unrestricted scheduling and CPU-only Llama generation remain
 unverified. See [the CPU validation contract](CPU_VALIDATION.md).
 
 Archived `install.sh` installs historical CUDA/FlashInfer packages and must not
@@ -28,8 +28,11 @@ Run source identity checks from the repository root:
 python3 tools/check_magicpig_sources.py
 python3 tests/traceability/test_magicpig_source_contracts.py
 python3 tools/check_magicpig_cpu.py
-python3 tools/check_magicpig_cpu.py --native --sanitize
+python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --sanitize
 ```
+
+Supported Hosted native sanitizer CI uses Ubuntu24/GCC14 with leak checking
+enabled; bounded OpenMP uses the explicit portable dependency model.
 
 The checker protects the archive, not equality of editable ports to upstream.
 Initial port Git blob identities are recorded in the source pin. Subsequent

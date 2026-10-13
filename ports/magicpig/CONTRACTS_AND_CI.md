@@ -3,12 +3,12 @@
 This index describes the selected v0.2 CPU checkpoint. The immutable reference
 is `ac9aa36c866330ca6ad2ce342a7848d7df6f49bb`; its source inventory must pass
 before numerical tests. The contracts/typing changes do not alter arithmetic.
-The original nine CPU repairs #65/#66/#67/#68/#72/#73/#75/#76/#77 are closed
-and integrated at `66f9855ba7249edea52b77d7cdc8568484c2a4e9`. Native #86 and
-#74 require their separate reviewed task integrations before the final #61
-rebase. The paired alignment/GCC14 candidate has successful Hosted plain and
-sanitized evidence; portable or compile-only success cannot replace it.
-Archived Python remains unchanged. Native Doxygen contracts are checked by
+All eleven CPU repairs #65–#68/#72–#77/#86 and MP5 are closed. Final arithmetic
+base is integration `59edfec2fe54dd6783afec2a0562aab62f70d84f`, source SHA256
+`3109b8df15ce5a088430ca114729e37b18ad33d70b8bfca15a4f67e50cbccaf7`.
+Actual Hosted plain and sanitized native execution is recorded for #86/#74;
+portable or compile-only success cannot replace that evidence. Archived Python
+remains unchanged. Native Doxygen contracts are checked by
 `tools/audit_traceability_docs.py` against the stable ledger IDs below.
 
 ## Mechanism and ownership contracts
@@ -20,7 +20,7 @@ Archived Python remains unchanged. Native Doxygen contracts are checked by
 | `MAGICPIG-FASTFILL-REPAIR-CPU`, `MAGICPIG-FASTFILL-REGRESSION-CPU` | [Fastfill](FASTFILL_REPAIR_CPU_CONTRACT.md): guarded int32 unsorted codes, stable token population and request replacement; scoped cursor ownership and clean sanitizer teardown. Historical wrong-table/leak evidence remains tied to its old commit. |
 | `MAGICPIG-PROBABILITY-CPU`, `MAGICPIG-PROBABILITY-DOMAIN-CPU`, `MAGICPIG-PROBABILITY-STABILITY-CPU` | [Correction](PROBABILITY_VALIDATION.md): finite accepted scores, positive norms/scaling, K>=1/L>=2 and tolerance-limited cosine clamping. Stable log inclusion probability retains the explicit +1e-4 variant. Server QK/correction is staged before worker dispatch or exposed output writes. |
 | `MAGICPIG-ATTENTION-CPU`, `MAGICPIG-ATTENTION-BOUNDARIES-CPU` | [Attention](ATTENTION_CPU_CONTRACT.md): BF16 caches, FP32 query/score/normalizer and int32 IDs/counts. Logical nnz controls QK accesses. Full nnz is rank-one [batch*query_heads], including differing grouped-head lengths; KV ownership uses query_head/groups. Empty output is zero with -Inf maximum/LSE. Explicit dimension/group checks precede output writes. |
-| `MAGICPIG-BASELINE-CPU`, `MAGICPIG-SOFTMAX-BOUNDARY-CPU`, `MAGICPIG-SOFTMAX-EMPTY-CPU`, `MAGICPIG-SOFTMAX-EXTREME-CPU`, `MAGICPIG-EXP-NATIVE-CPU` | [Softmax](SOFTMAX_CPU_CONTRACT.md): exact logical allocations, moderate finite-logit normalization and base-2 maximum/LSE; empty rows touch no scores and emit -Inf metadata. Full/optimized Softmax preserve every score beyond logical nnz. Finite base-two metadata requires FP32 representability. The #74 candidate bounds native exponent construction and adds a 2821-case direct regression; the paired #86 alignment/GCC14 candidate passes Hosted native plain/sanitized checks, and reviewed #86/#74 integration remains a final-base prerequisite. |
+| `MAGICPIG-BASELINE-CPU`, `MAGICPIG-SOFTMAX-BOUNDARY-CPU`, `MAGICPIG-SOFTMAX-EMPTY-CPU`, `MAGICPIG-SOFTMAX-EXTREME-CPU`, `MAGICPIG-EXP-NATIVE-CPU` | [Softmax](SOFTMAX_CPU_CONTRACT.md): exact logical allocations, moderate finite-logit normalization and base-2 maximum/LSE; empty rows touch no scores and emit -Inf metadata. Full/optimized Softmax preserve every score beyond logical nnz. Finite base-two metadata requires FP32 representability. The #74 candidate bounds native exponent construction and adds a 2821-case direct regression; reviewed #86/#74 integration passes Hosted native plain/sanitized checks and is included in the final base. |
 | `MAGICPIG-BF16-MODEL-CPU`, `MAGICPIG-BF16-BOUNDARY-CPU`, `MAGICPIG-BF16-SELECTED-CPU` | [BF16](BF16_CPU_CONTRACT.md): conversion model is distinct from native dot execution. Native QK requires supported multiple-of-32 dimensions and logical nnz; capability-based skips do not verify native execution. Real conversion linkage/dispatch remains unexecuted. |
 | `MAGICPIG-CACHE-MERGE-CPU` | [Cache/merge](CACHE_MERGE_CPU_CONTRACT.md): shaped FP64 host copies, padded prefill, disjoint tokens, heterogeneous probabilities, base-2 host merge, capacity negatives and clear/refill. Host guards/append do not establish native FlashInfer capacity or stream safety. |
 | `MAGICPIG-COMPOSITION-BRIDGE-CPU`, `MAGICPIG-CPU-COMPOSITION-CPU` | [Connected composition](CPU_COMPOSITION_CONTRACT.md): actual retrieved IDs feed maintained correction/attention, then selected cache/merge across24 decode steps/12 reuse cycles; independent FP64 union and actual executed stale/correction mutations. Bridge executable/fixture/source/descriptor identities are checked. |
@@ -30,16 +30,15 @@ adapters replace Torch, dependency conversion/copy and scheduling; they do not
 establish unrestricted extension or GPU runtime correctness. The independent
 composition oracle executes the connected path, rather than inferring it from
 separate mechanism passes. Each repair requires its reviewed task integration
-and matching Hosted evidence. The #74 range/special-value fixture
-has `MAGICPIG-EXP-NATIVE-CPU cases=2821`; it must actually run on AVX512 before
-#74 can close. Its successful portable host-exp or native compile-only result
-cannot establish native execution, and its proposal remains separate from
-the integrated original exponential until that gate passes. The initial GCC13
-Hosted sample passed plain but failed native sanitizer stores (#86). The later
-same-target GCC14 comparison and aligned-source candidate passed native
-attention/baseline/Softmax and the full combined workflow; these diagnostic
-records support the compiler policy, while formal task candidates retain their
-own reviewed SHA/tree and CI records.
+and matching Hosted evidence. The #74 range/special-value fixture contains
+`MAGICPIG-EXP-NATIVE-CPU cases=2821` and actually executed in both phases on
+[PR #92 CI38433831517](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38433831517).
+Its candidate and integration have identical tree
+`7b73122e767a294dba31b265dd430d6a834b4a8f`; integration
+[CI38434322398](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38434322398)
+also passed. The GCC13 failures and earlier compiler diagnostic are history;
+current Ubuntu24/GCC14/aligned-source policy keeps every sanitizer enabled.
+Future runs on unsupported hardware report their own explicit skips.
 
 ## Deliberate maintained Python inventory
 
@@ -105,8 +104,8 @@ and BF16 bodies execute only after compiler/CPU/OS capability checks; missing
 capabilities are explicit skips, not native numerical passes. Python adapters
 are not ASan/UBSan/LSan evidence. Leak checks stay enabled in Hosted CI.
 `tools/report_magicpig_cpu.py` reports a real native result separately from a
-capability skip. It reports #74 pending if its experiment is not enrolled;
-once the experiment is enrolled, capable native runs must carry the actual
+capability skip. The integrated exponential experiment requires capable
+native runs to carry the actual
 2821-case marker as a complete token, not a prefix of another count.
 Unsupported standard Hosted runners still skip explicitly; Ubuntu24 does not
 guarantee AVX512 hardware. Successful reporting emits at most eight notices
@@ -128,21 +127,21 @@ It verifies the staged caller/worker boundary with the real OpenMP runtime,
 while keeping the arithmetic/conversion dependency models explicit. It neither
 forces unsupported SIMD flags nor validates unrestricted production scheduling.
 
-## Pending closeout record
+## Final CPU recovery checkpoint
 
-#61 formal preparation starts from integration merge
-`8ec0115d3e61aec23f812f48966ff7d34286aea8` (PR #80 / #60). The integration
-[dependency and recovery table](../../docs/MAGICPIG_INTEGRATION.md#mp3-recovery-checkpoint)
-is the handoff record. #60 is integrated and closed; #61's final base after the
-required #86/#74 merges, final PR/head/merge/check URLs remain pending. Record
-them before consuming this task. The original nine repair merges are already
-recorded at base `66f9855`; final rebase must preserve the reviewed Ubuntu24
-and explicit GCC14 native sanitizer policy. MP1/MP2 milestones are closed; MP3 and parent #52
-wait for their remaining applicable gates. MP5 retains repair scope, including
-the native #74/#86 gates, independently of scoped CPU mechanism milestones.
-The final rebase must consume the actual publisher integration state, including
-PRs #81–#90 already reviewed/merged, before final exact-candidate checks. A
-temporary diagnostic workflow is not part of the formal branch.
+#61 is rebased on integration `59edfec2fe54dd6783afec2a0562aab62f70d84f` after
+all eleven reviewed repairs. The exact [dependency and recovery table]
+(../../docs/MAGICPIG_INTEGRATION.md#mp3-recovery-checkpoint) records every task
+PR/head/merge and CI link. #59/#60 and MP1/MP2/MP5 are closed. The prepared
+#61 branch must still pass its own exact-candidate workflows before root
+records its PR/head/merge/check URLs and closes #61, MP3 and parent #52.
+
+Supported CI preserves Ubuntu24, explicit GCC14 and
+`ASAN_OPTIONS=detect_leaks=1`. The validated compact reporter replaces the
+publisher's inline implementation while checking recorded sparse-source hashes
+against the current checkout and exposing that SHA/GCC major in both aggregate
+notices. The temporary diagnostic workflow is excluded and will be retired
+through the authorized publication workflow; it is not imported here.
 
 Postponed #62 requires a separate native GPU restart. No CPU result here claims
 Torch/FBGEMM extension linkage, FlashInfer execution, asynchronous transfer or

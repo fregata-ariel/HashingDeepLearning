@@ -26,7 +26,7 @@ positive eligibility is a failure, not a skip. BF16 is independent of FMA.
 python3 tests/traceability/test_magicpig_capabilities.py
 python3 tests/traceability/test_magicpig_cpu_contracts.py
 python3 tools/check_magicpig_cpu.py --build-dir /tmp/magicpig-plain
-python3 tools/check_magicpig_cpu.py --native --sanitize --build-dir /tmp/magicpig-sanitized
+python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --sanitize --build-dir /tmp/magicpig-sanitized
 ```
 
 ## Oracle and bounded coverage
@@ -43,8 +43,10 @@ independent of extracted source and the software lane adapter.
 Portable probability/output absolute tolerance is `1e-5`. Native polynomial
 probabilities allow `0.005 + 0.02*abs(expected)`; weighted output and LSE allow
 `0.03`. Correction tolerance is `1e-5` in both modes. Common-shift-sized float
-metadata has a separate rounding allowance. Polynomial tests cover finite,
-moderate relative logits, not extreme exponential underflow/overflow.
+metadata has a separate rounding allowance. This bootstrap retains its legacy
+tolerances on moderate relative logits; the stronger current
+[Softmax gate](SOFTMAX_CPU_CONTRACT.md) separately tests native extreme/special
+values against its2e-5 relative exponential budget.
 
 `MAGICPIG-BF16-SELECTED-CPU` checks one complete 16-row × 32-coordinate tile
 against dense FP64 dots of exactly representable BF16 operands, with unsorted
@@ -183,17 +185,18 @@ not establish unrestricted correctness outside their stated contracts.
 
 ## Attention, Softmax and BF16 checkpoint (#58)
 
-Default execution now runs seven portable suites: baseline, simhash,
-lsh_retrieval, probability, attention, softmax and bf16_model. The execution-mode
-table above describes the original bootstrap. The attention suite additionally
-executes actual QK/WV and server bodies; native attention/softmax use the actual
-exponential polynomial and constants, hashed independently of the test adapter.
+The original #58 checkpoint enrolled seven portable suites. Current default
+execution also enrolls hash-domain, fastfill regression and connected-composition
+C++/Python fixtures. Plain and sanitized phases run12 portable/host suites on
+unsupported native hardware and17 suites when all AVX512/BF16 gates pass.
+Native attention and Softmax execute actual maintained intrinsics/exponential;
+Torch/FBGEMM/FlashInfer runtime substitutions remain explicit.
 
-| Contract | Verified scope |
+| Contract | Current verified scope |
 | --- | --- |
-| [Attention](ATTENTION_CPU_CONTRACT.md) | 682 head compositions, 13,312 probability and 47,168 output checks, 432 ownership checks, 32 corrected logits and 11 boundary cases |
-| [Softmax](SOFTMAX_CPU_CONTRACT.md) | 72 sparse, 72 padded full and 18 complete optimized cases; base-2 maximum/LSE literal checks; 108 tail and three native extreme characterizations |
-| [BF16](BF16_CPU_CONTRACT.md) | Conversion model: 24 cases/1,408 coordinates plus22 bit literals; actual native QK:18 complete/24 padded cases,864 scores and three unsupported dimensions |
+| [Attention](ATTENTION_CPU_CONTRACT.md) | 832 nonempty head compositions,16,544 probabilities,66,368 BF16 coordinates,432 ownership checks,32 corrected logits and175 boundary cases including90 empty heads |
+| [Softmax](SOFTMAX_CPU_CONTRACT.md) | 72 guarded cases per variant and216 exact allocations;6 empty cases;24 extreme normalized rows;actual native2,821-case exponential gate |
+| [BF16](BF16_CPU_CONTRACT.md) | Conversion model24 cases/1,408 coordinates plus22 bit literals;native QK18 complete/24 logical-tail cases,864 scores and8 dimension rejections |
 
 The independent FP64 oracle uses the same supplied candidate multiset and
 quantized inputs. BF16 input conversion, FP32 accumulation and BF16 output
@@ -204,32 +207,24 @@ FP32; the Tensor shim and serial OpenMP pragmas do not establish production
 Torch ABI/conversion/scheduling. Native BF16 QK remains independently gated
 on AVX512F/BW/BF16, without requiring FMA.
 
-Four descriptor-enrolled negative probes run only in portable sanitizer mode:
-full/optimized exact-tail allocations require ASan heap-buffer-overflow;
-sparse/full empty sets require fatal UBSan null-float load. Exit1, exact marker,
-diagnostic category and selected production-body source site must all agree.
-ASan addresses are resolved using addr2line against the exact non-PIE executable;
-the selected function and line must be paired. Extra errors, generic crashes,
-wrong sites or absent diagnostics fail the run. Native masked-intrinsic
-instrumentation is not inferred. The evidence records these separately as
-known_defect_reproduced, and clears prior successful evidence before validation.
-`test_magicpig_boundary_contracts.py` covers rejection and stale-evidence cases.
+The original four Softmax negative probes documented pre-repair tail/empty
+failures. Current #72/#73/#74 tests require successful exact-capacity, zero-mass
+and extreme-logit calls; descriptors no longer expect those failures. Generic
+boundary-validator tests still reject wrong sites, unrelated diagnostics and
+stale evidence. Maintained QK and full-attention routing now honor logical nnz
+and differing query-head lengths; the old0.5-versus1.0 GQA witness is repaired.
 
-Repairs remain open: [#72 tails](https://github.com/fregata-ariel/HashingDeepLearning/issues/72),
-[#73 empty sets](https://github.com/fregata-ariel/HashingDeepLearning/issues/73),
-[#74 native exponent](https://github.com/fregata-ariel/HashingDeepLearning/issues/74),
-[#75 QK padding](https://github.com/fregata-ariel/HashingDeepLearning/issues/75),
-[#76 dimensions/groups](https://github.com/fregata-ariel/HashingDeepLearning/issues/76),
-and [#77 varying GQA lengths](https://github.com/fregata-ariel/HashingDeepLearning/issues/77).
-Full server correctness support uses uniform lengths, dim128 and groups1/4/8;
-the varying-length witness returns0.5 versus independent1.0 and remains a defect.
-The immutable archive and maintained arithmetic are unchanged. Routine fixtures
-need no model/data downloads; GPU, full-extension and generation tests remain
-postponed/unverified. Hosted CI keeps LeakSanitizer enabled; the local sandbox
-requires the explicit `--sanitize --disable-leak-check` exception only.
+All eleven repairs #65–#68/#72–#77/#86 are closed and integrated. Final native
+compiler/storage policy is Ubuntu24/GCC14 with ASan/UBSan/LSan enabled. Actual
+#74 candidate CI38433831517 executed both17-suite phases, AVX4/BF161 and the
+2,821-case exponential gate; integration59edfec CI38434322398 also succeeded.
+The immutable archive remains unchanged; maintained arithmetic includes the
+reviewed repairs. No routine fixture needs models/datasets. GPU, full-extension
+and generation tests remain postponed. Local native capability skips are
+reported honestly; leak checking stays enabled.
 
 
-## Cache/normalizer merge CPU checkpoint (#59, in progress)
+## Cache/normalizer merge CPU checkpoint (#59, integrated)
 
 The new `cache_merge` Python descriptor runs nine pinned `attnserver.py`
 statement blocks through restricted CPU substitutes. See
@@ -246,6 +241,7 @@ This is explicitly a **source-selected Python/host FP64 support model**, not
 Torch, real FlashInfer `merge_state`, native GPU/async copy, or a complete
 LSH-to-attention Python runtime. AST runs are
 `not_applicable_python_adapter` in sanitizer mode. Short contexts with
-empty offload remain unsupported and separate source repairs remain open.
-#60 must connect the verified individual mechanisms before full composition
-is claimed.
+empty offload remain unsupported in archived sparse Python fill. This is
+distinct from repaired C++ empty-candidate attention. #60 is integrated and
+executes the connected hash/retrieval/correction/attention/cache/merge path;
+see [its precise execution scope](CPU_COMPOSITION_CONTRACT.md).

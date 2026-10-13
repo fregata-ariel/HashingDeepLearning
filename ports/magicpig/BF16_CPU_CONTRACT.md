@@ -2,7 +2,7 @@
 
 The `bf16_model` suite executes the unchanged selected `wv_kernel` using software
 FP32 lanes and explicit conversion substitutes. The independently gated native
-`bf16_tile` suite executes the unchanged `qk_kernel_bf16_impl`. Both are small
+`bf16_tile` suite executes the maintained `qk_kernel_bf16_impl`. Both are small
 deterministic CPU fixtures; GPU experiments remain postponed.
 
 Run `python3 tools/check_magicpig_cpu.py --suite bf16_model` for the portable
@@ -72,15 +72,17 @@ contract and does not establish support for arrays allocated at exact logical
 nnz. Empty QK uses valid storage and performs no score writes; it says nothing
 about empty Softmax, whose domain is tested separately.
 
-Three safe all-ones cases at dimensions 16,48,80 reproduce the source's
-`floor(head_dim/32)*32` result, differing from the complete dot product. These
-are unsupported-dimension defect characterizations. The ordinary native inputs
-show maximum accumulator error about 7.45058e-8 and input-quantization
-contribution about 0.000169936. Neither padded tails nor silent dimension
-truncation is reported as unrestricted QK correctness.
+Repair #76 rejects dimensions0/16/31/33/48/80/127/129 with
+`std::invalid_argument` before any input reads or score writes, rather than
+silently computing a truncated dot product. Native BF16 QK supports positive
+multiples32, tested at32/64/128 against same-quantized FP64 dots. BF16 server
+entrypoints validate this policy before OpenMP workers; the fixed scheduled WV
+path additionally requires dim128. This does not establish Torch binding or
+native conversion behavior.
 
-The plain and local ASan/UBSan standalone runs pass both suites. Local process
-inspection restrictions require the explicit leak-check disable option; hosted
-CI must keep LeakSanitizer enabled. Full Torch/FBGEMM linkage, native conversion
-execution, BF16 server dispatch and model-level approximation quality remain
-outside these fixtures.
+Repair #76 portable attention and BF16 model fixtures pass plain and
+ASan/UBSan/LeakSanitizer runs with leak detection enabled. Native BF16 and
+AVX512 arithmetic are capability-skipped on the local CPU; the native BF16
+fixture is compile checked with its required ISA flags. Full Torch/FBGEMM
+linkage, native conversion execution, BF16 server dispatch and model-level
+approximation quality remain outside these fixtures.

@@ -67,19 +67,14 @@ void check_case(int dim, int nnz, bool nontrivial, bool padded_tail,
   }
   require(padded_tail == (nnz != padded), "test tail classification mismatch");
 }
-void dimension_truncation() {
-  constexpr int nnz = 16;
-  for (int dim : {16,48,80}) {
-    std::vector<bfloat16> keys(nnz * dim,0x3f80u), query(dim,0x3f80u);
-    std::array<int,nnz> ids{}; for (int i=0;i<nnz;++i)ids[i]=i;
-    std::array<float,nnz+2> guarded{}; guarded.front()=17; guarded.back()=-23;
-    qk_kernel_bf16_impl(keys.data(),ids.data(),query.data(),guarded.data()+1,dim,nnz);
-    const int processed=(dim/32)*32;
-    for(int i=0;i<nnz;++i) {
-      require(guarded[i+1]==processed,"known BF16 dimension truncation changed");
-      require(guarded[i+1]!=dim,"dimension witness must differ from complete dense dot");
-    }
-    require(guarded.front()==17&&guarded.back()==-23,"dimension witness guard changed");
+void dimension_rejection() {
+  for (int dim : {0,16,31,33,48,80,127,129}) {
+    std::array<float,3> guarded{17,19,-23};
+    bool rejected = false;
+    try { qk_kernel_bf16_impl(nullptr,nullptr,nullptr,guarded.data()+1,dim,1); }
+    catch (const std::invalid_argument&) { rejected = true; }
+    require(rejected, "unsupported BF16 dimension rejected");
+    require(guarded[0]==17&&guarded[1]==19&&guarded[2]==-23,"dimension rejection precedes reads/writes");
   }
 }
 } // namespace native_bf16_test
@@ -90,9 +85,9 @@ int main() {
       native_bf16_test::check_case(dim,nnz,nontrivial,false,maximum,quantization,checks);
     for(int dim : {32,64,128}) for(int nnz : {1,15,17,31}) for(bool nontrivial : {false,true})
       native_bf16_test::check_case(dim,nnz,nontrivial,true,maximum,quantization,checks);
-    native_bf16_test::dimension_truncation();
+    native_bf16_test::dimension_rejection();
     std::cout << "MAGICPIG_BF16_BODY_PASS supported_cases=18 padded_tail_cases=24 score_checks=" << checks
-              << " dimension_truncation_cases=3 max_fp32_accumulator_error=" << maximum
+              << " dimension_rejection_cases=8 max_fp32_accumulator_error=" << maximum
               << " max_input_quantization_error=" << quantization
               << " native_conversion=false padded_tail_requires_accessible_ids_and_scores=true\n";
   } catch(const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }

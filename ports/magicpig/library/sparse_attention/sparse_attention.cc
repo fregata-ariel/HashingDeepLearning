@@ -75,7 +75,9 @@ const float *query,
 float *attn_weight,
 const int HEAD_DIM,
 const int nnz) 
-{  
+{
+    if (HEAD_DIM <= 0 || HEAD_DIM % 16 != 0) throw std::invalid_argument("FP32 QK head_dim must be a positive multiple of 16");
+
   memset(attn_weight, 0, sizeof(float) * nnz);
   float w_f32[16];
   int nnz_16 = (nnz % 16 == 0) ? (nnz): (nnz + 16 - nnz % 16);
@@ -121,7 +123,9 @@ const bfloat16 *query,
 float *attn_weight,
 const int HEAD_DIM,
 const int nnz) 
-{  
+{
+    if (HEAD_DIM <= 0 || HEAD_DIM % 32 != 0) throw std::invalid_argument("BF16 QK head_dim must be a positive multiple of 32");
+
     memset(attn_weight, 0, sizeof(float) * nnz);
     int nnz_16 = (nnz % 16 == 0) ? nnz : (nnz + 16 - nnz % 16);
 
@@ -160,6 +164,8 @@ void qk_kernel_full(
     const int nnz,           // 只计算k的前nnz <= max_length
     const int max_length
 ) {
+    if (HEAD_DIM <= 0 || HEAD_DIM % 16 != 0 || num_attention_groups <= 0) throw std::invalid_argument("full QK requires positive groups and head_dim multiple of 16");
+
     const int HEAD_DIM_16 = HEAD_DIM / 16; // 每次处理 16 个维度
     const int TILE_SIZE = 64; // 块大小，处理 TILE_SIZE 行 key 一次
     
@@ -547,6 +553,8 @@ const float *attn_weight,
 bfloat16 *output, 
 const int HEAD_DIM,
 const int nnz) {
+    if (HEAD_DIM <= 0 || HEAD_DIM % 16 != 0) throw std::invalid_argument("WV head_dim must be a positive multiple of 16");
+
     float y_f32[16];
     float w_f32[16];
     for (int io = 0; io < (HEAD_DIM / 16); ++io) {
@@ -576,6 +584,8 @@ const float *attn_weight,
 bfloat16 *output, 
 const int HEAD_DIM,
 const int nnz) {
+    if (HEAD_DIM != 128) throw std::invalid_argument("fixed WV head_dim must be 128");
+
 
     __m512 y[8];
     float v_f32[16];
@@ -614,9 +624,8 @@ void wv_kernel_dim128_full(
     const int nnz,                // 每行前 nnz 的非零部分
     const int num_q               // 查询向量的数量，必须是 1, 4 或 8
 ) {
-    if (num_q != 4 && num_q != 8 && num_q != 1) {
-        return; // 不支持其他数量
-    }
+    if (HEAD_DIM != 128 || (num_q != 1 && num_q != 4 && num_q != 8)) throw std::invalid_argument("full WV requires head_dim 128 and groups 1, 4 or 8");
+
 
     // 全局结果数组
     __m512 y[8][8]; // 每个查询向量最多分成 8 个块（128维）
@@ -684,6 +693,8 @@ const int offset,
 const int COMPUTE_HEAD_DIM,
 const int HEAD_DIM,
 const int nnz) {
+    if (HEAD_DIM != 128 || COMPUTE_HEAD_DIM != 64 || (offset != 0 && offset != 64)) throw std::invalid_argument("parallel fixed WV requires dim128 and aligned 64-coordinate halves");
+
 
     __m512 y[4];
     float v_f32[16];
@@ -720,6 +731,8 @@ const int offset,
 const int COMPUTE_HEAD_DIM,
 const int HEAD_DIM,
 const int nnz) {
+    if (HEAD_DIM <= 0 || HEAD_DIM % 16 != 0 || COMPUTE_HEAD_DIM <= 0 || COMPUTE_HEAD_DIM % 16 != 0 || offset < 0 || offset % 16 != 0 || COMPUTE_HEAD_DIM > HEAD_DIM || offset > HEAD_DIM - COMPUTE_HEAD_DIM) throw std::invalid_argument("parallel WV requires aligned in-range dimensions");
+
     float y_f32[16];
     float w_f32[16];
     for (int io = 0; io < (COMPUTE_HEAD_DIM / 16); ++io) {
@@ -772,7 +785,10 @@ int num_key_value_heads,
 int head_dim, 
 int batch_size, 
 int max_length)
-{   
+{
+    if (this->allocated) throw std::invalid_argument("SparseAttentionServer alloc may only be called once");
+    if (num_layers <= 0 || num_attention_heads <= 0 || num_key_value_heads <= 0 || num_attention_heads % num_key_value_heads != 0 || head_dim <= 0 || head_dim % 16 != 0 || batch_size <= 0 || max_length <= 0) throw std::invalid_argument("invalid sparse attention allocation dimensions");
+
     this->num_layers = num_layers;
     this->num_attention_heads = num_attention_heads;
     this->num_key_value_heads = num_key_value_heads;
@@ -807,7 +823,7 @@ int max_length)
 
 void SparseAttentionServer::clear()
 {
-  
+
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for(int i = 0; i < this->num_layers; ++i){
         
@@ -1038,6 +1054,8 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (this->head_dim <= 0 || this->head_dim % 32 != 0) throw std::invalid_argument("BF16 attention head_dim must be a positive multiple of 32");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     bfloat16 * query = static_cast<bfloat16 *>(query_pt.data_ptr());
@@ -1172,6 +1190,8 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (this->head_dim <= 0 || this->head_dim % 32 != 0) throw std::invalid_argument("BF16 attention head_dim must be a positive multiple of 32");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     
@@ -1228,6 +1248,8 @@ torch::Tensor max_value_expsum_pt,
 torch::Tensor query_pt,
 torch::Tensor nnz_pt)
 {
+    if (!this->allocated || this->head_dim != 128 || (this->num_attention_groups != 1 && this->num_attention_groups != 4 && this->num_attention_groups != 8)) throw std::invalid_argument("full_attention requires dim128 and query groups 1, 4 or 8");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1283,6 +1305,8 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (this->head_dim != 128) throw std::invalid_argument("scheduled_attention requires head_dim 128");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1371,6 +1395,10 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (this->head_dim != 128) throw std::invalid_argument("scheduled_attention requires head_dim 128");
+
+    if (this->head_dim <= 0 || this->head_dim % 32 != 0) throw std::invalid_argument("BF16 attention head_dim must be a positive multiple of 32");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     bfloat16 * query = static_cast<bfloat16 *>(query_pt.data_ptr());

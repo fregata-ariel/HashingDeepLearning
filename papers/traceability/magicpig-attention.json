@@ -40,7 +40,7 @@
       "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU",
       "paper": "magicpig-2024",
       "paper_location": "Sections 4.3-4.4; released CPU kernel capacity/dimension support boundaries",
-      "mechanism": "Defined-memory characterization of rounded QK score writes, full-Softmax padded mutation, unsupported dimension tails and full-WV query groups.",
+      "mechanism": "Defined-memory QK/full-softmax padding characterization and explicit dimension/group rejection regressions.",
       "relation": "support",
       "implementation": {
         "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
@@ -51,18 +51,18 @@
         "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU"
       },
       "conditions": {
-        "cases": 11,
+        "cases": 48,
         "nnz": "1/15/16/17/31/32",
         "capacity": "Both indices and scores allocated to round_up(nnz,16); initialized score padding and valid row IDs; guards after capacity",
         "padding_observation": "qk_kernel zeros only nnz but accumulates through round_up(nnz,16), preserving prior padding value; softmax_kernel_full scales/normalizes padded slots while valid probabilities remain correct",
-        "dimension_observation": "QK dimension17 ignores a nonzero last coordinate; WV dimension17 leaves last output untouched",
-        "full_group_observation": "wv_kernel_dim128_full group2 returns silently without output writes; supported full server tests restrict groups1/4/8 and dimension128",
+        "dimension_observation": "Repair #76: FP32 QK/WV reject nonpositive/nonmultiple16 dimensions before reads/writes; dimensions near16/32/128 checked.",
+        "full_group_observation": "Repair #76: full server and fixed WV reject dimensions other than128 or groups outside1/4/8 before writes; valid groups remain FP64 checked.",
         "empty_candidates": "not called here; unsafe empty behavior is characterized separately",
         "invalid_parameters": "not validated by maintained server; unsupported capacity, dimension, layer/request, divisibility, reallocation and expired views are not claimed safe",
         "gpu_execution": "postponed",
         "varying_gqa_lengths_observation": "Actual full server with groups4/KVheads2 and query lengths [16,16,16,16,32,32,32,32], zero logits and BF16 values1 produces head4 output0.5 versus independent dense1. KV-indexed nnz in QK/WV differs from query-indexed nnz in Softmax; verified full support remains uniform lengths only."
       },
-      "note": "Reports observed restrictions rather than a repair. Maintained arithmetic remains unchanged. Padded capacity is a caller precondition; nnz-sized buffers are not asserted safe. Corrected sparse all-candidate support differs from dense full attention."
+      "note": "Repair #76 validates dimensions and groups before writes. QK tails and varying GQA lengths remain tracked by #75/#77."
     }
   ]
 }

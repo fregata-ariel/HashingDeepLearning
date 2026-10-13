@@ -154,6 +154,34 @@ class WorkflowContracts(unittest.TestCase):
         self.assertNotIn("schedule:", text)
         self.assertNotIn("self-hosted", text)
 
+    def test_cpu_typing_dependencies_and_checkout_notice_are_preserved(self) -> None:
+        text = (ROOT / ".github/workflows/python-typing.yml").read_text()
+        self.assertIn('python-version: "3.12"', text)
+        self.assertIn("mypy==2.4.0 numpy==2.3.5 tensorboard==2.21.0", text)
+        self.assertIn("torch==2.14.1+cpu", text)
+        self.assertIn("--index-url https://download.pytorch.org/whl/cpu", text)
+        for filename in ("python-typing.yml", "traceability.yml"):
+            content = (ROOT / ".github/workflows" / filename).read_text()
+            self.assertIn("::notice title=Tested merge candidate::commit=$(git rev-parse HEAD);tree=$(git rev-parse 'HEAD^{tree}')", content)
+
+    def test_oracle_tool_only_changes_trigger_bounded_cpu_gates(self) -> None:
+        text = (ROOT / ".github/workflows/traceability.yml").read_text()
+        for event in ("push", "pull_request"):
+            paths = self.trigger_paths(text, event)
+            for changed in ("tools/generate_magicpig_probability_reference.py", "tools/report_magicpig_cpu.py", "tools/audit_python_annotations.py", "tools/maintained_python_inventory.json"):
+                self.assertTrue(any(fnmatch.fnmatchcase(changed, p) for p in paths))
+        self.assertIn("python3 tools/generate_magicpig_probability_reference.py --check", text)
+        self.assertIn("python3 tools/report_magicpig_cpu.py", text)
+        reporting = text.split("      - name: Report actual native execution separately from skips\n", 1)[1].split("      - name:", 1)[0]
+        self.assertIn("if: always()", reporting)
+        self.assertIn("set -o pipefail", text)
+        self.assertIn("2>&1 | tee traceability-artifact/magicpig-cpu/sanitized/run.log", text)
+        self.assertIn('OMP_THREAD_LIMIT: "4"', text)
+        self.assertIn('OMP_NUM_THREADS: "4"', text)
+        self.assertIn("-fopenmp -fsanitize=address,undefined", text)
+        openmp = text.split("      - name: Bounded OpenMP attention ownership regression\n", 1)[1].split("      - name:", 1)[0]
+        self.assertNotIn("-mavx512", openmp)
+
 
 if __name__ == "__main__":
     unittest.main()

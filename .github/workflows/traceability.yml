@@ -11,7 +11,10 @@ on:
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
       - "tools/check_magicpig_cpu.py"
+      - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
+      - "tools/audit_python_annotations.py"
+      - "tools/maintained_python_inventory.json"
       - "third_party/magicpig/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
@@ -39,7 +42,10 @@ on:
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
       - "tools/check_magicpig_cpu.py"
+      - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
+      - "tools/audit_python_annotations.py"
+      - "tools/maintained_python_inventory.json"
       - "third_party/magicpig/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
@@ -107,36 +113,29 @@ jobs:
           python3 tests/traceability/test_magicpig_capabilities.py
           python3 tests/traceability/test_magicpig_cpu_contracts.py
           python3 tests/traceability/test_magicpig_boundary_contracts.py
+          python3 tests/traceability/test_magicpig_ci_reporting.py
+          python3 tests/traceability/test_python_typing_inventory.py
           python3 tools/generate_magicpig_probability_reference.py --check
-          python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --build-dir traceability-artifact/magicpig-cpu/plain
-          python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --sanitize --build-dir traceability-artifact/magicpig-cpu/sanitized
+          mkdir -p traceability-artifact/magicpig-cpu/plain traceability-artifact/magicpig-cpu/sanitized
+          set -o pipefail
+          python3 tools/check_magicpig_cpu.py --native --build-dir traceability-artifact/magicpig-cpu/plain 2>&1 | tee traceability-artifact/magicpig-cpu/plain/run.log
+          python3 tools/check_magicpig_cpu.py --native --sanitize --build-dir traceability-artifact/magicpig-cpu/sanitized 2>&1 | tee traceability-artifact/magicpig-cpu/sanitized/run.log
 
-      - name: Record actual native execution separately from skips
+      - name: Report actual native execution separately from skips
+        if: always()
         run: |
-          python3 - <<'PY'
-          import hashlib, json, subprocess
-          from pathlib import Path
-          commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
-          source = 'ports/magicpig/library/sparse_attention/sparse_attention.cc'
-          source_hash = hashlib.sha256(Path(source).read_bytes()).hexdigest()
-          for mode in ('plain', 'sanitized'):
-              data = json.loads(Path(f'traceability-artifact/magicpig-cpu/{mode}/magicpig_cpu_evidence.json').read_text())
-              results = data['results']
-              assert data['status'] == 'pass' and all(r['status'] == 'pass' for r in results)
-              assert data['sanitize'] == (mode == 'sanitized')
-              assert all(r['leak_check_explicitly_disabled'] is False for r in results if r['mode'] != 'portable_python')
-              for result in results:
-                  if source in result.get('source_sha256', {}):
-                      assert result['source_sha256'][source] == source_hash
-              avx = [r for r in results if r['mode'] == 'avx512']
-              bf16 = [r for r in results if r['mode'] == 'bf16']
-              exp_cases = 2821 if any(r['suite'] == 'softmax' and 'MAGICPIG-EXP-NATIVE-CPU cases=2821' in r['stdout'] for r in avx) else 0
-              proof = dict(commit=commit, mode=mode, gcc_major=data['capabilities']['gcc_major'],
-                           result_count=len(results), avx512_count=len(avx), bf16_count=len(bf16),
-                           exp_cases=exp_cases, sanitize=data['sanitize'], leaks_disabled=False,
-                           sparse_attention_sha256=source_hash)
-              print(f'::notice title=MagicPIG native execution {mode}::{json.dumps(proof, sort_keys=True)}')
-          PY
+          python3 tools/report_magicpig_cpu.py \
+            --evidence traceability-artifact/magicpig-cpu/plain/magicpig_cpu_evidence.json \
+            --evidence traceability-artifact/magicpig-cpu/sanitized/magicpig_cpu_evidence.json
+
+      - name: Bounded OpenMP attention ownership regression
+        env:
+          OMP_THREAD_LIMIT: "4"
+          OMP_NUM_THREADS: "4"
+        run: |
+          g++ -std=c++17 -O1 -fno-tree-vectorize -fno-tree-slp-vectorize -fopenmp -fsanitize=address,undefined -g -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie traceability-artifact/magicpig-cpu/sanitized/portable/attention/selected_bodies.cpp -o traceability-artifact/magicpig-cpu/attention-openmp
+          traceability-artifact/magicpig-cpu/attention-openmp
+          echo "::notice title=MagicPIG bounded OpenMP attention::PASS; OMP_THREAD_LIMIT=4; OMP_NUM_THREADS=4; ASan+UBSan+LSan; commit=$(git rev-parse HEAD)"
 
       - name: G-SLIDE CPU serial CUDA-body oracles and sanitizers
         run: |

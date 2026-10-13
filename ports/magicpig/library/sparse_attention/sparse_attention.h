@@ -26,6 +26,8 @@ class SparseAttentionServer{
         void attention_bf16(int layer_id, int K, int L, torch::Tensor output_pt, torch::Tensor max_value_expsum_pt, torch::Tensor query_pt, torch::Tensor query_norm_pt, torch::Tensor ind_pt, torch::Tensor nnz_pt);
         void dynamic_attention(int layer_id, int K, int L, torch::Tensor output_pt, torch::Tensor max_value_expsum_pt, torch::Tensor query_pt, torch::Tensor query_norm_pt, torch::Tensor ind_pt, torch::Tensor nnz_pt);
         void dynamic_attention_bf16(int layer_id, int K, int L, torch::Tensor output_pt, torch::Tensor max_value_expsum_pt, torch::Tensor query_pt, torch::Tensor query_norm_pt, torch::Tensor ind_pt, torch::Tensor nnz_pt);
+        // nnz shape: [batch_size*num_attention_heads]; flattened batch/query
+        // head counts apply consistently to QK, Softmax and WV (KV=head/groups).
         void full_attention(int layer_id, torch::Tensor output_pt, torch::Tensor max_value_expsum_pt, torch::Tensor query_pt, torch::Tensor nnz_pt);
         void scheduled_attention(int layer_id, int K, int L, torch::Tensor output_pt, torch::Tensor max_value_expsum_pt, torch::Tensor query_pt, torch::Tensor query_norm_pt, torch::Tensor ind_pt, torch::Tensor nnz_pt);
         void scheduled_attention_bf16(int layer_id, int K, int L, torch::Tensor output_pt, torch::Tensor max_value_expsum_pt, torch::Tensor query_pt, torch::Tensor query_norm_pt, torch::Tensor ind_pt, torch::Tensor nnz_pt);

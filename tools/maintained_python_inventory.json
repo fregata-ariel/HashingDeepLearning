@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "groups": [
+    {
+      "name": "mongoose",
+      "root": "ports/mongoose",
+      "python_files": [
+        "lsh_lib/matrix_simhash.py",
+        "lsh_lib/query_mul_interface.py",
+        "lsh_lib/setup.py",
+        "mongoose_reformer/__init__.py",
+        "mongoose_reformer/reformer_lib/__init__.py",
+        "mongoose_reformer/reformer_lib/autopadder.py",
+        "mongoose_reformer/reformer_lib/generative_tools.py",
+        "mongoose_reformer/reformer_lib/recorder.py",
+        "mongoose_reformer/reformer_lib/reformer_enc_dec.py",
+        "mongoose_reformer/reformer_lib/reformer_pytorch.py",
+        "mongoose_reformer/reformer_lib/reversible.py",
+        "mongoose_reformer/reformer_lib/scheduler.py",
+        "mongoose_reformer/train_reformer.py",
+        "mongoose_slide/__init__.py",
+        "mongoose_slide/slide_lib/__init__.py",
+        "mongoose_slide/slide_lib/adam_base.py",
+        "mongoose_slide/slide_lib/cupy_kernel.py",
+        "mongoose_slide/slide_lib/lazy_parser.py",
+        "mongoose_slide/slide_lib/lsh.py",
+        "mongoose_slide/slide_lib/lsh_softmax.py",
+        "mongoose_slide/slide_lib/network.py",
+        "mongoose_slide/slide_lib/simHash.py",
+        "mongoose_slide/slide_lib/triplet_network.py"
+      ],
+      "stub_files": [
+        "lsh_lib/clsh.pyi"
+      ],
+      "mypy_path": [
+        "ports/mongoose",
+        "typings"
+      ]
+    },
+    {
+      "name": "slide-original",
+      "root": "ports/slide-original/python_examples",
+      "python_files": [
+        "config.py",
+        "example_full_softmax.py",
+        "example_sampled_softmax.py",
+        "util.py"
+      ],
+      "stub_files": [],
+      "mypy_path": [
+        "ports/slide-original/python_examples",
+        "typings"
+      ]
+    },
+    {
+      "name": "slide-optimized-avx512",
+      "root": "ports/slide-optimized-avx512/python_examples",
+      "python_files": [
+        "config.py",
+        "example_full_softmax.py",
+        "example_sampled_softmax.py",
+        "util.py"
+      ],
+      "stub_files": [],
+      "mypy_path": [
+        "ports/slide-optimized-avx512/python_examples",
+        "typings"
+      ]
+    },
+    {
+      "name": "magicpig",
+      "root": "ports/magicpig",
+      "python_files": [],
+      "stub_files": [],
+      "mypy_path": [
+        "ports/magicpig",
+        "typings"
+      ]
+    },
+    {
+      "name": "g-slide",
+      "root": "ports/g-slide",
+      "python_files": [],
+      "stub_files": [],
+      "mypy_path": [
+        "ports/g-slide",
+        "typings"
+      ]
+    }
+  ]
+}

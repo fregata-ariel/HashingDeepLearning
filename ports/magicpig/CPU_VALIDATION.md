@@ -159,22 +159,26 @@ variant; the archive and valid sorted-fill arithmetic remain unchanged. Default
 portable suites at the historical Issue56 checkpoint were baseline, simhash and
 lsh_retrieval; probability integrated separately in #57.
 
-## Probability/domain checkpoint (#57)
+## Probability/domain checkpoint (#57), maintained repairs (#67/#68)
 
-`probability` executes the unchanged transform body with independent exhaustive
-bit/table outcomes and FP64 positive-binomial sums: 15108 states,141 corrections,
-14 domain cases and670 assertions. [Contract](PROBABILITY_VALIDATION.md) gives
-conditioned error budgets, endpoint/zero-norm/invalid-parameter characterization
-and a finite self-normalized bias example scoped to synthetic independent
-candidate processes. +1e-4 is a source variant; tiny-inclusion cancellation and
-input-domain checks remain repairs #68/#67, not claims of exact/unbiased output.
-Default portable suites are now baseline,simhash,lsh_retrieval,probability.
-Actual native modes remain capability-gated; Python adapters remain outside
-native sanitizer claims. GPU/full-extension/model execution is still unverified.
+`probability` now executes the maintained stable inclusion helper and transform
+with independent references: 15108 bit/table states,141 original corrections,
+42 domain cases,312 stable-probability cases and3150 assertions. The
+[contract](PROBABILITY_VALIDATION.md) documents eight-epsilon cosine roundoff,
+validation before partial mutation, positive-tail/logarithmic arithmetic,
+54 reproducible160-digit Decimal references, and explicit error budgets.
+The old invalid-domain and tiny-inclusion defect expectations were deliberately
+replaced by maintained repairs #67/#68. +1e-4 remains the biased source variant;
+finite self-normalization still has no unbiased-output claim.
+
+Focused probability and dependent portable baseline/attention sanitizer runs
+pass with ASan/UBSan/LeakSanitizer enabled. Native modes remain capability-gated;
+Python adapters remain outside native sanitizer claims. GPU/full-extension/model
+execution and OpenMP wrapper exception transport remain separate verification.
 
 #55/#56/#57 are scoped mechanism verification with explicit follow-up defects;
-#58 adds selected sparse-attention/BF16/Softmax composition below. These tested
-domains and follow-up repairs remain separate from unrestricted correctness.
+#58 adds selected sparse-attention/BF16/Softmax composition below. Repairs do
+not establish unrestricted correctness outside their stated contracts.
 
 ## Attention, Softmax and BF16 checkpoint (#58)
 

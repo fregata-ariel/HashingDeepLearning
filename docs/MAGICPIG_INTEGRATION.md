@@ -198,3 +198,13 @@ This work does not change `third_party/magicpig` or production arithmetic.
 Before #59 closes, record exact PR head/CI/reviewed merge candidate here
 and in #59. #60 and #61 stay separate. CPU-only fixtures do not
 override known repairs or the postponed GPU milestone.
+
+PR [#79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) review
+follow-up corrects the CPU fixture's formerly shape-free cache copies and
+token-ID-parity probability assignment. The pinned dense caller supplies padded
+`max_length` buffers; this is a fixture correction, not a demonstrated native
+dense-fill defect. Both 0.4/0.65 sampled probabilities, fixed-shape copies,
+host capacity negatives and clear/refill state are checked. Merge algebra
+continues to use the independent union-attention oracle. Updated Hosted CI
+evidence must be matched to the final PR head before integration; the prior
+successful run for `f816a50` does not validate these follow-up edits.

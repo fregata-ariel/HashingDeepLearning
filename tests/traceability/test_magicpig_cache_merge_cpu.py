@@ -78,16 +78,36 @@ def run_selected(block: list[ast.stmt], env: dict[str, Any], **dependencies: Any
 
 
 class Slot:
-    def __init__(self) -> None:
-        self.value: Tensor | None = None
+    def __init__(self, heads: int, capacity: int, dim: int) -> None:
+        self.value = Tensor([0.0] * (heads * capacity * dim), (heads, capacity, dim))
 
-    def __getitem__(self, key: Any) -> Slot:
-        # A view into a bounded, already allocated host buffer. Guarded below.
-        assert isinstance(key, tuple)
-        return self
+    def __getitem__(self, key: Any) -> SlotView:
+        assert isinstance(key, tuple) and len(key) == 3 and key[0] is Ellipsis
+        assert key[2] == slice(None) and isinstance(key[1], slice)
+        start, stop, step = key[1].indices(self.value.shape[1])
+        assert step == 1
+        return SlotView(self, start, stop)
 
     def copy_(self, value: Tensor) -> None:
-        self.value = Tensor(list(value.data), value.shape)
+        SlotView(self, 0, self.value.shape[1]).copy_(value)
+
+    def zero_(self) -> None:
+        self.value.data = [0.0] * len(self.value.data)
+
+
+class SlotView:
+    def __init__(self, slot: Slot, start: int, stop: int) -> None:
+        self.slot, self.start, self.stop = slot, start, stop
+
+    def copy_(self, value: Tensor) -> None:
+        heads, _, dim = self.slot.value.shape
+        # Selected source copies have equal shapes. Broadcasting is outside this
+        # adapter's contract; rejection fixtures use nonbroadcastable shapes.
+        if value.shape != (heads, self.stop - self.start, dim):
+            raise ValueError('cache copy shape mismatch')
+        for h, t, d in itertools.product(range(heads), range(self.stop - self.start), range(dim)):
+            offset = (h * self.slot.value.shape[1] + self.start + t) * dim + d
+            self.slot.value.data[offset] = value.index((h, t, d))
 
 
 class IndexedValues:
@@ -134,6 +154,8 @@ class CapturePlan:
         self.calls: list[dict[str, Any]] = []
 
     def plan(self, *args: Any, **kwargs: Any) -> None:
+        if any(n < 1 or n > args[6] for n in args[2].values):
+            raise ValueError('host page capacity exceeded')
         self.calls.append({'lengths': list(args[2].values), 'heads': (args[3], args[4]),
                            'dim': args[5], 'capacity': args[6], 'kwargs': kwargs})
 
@@ -155,7 +177,7 @@ def source_membership(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, floa
                 for t in range(length) for h in range(heads) for d in range(dim)]
         key_cache = Tensor(keys, (length, heads, dim))
         value_cache = Tensor(values, (length, heads, dim))
-        sparse_slots = [[Slot(), Slot()] for _ in range(2)]
+        sparse_slots = [[Slot(heads, 4, dim), Slot(heads, 4, dim)] for _ in range(2)]
         obj = SimpleNamespace(num_sink_tokens=1, num_local_tokens=1,
                               avg_k=[StoredMean()], flashinfer_kv_cache=[sparse_slots],
                               kv_last_page_len=IndexedValues(2))
@@ -169,8 +191,9 @@ def source_membership(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, floa
         assert obj.kv_last_page_len.values[batch] == 2
         assert obj.flashinfer_kv_cache[0][batch][0].value is not None
         assert obj.flashinfer_kv_cache[0][batch][1].value is not None
-        assert obj.flashinfer_kv_cache[0][batch][0].value.data == env['key'].data
-        assert obj.flashinfer_kv_cache[0][batch][1].value.data == env['value'].data
+        assert obj.flashinfer_kv_cache[0][batch][0].value[:, :2, :].data == env['key'].data
+        assert obj.flashinfer_kv_cache[0][batch][1].value[:, :2, :].data == env['value'].data
+        assert obj.flashinfer_kv_cache[0][1 - batch][0].value.data == [0.0] * 16
         assert obj.avg_k[0].values[batch].data == env['avg_k'].data
         for head in range(heads):
             static = [int(env['value'].index((head, i, 0))) - 1 for i in range(2)]
@@ -223,16 +246,16 @@ def source_membership(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, floa
         env = {'self': obj, 'seq_len': length,
                'key_cache': Tensor([1.0, 2.0] * length, (length, 1, 2)),
                'value_cache': Tensor([1.0, 2.0] * length, (length, 1, 2))}
+        run_selected(blocks['partition'], env)
+        assert env['offload_key'].shape[1] == 0
         try:
-            run_selected(blocks['partition'], env)
             run_selected(blocks['centering'], env)
-        except (ZeroDivisionError, ValueError, AssertionError):
+        except ZeroDivisionError:
+            # Restricted host mean rejects an empty reduction; PyTorch may
+            # produce NaNs instead. This does not assert a Torch exception.
             short_unsupported += 1
         else:
-            # No undefined source domain is silently treated as valid even when
-            # a mock backend tolerates its empty reduction.
-            assert env['offload_key'].shape[1] == 0
-            short_unsupported += 1
+            raise AssertionError('host adapter silently accepted empty offload mean')
     assert count == 16 and centered_checks > 50 and max_shift_error < 1e-12
     assert short_unsupported == 2
     return count, centered_checks, max_shift_error, short_unsupported
@@ -241,11 +264,15 @@ def source_membership(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, floa
 def dense_and_plan(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int]:
     dense_cases = 0
     for length in (2, 3, 7):
-        slots = [[Slot(), Slot()]]
+        capacity = 8
+        slots = [[Slot(2, capacity, 2), Slot(2, capacity, 2)]]
         obj = SimpleNamespace(dense_layers=[0], flashinfer_kv_cache=[slots],
                               dense_kv_last_page_len=IndexedValues(1))
-        key = Tensor([float(x) for x in range(length * 4)], (length, 2, 2))
-        value = Tensor([float(100 + x) for x in range(length * 4)], (length, 2, 2))
+        # llama.py passes its full max_length buffers, including unused tail.
+        key = Tensor([float(x) for x in range(length * 4)] + [0.0] * ((capacity - length) * 4),
+                     (capacity, 2, 2))
+        value = Tensor([float(100 + x) for x in range(length * 4)] + [0.0] * ((capacity - length) * 4),
+                       (capacity, 2, 2))
         run_selected(blocks['dense_fill'], {'self': obj, 'layer_idx': 0, 'request_id': 0,
                                             'key_cache': key, 'value_cache': value,
                                             'seq_len': length})
@@ -272,7 +299,7 @@ def dense_and_plan(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int]:
                 assert c['heads'] == (8, 2) and c['dim'] == 128
                 assert c['kwargs']['q_data_type'] == 'bfloat16'
             plan_calls += 2
-        # Bounds checked by our host state allocator, not the archived plan().
+        # Bounds rejected by CapturePlan, not by the archived plan().
         assert all(n <= obj.page_size for n in obj.kv_last_page_len.values)
         assert all(n <= obj.dense_page_size for n in obj.dense_kv_last_page_len.values)
     return dense_cases, plan_calls
@@ -301,11 +328,14 @@ def host_merge(a: list[tuple[float, ...]], alse: list[float],
     return merged, lse
 
 
-def merge_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, float]:
+def merge_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, float, int]:
     checks = 0
     dense_checks = 0
     max_error = 0.0
-    sensitivity = {'omit_correction': False, 'natural_lse': False, 'stale_centers': False}
+    sensitivity = {'omit_correction': False, 'natural_lse': False, 'stale_centers': False,
+                   'uniform_probability': False}
+    sampled_probabilities: set[float] = set()
+    heterogeneous_checks = 0
     for group, batch, length, sampled in itertools.product((1, 4, 8), range(2), (3, 5, 8), (False, True)):
         head_results: list[tuple[tuple[float, ...], float, tuple[float, ...], float,
                                  tuple[float, ...], float]] = []
@@ -319,6 +349,12 @@ def merge_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, float]:
             static = [0, length - 1, length]
             offloaded = list(range(1, length - 1))
             selected = offloaded[::2] if sampled else offloaded
+            # Alternate over selected positions: sampled IDs are all odd, so
+            # token-ID parity would silently omit the 0.65 probability cases.
+            probabilities = {t: (0.4 if i % 2 == 0 else 0.65) if sampled else 1.0
+                             for i, t in enumerate(selected)}
+            if sampled:
+                sampled_probabilities.update(probabilities.values())
             assert set(static).isdisjoint(selected)
             assert set(static + offloaded) == set(range(length + 1))
             mean = tuple(sum(keys[t][d] for t in offloaded) / len(offloaded) for d in range(2))
@@ -327,7 +363,7 @@ def merge_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, float]:
                 score = sum(q * x for q, x in zip(query, k)) / math.sqrt(2.0) - math.log(p)
                 return score, values[t]
             gpu_rows = [row(t, 1.0) for t in static]
-            cpu_rows = [row(t, (0.4 if t % 2 else 0.65) if sampled else 1.0) for t in selected]
+            cpu_rows = [row(t, probabilities[t]) for t in selected]
             gpu, glse = fp64_attention(gpu_rows)
             cpu, clse = fp64_attention(cpu_rows)
             expected, el = fp64_attention(gpu_rows + cpu_rows)
@@ -340,6 +376,14 @@ def merge_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, float]:
             else:
                 bad, _ = fp64_attention(gpu_rows + [row(t, 1.0) for t in selected])
                 sensitivity['omit_correction'] |= max(abs(x - y) for x, y in zip(bad, expected)) > 1e-4
+                # Different inclusion probabilities must also affect the
+                # within-offload distribution, not just its total merge mass.
+                uniform_cpu, _ = fp64_attention([row(t, 0.4) for t in selected])
+                different = max(abs(x - y) for x, y in zip(uniform_cpu, cpu)) > 1e-4
+                if len(set(probabilities.values())) > 1:
+                    assert different, 'heterogeneous probabilities did not reweight offload output'
+                    heterogeneous_checks += 1
+                sensitivity['uniform_probability'] |= different
                 # Shift only the GPU-side keys (stale/offload centering mismatch).
                 bad_gpu = [row(t, 1.0, shift=False) for t in static]
                 bad_center, _ = fp64_attention(bad_gpu + cpu_rows)
@@ -363,8 +407,10 @@ def merge_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, float]:
         sensitivity['natural_lse'] |= any(max(abs(x-y) for x, y in zip(a,b)) > 1e-4
                                           for a,b in zip(bad, merged))
     assert all(sensitivity.values()), sensitivity
+    assert sampled_probabilities == {0.4, 0.65}, sampled_probabilities
     assert checks == 2 * sum((1,4,8)) * 2 * 3 * 2 and dense_checks == checks // 2
-    return checks, dense_checks, max_error
+    assert heterogeneous_checks == 104, heterogeneous_checks
+    return checks, dense_checks, max_error, heterogeneous_checks
 
 
 def clear_checks(blocks: dict[str, list[ast.stmt]]) -> int:
@@ -396,6 +442,139 @@ def clear_checks(blocks: dict[str, list[ast.stmt]]) -> int:
     return resets
 
 
+def bounded_state_checks(blocks: dict[str, list[ast.stmt]]) -> tuple[int, int, int, int]:
+    capacity_checks = 0
+    copy_rejections = 0
+    for sparse, dense in ((3, 6), (4, 7), (4, 6), (3, 7)):
+        obj = SimpleNamespace(
+            kv_last_page_len=IndexedValues(1), dense_kv_last_page_len=IndexedValues(1),
+            decode_wrapper=CapturePlan(), dense_decode_wrapper=CapturePlan(),
+            kv_page_indptr=[0, 1], kv_page_indices=[0],
+            dense_kv_page_indptr=[0, 1], dense_kv_page_indices=[0],
+            num_attention_heads=2, num_key_value_heads=2, head_dim=2,
+            page_size=4, dense_page_size=7)
+        obj.kv_last_page_len.values = [sparse]
+        obj.dense_kv_last_page_len.values = [dense]
+        try:
+            run_selected(blocks['plan'], {'self': obj}, torch=SimpleNamespace(bfloat16='bfloat16'))
+        except ValueError as error:
+            assert str(error) == 'host page capacity exceeded' and (sparse == 4 or dense == 7)
+        else:
+            assert (sparse, dense) == (3, 6)
+            assert obj.kv_last_page_len.values == [4] and obj.dense_kv_last_page_len.values == [7]
+        capacity_checks += 1
+    for sparse in (False, True):
+        for capacity in ((2, 5) if sparse else (3, 8)):
+            slots = [[Slot(2, capacity, 2), Slot(2, capacity, 2)]]
+            obj = SimpleNamespace(flashinfer_kv_cache=[slots], num_sink_tokens=1, num_local_tokens=1,
+                                  kv_last_page_len=IndexedValues(1), dense_kv_last_page_len=IndexedValues(1))
+            env = {'self': obj, 'layer_idx': 0, 'request_id': 0, 'seq_len': 2,
+                   'key': Tensor([1.0] * 12, (2, 3, 2)),
+                   'value': Tensor([2.0] * 12, (2, 3, 2)),
+                   'key_cache': Tensor([1.0] * 8, (2, 2, 2)),
+                   'value_cache': Tensor([2.0] * 8, (2, 2, 2))}
+            try:
+                run_selected(blocks['sparse_cache' if sparse else 'dense_fill'], env)
+            except ValueError as error:
+                assert str(error) == 'cache copy shape mismatch'
+                assert slots[0][0].value.data == [0.0] * (4 * capacity)
+                copy_rejections += 1
+            else:
+                raise AssertionError('nonbroadcastable cache copy accepted')
+
+    class MeanTensor(Tensor):
+        def __setitem__(self, request: int, mean: Tensor) -> None:
+            assert mean.shape == self.shape[1:]
+            width = math.prod(mean.shape)
+            self.data[request * width:(request + 1) * width] = mean.data
+
+        def zero_(self) -> None:
+            self.data = [0.0] * len(self.data)
+
+    class CacheLayer(list):
+        def zero_(self) -> None:
+            for slots in self:
+                for slot in slots:
+                    slot.zero_()
+
+    buffers = {k: Zeroable() for k in ('nnz', 'results_lsh_cpu', 'max_value_expsum',
+               'output_cuda', 'max_value_expsum_cuda', 'output', 'pinned_hashcode', 'pinned_query')}
+    obj = SimpleNamespace(
+        **buffers, num_layers=2, num_sink_tokens=1, num_local_tokens=1,
+        avg_k=[MeanTensor([0.0] * 8, (2, 2, 1, 2)) for _ in range(2)],
+        flashinfer_kv_cache=[CacheLayer([[Slot(2, capacity, 2), Slot(2, capacity, 2)]
+                            for _ in range(2)]) for capacity in (4, 8)],
+        kv_last_page_len=IndexedValues(2), dense_kv_last_page_len=IndexedValues(2),
+        lsh_retriever=CountClear(), attn_server=CountClear(),
+        decode_wrapper=CapturePlan(), dense_decode_wrapper=CapturePlan(),
+        kv_page_indptr=[0, 1, 2], kv_page_indices=[0, 1],
+        dense_kv_page_indptr=[0, 1, 2], dense_kv_page_indices=[0, 1],
+        num_attention_heads=2, num_key_value_heads=2, head_dim=2,
+        page_size=4, dense_page_size=8)
+    steps = 0
+    for cycle in range(2):
+        lengths = [3 + cycle, 5 + cycle]
+        expected_means = []
+        for request, length in enumerate(lengths):
+            key = Tensor([float(100 * cycle + 20 * request + t * 3 + h + d)
+                          if t < length else 0.0
+                          for t in range(8) for h in range(2) for d in range(2)], (8, 2, 2))
+            value = Tensor([float(10 * cycle + 5 * request + t + h + d)
+                            if t < length else 0.0
+                            for t in range(8) for h in range(2) for d in range(2)], (8, 2, 2))
+            env = {'self': obj, 'layer_idx': 0, 'request_id': request,
+                   'seq_len': length, 'key_cache': key, 'value_cache': value}
+            for name in ('partition', 'centering', 'center_store', 'sparse_cache'):
+                run_selected(blocks[name], env)
+            expected_means.extend([sum(key.index((t, h, d)) for t in range(1, length - 1)) / (length - 2)
+                                   for h in range(2) for d in range(2)])
+            run_selected(blocks['dense_fill'], {**env, 'layer_idx': 1})
+            assert obj.flashinfer_kv_cache[1][request][0].value.data == key.transpose(0, 1).data
+            assert obj.flashinfer_kv_cache[1][request][1].value.data == value.transpose(0, 1).data
+            # Sparse layer must only copy its two resident tokens, leaving append space untouched.
+            for slot, name in zip(obj.flashinfer_kv_cache[0][request], ('key', 'value')):
+                assert slot.value[:, :2, :].data == env[name].data
+                assert slot.value[:, 2:, :].data == [0.0] * 8
+        assert obj.avg_k[0].data == expected_means
+        assert obj.avg_k[1].data == [0.0] * 8
+        for step in range(2):
+            run_selected(blocks['plan'], {'self': obj}, torch=SimpleNamespace(bfloat16='bfloat16'))
+            assert obj.kv_last_page_len.values == [3 + step] * 2
+            assert obj.dense_kv_last_page_len.values == [n + step + 1 for n in lengths]
+            raw = [float(200 + 100 * cycle + 20 * request + 4 * step + h + d)
+                   for request in range(2) for h in range(2) for d in range(2)]
+            new_values = Tensor([-x for x in raw], (2, 2, 1, 2))
+            env = {'self': obj, 'layer_idx': 0, 'key_states': Tensor(raw, (2, 2, 1, 2))}
+            run_selected(blocks['append_centering'], env)
+            assert env['key_states'].data == [x - mean for x, mean in zip(raw, expected_means)]
+            # A host append surrogate checks page offsets and ownership. The
+            # FlashInfer append call and GPU scheduling remain unexecuted.
+            for request in range(2):
+                for layer, lengths_state in ((0, obj.kv_last_page_len), (1, obj.dense_kv_last_page_len)):
+                    position = lengths_state.values[request] - 1
+                    new_keys = env['key_states'] if layer == 0 else Tensor(raw, (2, 2, 1, 2))
+                    for slot, data in zip(obj.flashinfer_kv_cache[layer][request],
+                                          (new_keys[request], new_values[request])):
+                        before = list(slot.value.data)
+                        slot[..., position:position + 1, :].copy_(data)
+                        for h in range(2):
+                            for t in range(slot.value.shape[1]):
+                                for d in range(2):
+                                    index = (h * slot.value.shape[1] + t) * 2 + d
+                                    assert slot.value.data[index] == (data.index((h, 0, d)) if t == position else before[index])
+            assert obj.avg_k[0].data == expected_means
+            steps += 1
+        run_selected(blocks['clear'], {'self': obj})
+        assert obj.kv_last_page_len.values == obj.dense_kv_last_page_len.values == [0, 0]
+        assert obj.lsh_retriever.count == obj.attn_server.count == cycle + 1
+        assert all(x == 0.0 for mean in obj.avg_k for x in mean.data)
+        assert all(x == 0.0 for layer in obj.flashinfer_kv_cache for slots in layer
+                   for slot in slots for x in slot.value.data)
+        assert all(buf.data == [0.0, 0.0] for buf in buffers.values())
+    assert capacity_checks == copy_rejections == steps == 4
+    return capacity_checks, copy_rejections, steps, 2
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', type=Path, default=Path(__file__).resolve().parents[2])
@@ -406,8 +585,9 @@ def main() -> None:
     blocks = select(source)
     membership, centering, shift_error, short_unsupported = source_membership(blocks)
     dense, plans = dense_and_plan(blocks)
-    merged, full_dense, merge_error = merge_checks(blocks)
+    merged, full_dense, merge_error, heterogeneous = merge_checks(blocks)
     resets = clear_checks(blocks)
+    capacity, copy_rejections, lifecycle_steps, reuse_cycles = bounded_state_checks(blocks)
     statements = [n for n in ast.walk(ast.parse(source)) if isinstance(n, ast.stmt)]
     hashes = {}
     for name, nodes in blocks.items():
@@ -425,8 +605,12 @@ def main() -> None:
         'dense_fill_cases': dense, 'plan_calls': plans, 'merge_head_checks': merged,
         'full_selection_dense_checks': full_dense, 'merge_fp64_max_error': merge_error,
         'clear_buffer_checks': resets, 'gpu_execution': False, 'torch_runtime': False,
+        'capacity_boundary_checks': capacity, 'copy_shape_rejections': copy_rejections,
+        'lifecycle_decode_steps': lifecycle_steps, 'lifecycle_reuse_cycles': reuse_cycles,
+        'sampled_inclusion_probabilities': [0.4, 0.65],
+        'heterogeneous_sampled_head_checks': heterogeneous,
         'flashinfer_execution': False, 'host_adapter': 'restricted CPU selected AST; FP64 list tensor and base-2 merger',
-        'coverage_limit': 'nonempty offload; source kernel supported dims/nnz only; capacity rejected by host',
+        'coverage_limit': 'nonempty offload; host copy/page guards and append surrogate; native capacity and FlashInfer append unexecuted',
     }
     print(json.dumps(result, sort_keys=True))
     if args.evidence:

@@ -20,7 +20,7 @@ ASan/UBSan/LSan test.
 | Pinned source | Restricted substitute | Verified contract |
 | --- | --- | --- |
 | `fill` partition and centering | FP64 list Tensor | Sink/local vs offload membership and order; common offloaded-key mean |
-| `fill` sparse/dense copy | Host copy slots | Keys/values and page-length assignments |
+| `fill` sparse/dense copy | Fixed-shape host copy slots and bounded views | Keys/values, destination slices and page-length assignments |
 | `decode` appended-key centering | FP64 Tensor | Reuses fixed mean across requests |
 | `plan` | Length buffers and plan-call spy | Two step increments and GQA/dimension argument routing |
 | `decode` merge call | Base-2 FP64 host merge | Actual source call arguments, independent corrected-union attention oracle |
@@ -34,7 +34,9 @@ sink/local or offload; the appended token is distinct.
 
 For sampled offload IDs, the independent FP64 union oracle builds
 logits as \(q\cdot k/\sqrt{d}-\ln(p)\) with inclusion probabilities
-0.4 or 0.65; static/new tokens have \(p=1\). For full selection
+0.4 or 0.65, alternating by selected position; both values are asserted to
+execute, including heterogeneous probabilities within a sampled subset.
+Static/new tokens have \(p=1\). For full selection
 every \(p=1\), and 156 head cases match independently computed dense
 attention. The independent oracle computes the union using direct stable
 natural exponentials, then converts total LSE to base 2.
@@ -45,15 +47,39 @@ and return \((w_ao_a+w_bo_b)/(w_a+w_b)\), with combined LSE
 \(m+\log_2(w_a+w_b)\). The independent direct-union oracle does not
 reuse this merge equation. Sensitivity tests detect omission of sampled
 correction, inconsistent/stale centering, and natural-log versus base-2
-LSE confusion. Selected-source centering also preserves independent
+LSE confusion. A separate sensitivity check rejects replacing heterogeneous
+sampled probabilities with one uniform probability, which would lose
+within-offload value reweighting. These are host-oracle sensitivity comparisons;
+they do not execute or mutate production probability-correction kernels.
+All 104 heterogeneous-probability query heads must show the expected
+within-offload reweighting compared with a uniform-probability substitute.
+Selected-source centering also preserves independent
 dense attention probabilities under common key translation.
+
+The dense prefill caller in pinned `models/llama.py` allocates full
+`max_length` key/value buffers and passes them together with logical `seq_len`.
+The host fixture follows that padded-buffer contract: the selected dense fill
+copies the entire fixed-size page and sets its logical length separately.
+Short unpadded inputs are shape-error characterizations, not supported dense
+prefill fixtures. The earlier shape-free copy slot accepted those inputs
+incorrectly; this review correction changes the test adapter, not production.
+
+Four host page-boundary cases include exact capacity and sparse/dense overflow;
+four nonbroadcastable source-copy cases must reject incompatible shapes.
+These guards belong to the host substitutes, not the archived implementation.
+A shared two-layer/two-request state is filled, planned and appended for two
+steps, cleared, and reused with different inputs for two more steps. Resident
+prefixes, append offsets, the fixed centering reference, request/layer
+isolation and reset are checked. Appended-key writes use a host position-copy
+surrogate; the native FlashInfer append invocation is not selected or executed.
 
 ## Explicit restrictions and pending work
 
 - Sparse fill with no offloaded token is **not supported**:
   `seq_len <= num_sink_tokens + num_local_tokens`. Two short-input
   characterizations expose the empty mean reduction; these are not passes.
-- Host cache capacity is checked by the fixture. Actual pinned source
+- Host copy shape and cache capacity are checked with explicit negative
+  cases by the fixture. Actual pinned source
   `plan()` does not establish safe native overflow, stream ordering or
   asynchronous transfers.
 - FP64 dimension-two surrogate tests verify merge algebra only; #58

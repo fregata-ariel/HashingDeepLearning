@@ -227,6 +227,10 @@ statement blocks through restricted CPU substitutes. See
 16 partition cases, 312 GQA query-head output/LSE merges (156 full-selection
 dense comparisons), source page-length/copy/clear decisions and sensitivity
 to omitted correction, inconsistent centering and LSE base mismatch.
+The review follow-up exercises both sampled inclusion probabilities (0.4 and
+0.65), including within-offload reweighting; fixed-shape cache views enforce
+copy destinations and padded dense prefill. Explicit host capacity/shape
+negative cases and same-object clear/refill checks constrain adapter claims.
 
 This is explicitly a **source-selected Python/host FP64 support model**, not
 Torch, real FlashInfer `merge_state`, native GPU/async copy, or a complete

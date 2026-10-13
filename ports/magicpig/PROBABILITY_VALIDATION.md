@@ -1,6 +1,6 @@
 # Probability correction validation (#57)
 
-`probability` executes the selected unchanged `transform_kernel` from the
+`probability` executes the selected maintained `transform_kernel` from the
 maintained v0.2 source. It uses standard C++ and no Torch, CUDA, model or dataset.
 Run `python3 tools/check_magicpig_cpu.py --suite probability` for the focused gate;
 the default driver and existing traceability CI enroll it automatically.
@@ -40,23 +40,29 @@ bias of the ratio estimator. No production Softmax or estimator server is
 executed by this mathematical example, and no finite unbiased-attention claim
 is made.
 
-## Domain characterization and follow-up
+## Domain validation (#67) and pending stability repair
 
-Fourteen bounded cases gate existing behavior: cosine one float beyond either
-endpoint, zero query/key norms, negative K, zero scaling, K=0, L=0/1, negative
-norm, zero/negative nnz. Valid buffers and indices prevent memory undefined
-behavior. NaN/Inf cases check classifications explicitly; invalid counts
-accepted by the source check their resulting value, rather than treating them
-as supported inputs. Guards verify scores outside the one borrowed entry are
-unchanged; norms and IDs remain unchanged.
+The maintained boundary now throws `std::invalid_argument` for nonfinite scores,
+nonpositive or nonfinite query/key norms and scaling, negative counts, K<1,
+L<2, negative indices or null buffers for nonempty input. Valid empty input
+is a no-op. Indices still require caller-provided upper bounds; the raw kernel
+signature has no cache length. Cosine overshoot at most eight FP32 epsilons is
+clamped to the nearest endpoint; larger violations are rejected. Double norm
+products prevent finite FP32 norms from overflowing or underflowing during
+normalization. Nonfinite corrected outputs throw `std::overflow_error`.
+All corrected entries are prepared before mutating the borrowed score buffer.
 
-Follow-up [#67](https://github.com/fregata-ariel/HashingDeepLearning/issues/67)
-tracks finite-domain/parameter policy at the maintained entry point;
-[#68](https://github.com/fregata-ariel/HashingDeepLearning/issues/68) tracks stable
-small-inclusion arithmetic against an independent high-precision oracle.
-Neither repair is silently included in this characterization task. GPU tests,
-full Torch extension ABI/linkage, and end-to-end model attention remain deferred.
+42 domain regressions cover accepted endpoint roundoff and extreme finite norm
+products, nonfinite and zero/negative inputs, invalid counts/parameters, null
+buffers, later invalid entries, and unrepresentable corrected scores. Invalid
+entries leave scores and input buffers unchanged. The independent moderate
+FP64 and estimator references above are preserved. The focused plain and
+ASan/UBSan/LeakSanitizer runs pass 745 assertions with leak checking enabled.
 
-The plain and local ASan/UBSan selected-body runs pass 670 assertions. Local
-process-inspection restrictions require explicit `--disable-leak-check`;
-hosted CI keeps LeakSanitizer enabled. Deterministic literal inputs use no RNG.
+Native server callers must validate outside OpenMP regions or transport
+exceptions to the joining thread; exceptions may not cross an OpenMP region.
+Full Torch wrapper exception handling and index ownership are separate server
+integration checks. This selected scalar suite makes no Torch/GPU claim.
+[#68](https://github.com/fregata-ariel/HashingDeepLearning/issues/68) remains the
+separate stable-small-inclusion repair. Its tiny-cancellation characterization
+still applies after #67. Deterministic inputs use no RNG.

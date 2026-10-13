@@ -1,4 +1,6 @@
 #include "sparse_attention.h"
+#include <limits>
+#include <stdexcept>
 
 const __m512 LOG2E_VEC = _mm512_set1_ps(1.44269504089f); // log2(e)
 const __m512 MAGIC_FLOAT_BIAS = _mm512_set1_ps(12582912.0f); // Bias for integer part
@@ -193,15 +195,19 @@ void qk_kernel_full(
  * score and indices contain nnz valid entries; norms must be positive and
  * finite, cosine in [-1,1], sqrt_dim positive, K positive and L at least two.
  * Mutates borrowed scores; the released +1e-4 regularizer is a variant.
- * Selected-body CPU bootstrap calls this unchanged arithmetic before Softmax;
+ * Selected-body CPU bootstrap calls this arithmetic before Softmax;
  * Independent exhaustive bit/table events and FP64 binomial mass characterize
  * +1e-4 smoothing and finite self-normalized bias, not an unbiased attention
- * estimator. Cosine outside [-1,1] or zero norms produces NaN; K/L/scaling
- * are unvalidated (Issue #67). Tiny inclusion probabilities suffer FP32
- * cancellation (Issue #68); both repairs are separate from characterization.
+ * estimator. Issue #67 rejects nonfinite scores, nonpositive/nonfinite norms
+ * or scaling, negative nnz, K<1 and L<2 before modifying any score. Cosine
+ * excursions of at most 8*FLT_EPSILON are rounded to the nearest endpoint;
+ * larger excursions are rejected. Empty valid input is a no-op. Caller must
+ * provide valid borrowed buffers and indices; this signature has no capacity.
+ * Tiny inclusion probabilities still suffer FP32 cancellation (Issue #68).
  * @par Traceability relation
  * Support: probability/domain characterization;
  * TRACE_TEST_ID: MAGICPIG-PROBABILITY-CPU.
+ * TRACE_TEST_ID: MAGICPIG-PROBABILITY-DOMAIN-CPU.
  */
 void transform_kernel(
 float *score, 
@@ -212,17 +218,38 @@ const int k,
 const int l,
 const float sqrt_dim,
 const int *indices) { 
-  
+  if (nnz < 0 || k < 1 || l < 2 || !std::isfinite(q_norm) || q_norm <= 0 ||
+      !std::isfinite(sqrt_dim) || sqrt_dim <= 0)
+    throw std::invalid_argument("invalid probability parameters");
+  if (nnz == 0) return;
+  if (!score || !k_norm || !indices)
+    throw std::invalid_argument("null probability buffer");
+  const double cosine_tolerance = 8.0 * std::numeric_limits<float>::epsilon();
+  std::vector<float> corrected(nnz);
   for(int j = 0; j < nnz; ++j){
         const int ind = indices[j];
-        float norm = (q_norm * k_norm[ind]);
-        float theta = acosf(score[j] / norm);
+        if (ind < 0 || !std::isfinite(score[j]) || !std::isfinite(k_norm[ind]) ||
+            k_norm[ind] <= 0)
+          throw std::invalid_argument("invalid probability score or norm");
+        // Double intermediates avoid overflow/underflow of a finite FP32
+        // norm product. Index capacity remains a caller precondition.
+        double cosine = double(score[j]) / (double(q_norm) * k_norm[ind]);
+        if (cosine < -1.0 - cosine_tolerance || cosine > 1.0 + cosine_tolerance)
+          throw std::invalid_argument("probability cosine outside tolerance");
+        cosine = std::max(-1.0, std::min(1.0, cosine));
+        float theta = acosf(float(cosine));
         float proba = (1 - theta / M_PI);
         float p = powf(proba, k);
         float q = 1 - p;
         float w = 1  - powf(q, l-1) * (l * p + q);
-        score[j] = score[j] / sqrt_dim - logf(w + 1e-4);
+        if (!std::isfinite(w) || w + 1e-4 <= 0)
+          throw std::overflow_error("probability arithmetic outside finite range");
+        corrected[j] = score[j] / sqrt_dim - logf(w + 1e-4);
+        if (!std::isfinite(corrected[j]))
+          throw std::overflow_error("corrected probability score outside finite range");
     }
+  // Rejection of a later entry never leaves earlier scores partially corrected.
+  std::copy(corrected.begin(), corrected.end(), score);
 }
 
 /**

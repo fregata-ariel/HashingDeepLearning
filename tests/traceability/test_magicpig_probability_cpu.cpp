@@ -1,4 +1,4 @@
-// Executes selected transform_kernel; expectations use independent bit events
+// Executes maintained transform_kernel; expectations use independent bit events
 // and FP64 binomial mass, not the production cancellation expression.
 #include <cmath>
 #include <cstdlib>
@@ -114,45 +114,95 @@ void corrections() {
 }
 
 void domains() {
-  // Characterize current unguarded input domains using valid arrays/indices.
-  // Expected nonfinite classifications are assertions, not numerical passes.
-  auto nan = [&](float s, float q, float n, int k, int l, float scale,
-                 const char* label) {
-    require(std::isnan(execute(s, q, n, k, l, scale)), label);
+  const float inf = std::numeric_limits<float>::infinity();
+  const float nan = std::numeric_limits<float>::quiet_NaN();
+  auto reject = [&](float s, float q, float n, int k, int l, float scale,
+                    int count, const char* label) {
+    float scores[] = {314159.25f, s, .25f, 314159.25f};
+    float norms[] = {1.f, n, 314159.25f};
+    const int ids[] = {1, 0};
+    float before[4], norm_before[3];
+    std::memcpy(before, scores, sizeof scores);
+    std::memcpy(norm_before, norms, sizeof norms);
+    bool threw = false;
+    try { transform_kernel(scores + 1, count, q, norms, k, l, scale, ids); }
+    catch (const std::invalid_argument&) { threw = true; }
+    require(threw, label);
+    require(std::memcmp(before, scores, sizeof scores) == 0, "invalid scores unchanged");
+    require(std::memcmp(norm_before, norms, sizeof norms) == 0, "invalid norms unchanged");
     ++domain_cases;
   };
-  nan(std::nextafter(1.f, 2.f), 1, 1, 2, 3, 2, "acos above one");
-  nan(std::nextafter(-1.f, -2.f), 1, 1, 2, 3, 2, "acos below minus one");
-  nan(0, 0, 1, 2, 3, 2, "zero query norm");
-  nan(0, 1, 0, 2, 3, 2, "zero key norm");
-  nan(.5, 0, 1, 2, 3, 2, "nonzero score zero norm");
-  nan(0, 1, 1, -1, 3, 2, "negative K");
-  nan(0, 1, 1, 2, 3, 0, "zero scale zero score");
-  require(std::isinf(execute(.5, 1, 1, 2, 3, 0)), "zero scale infinity");
-  ++domain_cases;
-
-  close(execute(0, 1, 1, 0, 3), -std::log(1.0001), 1e-6, "K zero accepted");
-  ++domain_cases;
-  for (int l : {0, 1}) {
-    close(execute(0, 1, 1, 2, l), -std::log(1e-4), 1e-6,
-          "L below two accepted");
+  for (float s : {nan, inf, -inf}) reject(s, 1, 1, 2, 3, 2, 1, "nonfinite score rejected");
+  for (float q : {0.f, -1.f, nan, inf, -inf}) reject(0, q, 1, 2, 3, 2, 1, "invalid query norm");
+  for (float n : {0.f, -1.f, nan, inf, -inf}) reject(0, 1, n, 2, 3, 2, 1, "invalid key norm");
+  for (float scale : {0.f, -1.f, nan, inf, -inf}) reject(0, 1, 1, 2, 3, scale, 1, "invalid scaling");
+  for (int k : {-1, 0}) reject(0, 1, 1, k, 3, 2, 1, "invalid K");
+  for (int l : {-1, 0, 1}) reject(0, 1, 1, 2, l, 2, 1, "invalid L");
+  reject(0, 1, 1, 2, 3, 2, -1, "negative count");
+  const float tolerance = 8 * std::numeric_limits<float>::epsilon();
+  for (float s : {1.f + 2 * tolerance, -1.f - 2 * tolerance, 2.f, -2.f})
+    reject(s, 1, 1, 2, 3, 2, 1, "large cosine overshoot rejected");
+  for (float s : {std::nextafter(1.f, 2.f), 1.f + tolerance,
+                  std::nextafter(-1.f, -2.f), -1.f - tolerance}) {
+    const double expected = double(s) / 2 - std::log(s > 0 ? 1.0001 : 1e-4);
+    close(execute(s, 1, 1, 2, 3), expected, 2e-6, "bounded cosine overshoot clamped");
     ++domain_cases;
   }
-  close(execute(.5, 1, -1, 2, 3),
-        .25 - std::log(inclusion(std::pow(1 - std::acos(-.5) /
-                                              std::acos(-1.), 2), 3) + 1e-4),
-        1e-5, "negative norm accepted");
+  // Finite FP32 norm products may underflow or overflow in FP32. The
+  // maintained double normalization accepts both without NaN propagation.
+  for (float n : {std::numeric_limits<float>::denorm_min(),
+                  std::numeric_limits<float>::max()}) {
+    close(execute(0, n, n, 2, 3), -std::log(inclusion(.25, 3) + 1e-4),
+          2e-6, "finite extreme norm product");
+    ++domain_cases;
+  }
+  // Empty valid input needs no buffers; bad scalar parameters still reject.
+  transform_kernel(nullptr, 0, 1, nullptr, 2, 3, 2, nullptr);
   ++domain_cases;
-
-  float score = 7;
-  float norm = 1;
-  int id = 0;
-  transform_kernel(&score, 0, 1, &norm, 2, 3, 2, &id);
-  require(score == 7, "zero nnz unchanged");
-  ++domain_cases;
-  transform_kernel(&score, -1, 1, &norm, 2, 3, 2, &id);
-  require(score == 7, "negative nnz unchanged");
-  ++domain_cases;
+  reject(0, 0, 1, 2, 3, 2, 0, "empty invalid query norm");
+  {
+    float scores[] = {.25f, .5f};
+    float norms[] = {1.f, 0.f};
+    int ids[] = {0, 1};
+    bool threw = false;
+    try { transform_kernel(scores, 2, 1, norms, 2, 3, 2, ids); }
+    catch (const std::invalid_argument&) { threw = true; }
+    require(threw && scores[0] == .25f && scores[1] == .5f,
+            "later invalid entry prevents partial mutation");
+    ++domain_cases;
+    ids[1] = -1;
+    threw = false;
+    try { transform_kernel(scores, 2, 1, norms, 2, 3, 2, ids); }
+    catch (const std::invalid_argument&) { threw = true; }
+    require(threw && scores[0] == .25f && scores[1] == .5f,
+            "negative index rejected before access or mutation");
+    ++domain_cases;
+  }
+  {
+    float score = std::numeric_limits<float>::max();
+    float norm = score;
+    int id = 0;
+    bool threw = false;
+    try { transform_kernel(&score, 1, norm, &norm, 2, 3,
+                           std::numeric_limits<float>::denorm_min(), &id); }
+    catch (const std::overflow_error&) { threw = true; }
+    require(threw && score == std::numeric_limits<float>::max(),
+            "unrepresentable corrected score rejected unchanged");
+    ++domain_cases;
+  }
+  {
+    float score = .25f, norm = 1;
+    int id = 0;
+    for (int missing = 0; missing < 3; ++missing) {
+      bool threw = false;
+      try { transform_kernel(missing == 0 ? nullptr : &score, 1, 1,
+                             missing == 1 ? nullptr : &norm, 2, 3, 2,
+                             missing == 2 ? nullptr : &id); }
+      catch (const std::invalid_argument&) { threw = true; }
+      require(threw && score == .25f, "nonempty null buffer rejected");
+      ++domain_cases;
+    }
+  }
 }
 
 void estimator() {
@@ -218,6 +268,7 @@ int main() {
   estimator();
   std::cout << std::setprecision(12)
             << "TRACE_TEST_ID: MAGICPIG-PROBABILITY-CPU\n"
+            << "TRACE_TEST_ID: MAGICPIG-PROBABILITY-DOMAIN-CPU\n"
             << "MAGICPIG_PROBABILITY_PASS correction_cases=" << correction_cases
             << " domain_cases=" << domain_cases << " enumerated_states=" << states
             << " checks=" << checks << " max_absolute_error=" << worst << '\n';

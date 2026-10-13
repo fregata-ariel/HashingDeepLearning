@@ -21,8 +21,21 @@
         "seed": "deterministic literal inputs, no RNG",
         "cases": 24,
         "coordinates": 1408,
-        "head_dimensions": [16, 32, 128],
-        "nnz": [0, 1, 2, 15, 16, 17, 31, 32],
+        "head_dimensions": [
+          16,
+          32,
+          128
+        ],
+        "nnz": [
+          0,
+          1,
+          2,
+          15,
+          16,
+          17,
+          31,
+          32
+        ],
         "literal_conversion_bit_cases": 22,
         "decode_cases": 8,
         "accumulation_rounding_witnesses": 2,
@@ -30,7 +43,7 @@
         "accumulation": "Source-order FP32 fused multiply-add observed before output conversion; exact same-order FP32 equality plus independent FP64 absolute bound (nnz+1)*float_epsilon*sum_abs+1e-12.",
         "output_rounding": "Bit-exact agreement with independent finite arithmetic rounding oracle; output canaries unchanged.",
         "observed_local_maximum_input_quantization_error": 0.000113079,
-        "observed_local_maximum_fp32_accumulator_error": 1.11961e-8,
+        "observed_local_maximum_fp32_accumulator_error": 1.11961e-08,
         "fbgemm_conversion_executed": false,
         "torch_runtime": "not built",
         "gpu_execution": "postponed"
@@ -56,22 +69,39 @@
         "capabilities": "AVX512F, AVX512BW, AVX512BF16 and GCC >=11 confirmed before execution; no FMA requirement",
         "oracle": "Independent arithmetic decoding and FP64 dense dots on identical BF16 keys/query; input quantization error reported separately.",
         "seed": "deterministic fixed exactly representable and nontrivial input families, no RNG",
-        "head_dimensions": [32, 64, 128],
-        "supported_nnz": [0, 16, 32],
+        "head_dimensions": [
+          32,
+          64,
+          128
+        ],
+        "supported_nnz": [
+          0,
+          16,
+          32
+        ],
         "supported_cases": 18,
-        "padded_nnz": [1, 15, 17, 31],
+        "padded_nnz": [
+          1,
+          15,
+          17,
+          31
+        ],
         "padded_tail_cases": 24,
         "score_checks": 864,
         "padded_tail_contract": "Accessible initialized IDs and score capacity ceil(nnz/16)*16 required. Source zeros logical scores only and accumulates into seeded padded scores; seeded behavior asserted separately from logical QK correctness.",
         "absolute_bound": "(head_dim+2)*float_epsilon*(sum_abs+0.75)+1e-6",
-        "dimension_truncation_cases": 3,
-        "unsupported_head_dimensions": [16, 48, 80],
-        "dimension_truncation": "Safe all-ones buffers reproduce floor(head_dim/32)*32, explicitly differing from complete dense dot.",
-        "observed_local_maximum_fp32_accumulator_error": 7.45058e-8,
+        "unsupported_head_dimensions": [
+          16,
+          48,
+          80
+        ],
+        "observed_local_maximum_fp32_accumulator_error": 7.45058e-08,
         "observed_local_maximum_input_quantization_error": 0.000169936,
         "storage_adapter": "uint16_t alias; input quantizer is a source-derived software model, no FBGEMM conversion runtime",
         "unsupported_cpu": "explicit skip, not numerical pass",
-        "gpu_execution": "postponed"
+        "gpu_execution": "postponed",
+        "dimension_rejection_cases": 8,
+        "dimension_policy": "Repair #76: positive multiples32 accepted; dimensions0/16/31/33/48/80/127/129 reject before reads/writes."
       },
       "note": "Retains MAGICPIG-BF16-SELECTED-CPU bootstrap trace ID. Padded tails require physical capacity beyond logical nnz and are safe characterization, not exact-length buffer support. Unsupported dimensions silently truncate and are recorded as defects, not accepted dense-dot inputs. No full server BF16 dispatch or extension ABI/linkage claim."
     }

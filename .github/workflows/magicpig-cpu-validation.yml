@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          fetch-depth: 6
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -34,14 +34,29 @@ jobs:
           git rev-parse HEAD
           diagnostic_tree=$(git rev-parse 'HEAD^{tree}')
           echo "::notice title=Tested merge candidate::SHA=$GITHUB_SHA; tree=$diagnostic_tree; source candidate=f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb"
-          # Candidate code and annotations must match the reviewed combined CPU head.
-          git diff --exit-code f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb HEAD -- ports/magicpig tests/traceability tools papers docs
+          # Only the separately reviewed alignment delta and its support records differ.
+          python - <<'PY'
+          import hashlib, subprocess
+          from pathlib import Path
+          base = 'f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb'
+          source = 'ports/magicpig/library/sparse_attention/sparse_attention.cc'
+          allowed = {source, 'ports/magicpig/ATTENTION_CPU_CONTRACT.md', 'papers/traceability/magicpig-attention.json', '.github/workflows/magicpig-cpu-validation.yml'}
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only', base, 'HEAD'], text=True).splitlines())
+          assert changed <= allowed, changed
+          original = subprocess.check_output(['git', 'show', f'{base}:{source}'])
+          assert original.count(b'    float temp[16];') == 1
+          proposed = Path(source).read_bytes()
+          assert proposed == original.replace(b'    float temp[16];', b'    alignas(64) float temp[16];')
+          digest = hashlib.sha256(proposed).hexdigest()
+          assert digest == '3771b7fa8bae51baf83cc01244d78a1c70120cc58bcc735e93be57e6c49853dc'
+          print('::notice title=Approved alignment delta identity::Original source SHA256=' + hashlib.sha256(original).hexdigest() + '; proposed source SHA256=' + digest + '; sole arithmetic-source delta=float temp16 storage alignment64; no arithmetic changes')
+          PY
           cat /etc/os-release
           lscpu
           g++ --version
           diagnostic_cpu=$(lscpu | sed -n 's/^Model name:[[:space:]]*//p')
           diagnostic_compiler=$(g++ --version | head -n 1)
-          echo "::notice title=Single Ubuntu 24.04 diagnostic::SHA=$GITHUB_SHA; tree=$diagnostic_tree; Ubuntu24.04; kernel=$(uname -r); CPU=$diagnostic_cpu; compiler=$diagnostic_compiler; source and annotations unchanged; one image sample; no hardware ISA guarantee"
+          echo "::notice title=Single Ubuntu 24.04 diagnostic::SHA=$GITHUB_SHA; tree=$diagnostic_tree; Ubuntu24.04; kernel=$(uname -r); CPU=$diagnostic_cpu; compiler=$diagnostic_compiler; reviewed alignas64-only source delta; original crash disassembly and proposed validation; no hardware ISA guarantee"
       - name: Source, ledger and contract gates
         run: |
           python tools/validate_traceability.py --emit-dir magicpig-validation/ledger
@@ -52,6 +67,54 @@ jobs:
           python tests/traceability/test_magicpig_boundary_contracts.py
           python tests/traceability/test_python_typing_inventory.py
           python tools/generate_magicpig_probability_reference.py --check
+      - name: Original GCC13 native ASan failure and disassembly
+        run: |
+          python - <<'PY'
+          import hashlib, json, os, re, subprocess, sys
+          from pathlib import Path
+          def escape(text):
+              return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          snapshot = Path('/tmp/magicpig-original-f854')
+          subprocess.run(['git', 'clone', '--no-hardlinks', str(Path.cwd()), str(snapshot)], check=True, capture_output=True, text=True)
+          subprocess.run(['git', '-C', str(snapshot), 'checkout', '--detach', 'f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb'], check=True, capture_output=True, text=True)
+          sys.path.insert(0, str(snapshot / 'tools'))
+          import check_magicpig_cpu as original
+          build = Path('magicpig-validation/original-f854').resolve()
+          build.mkdir(parents=True, exist_ok=True)
+          probe = build / 'probe'
+          probe.mkdir()
+          caps = original.capabilities('g++', probe, True)
+          print('::notice title=Original native capability probe::' + escape(json.dumps(caps, sort_keys=True)), flush=True)
+          if not caps['modes']['avx512']['eligible']:
+              raise SystemExit('Original native reproduction unavailable: ' + caps['modes']['avx512']['reason'])
+          failure = None
+          try:
+              original.compile_run(original.load_suites()['attention'], 'avx512', build, 'g++', True, False)
+          except RuntimeError as error:
+              failure = str(error)
+              (build / 'failure.txt').write_text(failure)
+              print('::notice title=Original native ASan execution diagnostic::' + escape(failure[-14000:]), flush=True)
+          executable = build / 'avx512/attention/oracle'
+          translation = build / 'avx512/attention/selected_bodies.cpp'
+          assert executable.is_file() and translation.is_file(), 'Original translation/executable absent'
+          full_disassembly = subprocess.check_output(['objdump', '-d', '-l', '-C', str(executable)], text=True)
+          (build / 'disassembly.txt').write_text(full_disassembly)
+          lines = full_disassembly.splitlines()
+          starts = [i for i,line in enumerate(lines) if re.search(r'^[0-9a-f]+ <softmax_kernel\(.*>:$', line)]
+          assert len(starts) == 1, 'Softmax disassembly symbol missing/ambiguous'
+          print('::notice title=Original GCC13 softmax prologue::' + escape('\n'.join(lines[starts[0]:starts[0]+150])), flush=True)
+          if failure:
+              match = re.search(r'pc (0x[0-9a-fA-F]+)', failure)
+              if match:
+                  pc = int(match.group(1), 16)
+                  around = subprocess.check_output(['objdump', '-d', '-l', '-C', str(executable), '--start-address=' + hex(pc-64), '--stop-address=' + hex(pc+64)], text=True)
+                  print('::notice title=Original ASan fault PC assembly::' + escape(around), flush=True)
+              assert 'ERROR: AddressSanitizer: SEGV' in failure and 'softmax_kernel' in failure and '_mm512_storeu_ps' in failure, 'Unexpected original failure category/site'
+              print('::notice title=Original failure reproduced::ASan SEGV at softmax storeu; original source=f854; ISA actually executed; original failure is not proposed-source validation', flush=True)
+          else:
+              print('::notice title=Original failure not reproduced::Original attention sanitizer passed on this instance; use emitted assembly for diagnosis and do not infer crash cause', flush=True)
+          print('::notice title=Original executable identity::SHA256=' + hashlib.sha256(executable.read_bytes()).hexdigest() + '; translation SHA256=' + hashlib.sha256(translation.read_bytes()).hexdigest(), flush=True)
+          PY
       - name: All portable and capable native suites
         run: |
           python - <<'PY'
@@ -106,7 +169,7 @@ jobs:
                   executed = [r for r in results if r['mode'] == native_mode]
                   for result in executed:
                       assert result['status'] == 'pass'
-                      detail = f'SHA={os.environ["GITHUB_SHA"]}; mode={mode}; ISA={native_mode}; suite={result["suite"]}; actually executed PASS'
+                      detail = f'SHA={os.environ["GITHUB_SHA"]}; mode={mode}; ISA={native_mode}; suite={result["suite"]}; actually executed PASS; source_hashes={json.dumps(result["source_sha256"], sort_keys=True)}; fixture_sha256={result["fixture_sha256"]}; descriptor_sha256={result["descriptor_sha256"]}; adapters={json.dumps(result["adapter_sha256"], sort_keys=True)}'
                       if result['suite'] == 'softmax':
                           assert 'MAGICPIG-EXP-NATIVE-CPU cases=2821' in result['stdout']
                           detail += '; MAGICPIG-EXP-NATIVE-CPU cases=2821'

@@ -67,53 +67,95 @@ jobs:
           python tests/traceability/test_magicpig_boundary_contracts.py
           python tests/traceability/test_python_typing_inventory.py
           python tools/generate_magicpig_probability_reference.py --check
-      - name: Original GCC13 native ASan failure and disassembly
+      - name: Compiler boundary native sanitizer diagnosis
         run: |
           python - <<'PY'
           import hashlib, json, os, re, subprocess, sys
           from pathlib import Path
+          sys.path.insert(0, str(Path('tools').resolve()))
+          import check_magicpig_cpu as driver
           def escape(text):
               return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-          snapshot = Path('/tmp/magicpig-original-f854')
-          subprocess.run(['git', 'clone', '--no-hardlinks', str(Path.cwd()), str(snapshot)], check=True, capture_output=True, text=True)
-          subprocess.run(['git', '-C', str(snapshot), 'checkout', '--detach', 'f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb'], check=True, capture_output=True, text=True)
-          sys.path.insert(0, str(snapshot / 'tools'))
-          import check_magicpig_cpu as original
-          build = Path('magicpig-validation/original-f854').resolve()
-          build.mkdir(parents=True, exist_ok=True)
-          probe = build / 'probe'
+          root = Path('magicpig-validation/compiler-boundary').resolve()
+          root.mkdir(parents=True, exist_ok=True)
+          probe = root / 'probe'
           probe.mkdir()
-          caps = original.capabilities('g++', probe, True)
-          print('::notice title=Original native capability probe::' + escape(json.dumps(caps, sort_keys=True)), flush=True)
-          if not caps['modes']['avx512']['eligible']:
-              raise SystemExit('Original native reproduction unavailable: ' + caps['modes']['avx512']['reason'])
-          failure = None
-          try:
-              original.compile_run(original.load_suites()['attention'], 'avx512', build, 'g++', True, False)
-          except RuntimeError as error:
-              failure = str(error)
-              (build / 'failure.txt').write_text(failure)
-              print('::notice title=Original native ASan execution diagnostic::' + escape(failure[-14000:]), flush=True)
-          executable = build / 'avx512/attention/oracle'
-          translation = build / 'avx512/attention/selected_bodies.cpp'
-          assert executable.is_file() and translation.is_file(), 'Original translation/executable absent'
-          full_disassembly = subprocess.check_output(['objdump', '-d', '-l', '-C', str(executable)], text=True)
-          (build / 'disassembly.txt').write_text(full_disassembly)
-          lines = full_disassembly.splitlines()
-          starts = [i for i,line in enumerate(lines) if re.search(r'^[0-9a-f]+ <softmax_kernel\(.*>:$', line)]
-          assert len(starts) == 1, 'Softmax disassembly symbol missing/ambiguous'
-          print('::notice title=Original GCC13 softmax prologue::' + escape('\n'.join(lines[starts[0]:starts[0]+150])), flush=True)
-          if failure:
-              match = re.search(r'pc (0x[0-9a-fA-F]+)', failure)
-              if match:
-                  pc = int(match.group(1), 16)
-                  around = subprocess.check_output(['objdump', '-d', '-l', '-C', str(executable), '--start-address=' + hex(pc-64), '--stop-address=' + hex(pc+64)], text=True)
-                  print('::notice title=Original ASan fault PC assembly::' + escape(around), flush=True)
-              assert 'ERROR: AddressSanitizer: SEGV' in failure and 'softmax_kernel' in failure and '_mm512_storeu_ps' in failure, 'Unexpected original failure category/site'
-              print('::notice title=Original failure reproduced::ASan SEGV at softmax storeu; original source=f854; ISA actually executed; original failure is not proposed-source validation', flush=True)
-          else:
-              print('::notice title=Original failure not reproduced::Original attention sanitizer passed on this instance; use emitted assembly for diagnosis and do not infer crash cause', flush=True)
-          print('::notice title=Original executable identity::SHA256=' + hashlib.sha256(executable.read_bytes()).hexdigest() + '; translation SHA256=' + hashlib.sha256(translation.read_bytes()).hexdigest(), flush=True)
+          capabilities = driver.capabilities('g++', probe, True)
+          print('::notice title=Compiler boundary capabilities::' + escape(json.dumps(capabilities, sort_keys=True)), flush=True)
+          if not capabilities['modes']['avx512']['eligible']:
+              raise SystemExit('Actual native compiler comparison unavailable: ' + capabilities['modes']['avx512']['reason'])
+          # Compare the observed GCC13 stack-literal boundary with the
+          # preinstalled supported GCC14 toolchain, keeping all sanitizers.
+          suites = driver.load_suites()
+          records = {}
+          for label, cxx in (('gcc13-default', 'g++'), ('gcc14', 'g++-14')):
+              build = root / label
+              failure = None
+              result = None
+              try:
+                  result = driver.compile_run(suites['baseline'], 'avx512', build, cxx, True, False)
+              except RuntimeError as error:
+                  failure = str(error)
+                  build.mkdir(parents=True, exist_ok=True)
+                  (build / 'failure.txt').write_text(failure)
+                  print('::notice title=Compiler boundary baseline outcome::' + escape(f'{label}; native SAN FAILED; ' + failure[-12000:]), flush=True)
+              executable = build / 'avx512/baseline/oracle'
+              if executable.is_file():
+                  asm = subprocess.check_output(['objdump', '-d', '-l', '-C', str(executable)], text=True)
+                  (build / 'disassembly.txt').write_text(asm)
+                  # Explicit native source intrinsics must still emit ZMM
+                  # arithmetic for a policy result to be accepted.
+                  zmm = [line for line in asm.splitlines() if '%zmm' in line and re.search(r'v(?:mulps|fmadd|addps)', line)]
+                  assert zmm, 'Native 512-bit arithmetic was removed'
+                  print('::notice title=Explicit AVX512 retained::' + escape(label + '; executable SHA256=' + hashlib.sha256(executable.read_bytes()).hexdigest() + ';\n' + '\n'.join(zmm[:8])), flush=True)
+                  if label == 'gcc13-default':
+                      lines = asm.splitlines()
+                      starts = [i for i,line in enumerate(lines) if re.search(r'^[0-9a-f]+ <magicpig_cpu_fixture::Fixture::Fixture\(\)>:$', line)]
+                      if starts:
+                          print('::notice title=Original GCC13 baseline constructor prologue::' + escape('\n'.join(lines[starts[0]:starts[0]+100])), flush=True)
+                      if failure:
+                          match = re.search(r'pc (0x[0-9a-fA-F]+)', failure)
+                          if match:
+                              pc = int(match.group(1), 16)
+                              around = subprocess.check_output(['objdump', '-d', '-l', '-C', str(executable), '--start-address=' + hex(pc-64), '--stop-address=' + hex(pc+64)], text=True)
+                              print('::notice title=Original GCC13 baseline fault assembly::' + escape(around), flush=True)
+              if result:
+                  assert result['status'] == 'pass' and result['sanitize'] and not result['leak_check_explicitly_disabled']
+                  print(f'::notice title=Compiler boundary baseline outcome::{label}; actual native SAN PASS; explicit AVX512 retained; same source/fixture/oracle', flush=True)
+              records[label] = {'cxx': cxx, 'passed': result is not None, 'failure': failure}
+          # Probe direct exponential special/underflow lanes for the first
+          # passing supported policy before running the full suite once.
+          selected = None
+          for label in ('gcc14',):
+              if not records[label]['passed']:
+                  continue
+              try:
+                  direct = driver.compile_run(suites['softmax'], 'avx512', root / (label + '-softmax'), records[label]['cxx'], True, False)
+              except RuntimeError as error:
+                  failure = str(error)
+                  print('::notice title=Compiler boundary exponential outcome::' + escape(label + '; actual native SAN FAILED; ' + failure[-12000:]), flush=True)
+                  softmax_exe = root / (label + '-softmax') / 'avx512/softmax/oracle'
+                  if softmax_exe.is_file():
+                      disassembly = subprocess.check_output(['objdump', '-d', '-l', '-C', str(softmax_exe)], text=True)
+                      (root / (label + '-softmax') / 'disassembly.txt').write_text(disassembly)
+                      match = re.search(r'pc (0x[0-9a-fA-F]+)', failure)
+                      if match:
+                          pc = int(match.group(1), 16)
+                          around = subprocess.check_output(['objdump', '-d', '-l', '-C', str(softmax_exe), '--start-address=' + hex(pc-64), '--stop-address=' + hex(pc+64)], text=True)
+                          print('::notice title=GCC14 exponential fault assembly::' + escape(around), flush=True)
+                      asm_lines = disassembly.splitlines()
+                      starts = [i for i,line in enumerate(asm_lines) if re.search(r'^[0-9a-f]+ <avx512_exp_ps\(.*>:$', line)]
+                      if starts:
+                          print('::notice title=GCC14 exponential prologue::' + escape('\n'.join(asm_lines[starts[0]:starts[0]+100])), flush=True)
+                  continue
+              assert 'MAGICPIG-EXP-NATIVE-CPU cases=2821' in direct['stdout']
+              selected = {'label': label, 'cxx': records[label]['cxx'], 'source_sha256': direct['source_sha256'], 'fixture_sha256': direct['fixture_sha256'], 'descriptor_sha256': direct['descriptor_sha256'], 'adapter_sha256': direct['adapter_sha256'], 'compiler_version': subprocess.check_output([records[label]['cxx'], '--version'], text=True).splitlines()[0]}
+              break
+          (root / 'results.json').write_text(json.dumps(records, indent=2) + '\n')
+          if selected is None:
+              raise SystemExit('GCC14 did not pass actual baseline plus 2821-case native SAN exponential checks')
+          Path('magicpig-validation/compiler-policy.json').write_text(json.dumps(selected, indent=2) + '\n')
+          print('::notice title=Tested supported compiler policy::' + escape(json.dumps(selected, sort_keys=True) + '; actual native SAN baseline and MAGICPIG-EXP-NATIVE-CPU cases=2821 PASS'), flush=True)
           PY
       - name: All portable and capable native suites
         run: |
@@ -126,12 +168,13 @@ jobs:
               return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
           probe = Path('magicpig-validation/native-probe')
           probe.mkdir(parents=True, exist_ok=True)
-          capabilities = driver.capabilities('g++', probe, True)
+          policy = json.loads(Path('magicpig-validation/compiler-policy.json').read_text())
+          capabilities = driver.capabilities(policy['cxx'], probe, True)
           (probe / 'capabilities.json').write_text(json.dumps(capabilities, indent=2) + '\n')
           print('::notice title=Actual CPU OS compiler capability probe::' + escape(json.dumps(capabilities, sort_keys=True)), flush=True)
           failures = []
           for mode in ('plain', 'sanitized'):
-              command = [sys.executable, 'tools/check_magicpig_cpu.py', '--native', '--build-dir', f'magicpig-validation/{mode}']
+              command = [sys.executable, 'tools/check_magicpig_cpu.py', '--native', '--cxx', policy['cxx'], '--build-dir', f'magicpig-validation/{mode}']
               if mode == 'sanitized':
                   command.append('--sanitize')
               result = subprocess.run(command, capture_output=True, text=True)
@@ -188,7 +231,8 @@ jobs:
           OMP_THREAD_LIMIT: "4"
           OMP_NUM_THREADS: "4"
         run: |
-          g++ -std=c++17 -O1 -fno-tree-vectorize -fno-tree-slp-vectorize -fopenmp -fsanitize=address,undefined -g -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie magicpig-validation/sanitized/portable/attention/selected_bodies.cpp -o magicpig-validation/attention-openmp
+          diagnostic_cxx=$(python -c 'import json; print(json.load(open("magicpig-validation/compiler-policy.json"))["cxx"])')
+          "$diagnostic_cxx" -std=c++17 -O1 -fno-tree-vectorize -fno-tree-slp-vectorize -fopenmp -fsanitize=address,undefined -g -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie magicpig-validation/sanitized/portable/attention/selected_bodies.cpp -o magicpig-validation/attention-openmp
           magicpig-validation/attention-openmp
       - name: Install CPU typing dependencies
         run: |

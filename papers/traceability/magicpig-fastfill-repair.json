@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-FASTFILL-REPAIR-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3, at-least-two-table candidate selection; repaired alternate table construction",
+      "mechanism": "Validate unsorted codes, build bucket prefixes and stable token contents with scoped temporary ownership, then compare fastfill and sorted-fill retrieval independently to literal token-table collisions.",
+      "relation": "variant",
+      "implementation": {"file": "ports/magicpig/library/lsh/lsh.cc", "symbol": "LSH::fastfill"},
+      "test": {"file": "tests/traceability/test_magicpig_fastfill_cpu.cpp", "id": "MAGICPIG-FASTFILL-REPAIR-CPU"},
+      "conditions": {
+        "execution": "Portable selected maintained C++ bodies; serial OpenMP; explicit non-owning Torch metadata/buffer shim and portable sorted-fill copy substitute",
+        "seed": "Fixed literal/formula integer codes; no randomness",
+        "lengths": [0, 1, 2, 15, 16, 17, 31, 32, 33, 35],
+        "configuration": "K2,L4,2 layers,2 requests,2 KV heads,4 query heads,capacity35; all-colliding and two mixed patterns;2 owner lifetimes;4 replacement generations",
+        "batched_head_checks": 15360,
+        "boundary_rejections": 14,
+        "oracle": "Enumerate each original token and count distinct matching table coordinates, accepting exactly >=2; sorted-fill parity is supplementary and not the sole oracle",
+        "contract": "Allocated owner; valid layer/request; rank3 contiguous CPU int32 [KV heads,L,length]; length within capacity; bucket codes [0,2^K). Whole input validated before owner mutation. Repeat fastfill replaces selected request tables including empty input; copies token IDs, does not borrow hash input.",
+        "sanitizers": "Run ASan/UBSan/LSan with leak detection enabled on hosted runner; no expected leak is accepted after repair",
+        "gpu_execution": "postponed",
+        "torch_extension": "not built"
+      },
+      "note": "Deliberate Issue66 maintained production variant replaces the archived incomplete fastfill behavior; immutable archive remains unchanged. Synthetic metadata validation does not prove Torch ABI, tensor dispatcher or GPU runtime. alloc-once/valid configuration remains a prerequisite; allocation exception guarantees and OpenMP scheduling are outside this suite. Native AVX sorted-fill copy is covered separately by lsh_retrieval."
+    }
+  ]
+}

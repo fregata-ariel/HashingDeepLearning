@@ -10,19 +10,28 @@
 #include <stdexcept>
 #include <vector>
 #define LSH_THREADS 64
+#define TORCH_CHECK(condition, message) do { if (!(condition)) throw std::invalid_argument(message); } while (false)
 namespace torch {
 constexpr int kInt8 = 1;
+constexpr int kInt32 = 2;
 struct TensorOptions { TensorOptions dtype(int) const { return *this; } };
 class Tensor {
     void* data_;
     std::vector<int64_t> dimensions_;
+    int dtype_;
+    bool cpu_, contiguous_;
 public:
-    Tensor(void* data, std::initializer_list<int64_t> dimensions)
-        : data_(data), dimensions_(dimensions) {
+    Tensor(void* data, std::initializer_list<int64_t> dimensions, int dtype = kInt32,
+           bool cpu = true, bool contiguous = true)
+        : data_(data), dimensions_(dimensions), dtype_(dtype), cpu_(cpu), contiguous_(contiguous) {
         if (!data_) throw std::invalid_argument("null tensor storage");
         for (auto d : dimensions_) if (d < 0) throw std::invalid_argument("negative tensor dimension");
     }
     int64_t size(size_t dim) const { return dimensions_.at(dim); }
+    int64_t dim() const { return static_cast<int64_t>(dimensions_.size()); }
+    int scalar_type() const { return dtype_; }
+    bool is_cpu() const { return cpu_; }
+    bool is_contiguous() const { return contiguous_; }
     void* data_ptr() const { return data_; }
 };
 inline Tensor from_blob(void* p, std::initializer_list<int64_t> shape, TensorOptions) {

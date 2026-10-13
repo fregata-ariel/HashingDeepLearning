@@ -100,13 +100,15 @@ int max_length)
  * @par Paper mapping
  * MagicPIG v4 Section 4.3: alternate candidate-table construction support.
  * @par Implementation note
- * Known incomplete path: bucket prefixes are written but token contents are
- * not; temporary mo_ij allocations leak. A dedicated CPU process reproduces
- * expected {0,1,2,3} versus actual {0} and separately checks the leak diagnostic.
- * This is defect characterization, not sorted-fill equivalence or correctness.
- * Repair tracked in GitHub Issue #66; immutable archive remains unchanged.
+ * Require an allocated owner, valid layer/request, and contiguous CPU int32
+ * codes of shape [KV heads, L, sequence length], with length <= max_length and
+ * every code in [0, 2^K). Validate the whole input before changing owner state.
+ * Replace only the selected layer/request's tables, including empty refill;
+ * stable counting placement copies token IDs in increasing order per bucket.
+ * Temporary bucket cursors have scoped vector ownership (Issue #66 repair).
+ * CPU selected-body tests do not establish real Torch ABI or GPU behavior.
  * @par Traceability relation
- * Support; TRACE_TEST_ID: MAGICPIG-FASTFILL-DEFECT-CPU.
+ * Variant; TRACE_TEST_ID: MAGICPIG-FASTFILL-REPAIR-CPU.
  */
 void LSH::fastfill(
 int layer_id, 
@@ -114,24 +116,28 @@ int request_id,
 torch::Tensor hash_code_pt
 )
 {
-
-int seq_len = hash_code_pt.size(2);
-int offset = request_id * this->num_key_value_heads;
-
-// #pragma omp parallel for schedule(static,1) num_threads(LSH_THREADS)
-// for (int l = 0; l < this->L; ++l){
-//     for(int h = 0; h < this->num_key_value_heads; ++h){
-//         for (int s = 0; s < seq_len; ++s){
-//             const int v = hash_code_pt[h][l][s].item<int>();
-//             this->ht[layer_id][offset + h][l][v].push_back(s);
-//         }
-//     }
-// }
-
-int * hash_code = static_cast<int *>(hash_code_pt.data_ptr());
+TORCH_CHECK(this->allocated, "fastfill requires an allocated LSH owner");
+TORCH_CHECK(layer_id >= 0 && layer_id < this->num_layers, "invalid fastfill layer");
+TORCH_CHECK(request_id >= 0 && request_id < this->batch_size, "invalid fastfill request");
+TORCH_CHECK(hash_code_pt.dim() == 3, "fastfill codes must have rank 3");
+TORCH_CHECK(hash_code_pt.is_cpu() && hash_code_pt.is_contiguous(),
+            "fastfill codes must be contiguous CPU tensors");
+TORCH_CHECK(hash_code_pt.scalar_type() == torch::kInt32, "fastfill codes must be int32");
+TORCH_CHECK(hash_code_pt.size(0) == this->num_key_value_heads && hash_code_pt.size(1) == this->L,
+            "fastfill code head/table shape mismatch");
+TORCH_CHECK(hash_code_pt.size(2) <= this->max_length, "fastfill sequence exceeds capacity");
+int seq_len = static_cast<int>(hash_code_pt.size(2));
+const int * hash_code = static_cast<const int *>(hash_code_pt.data_ptr());
+for (int h = 0; h < this->num_key_value_heads; ++h)
+    for (int j = 0; j < this->L; ++j)
+        for (int token = 0; token < seq_len; ++token) {
+            const int code = hash_code[(h * this->L + j) * seq_len + token];
+            TORCH_CHECK(code >= 0 && code < this->num_buckets, "fastfill hash code outside bucket range");
+        }
 int stride = this->num_key_value_heads * this->L * this->num_buckets;
 int * start = this->table_start[layer_id] + request_id * stride;
 int * end = this->table_end[layer_id] + request_id * stride;
+int * content = this->table[layer_id] + request_id * this->num_key_value_heads * this->L * this->max_length;
 
 for(int i = 0;  i < this->num_key_value_heads; ++i){
         const int * v_i = hash_code + i * (this->L * seq_len);
@@ -142,8 +148,8 @@ for(int i = 0;  i < this->num_key_value_heads; ++i){
             const int * v_ij = v_i + j * seq_len;
             int *ms_ij = ms_i + j * num_buckets;
             int *me_ij = me_i + j * num_buckets;
-            int *mo_ij = new int [num_buckets];
-            memset(mo_ij, 0, num_buckets * sizeof(int));
+            std::fill_n(ms_ij, num_buckets, 0);
+            std::fill_n(me_ij, num_buckets, 0);
             for(int k=0; k<seq_len; ++k){
                 const int v = v_ij[k];
                 me_ij[v] += 1;
@@ -153,6 +159,10 @@ for(int i = 0;  i < this->num_key_value_heads; ++i){
                 ms_ij[b] =  me_ij[b-1];
                 me_ij[b] += ms_ij[b]; 
             }
+            std::vector<int> next(ms_ij, ms_ij + num_buckets);
+            int * table_ij = content + (i * this->L + j) * this->max_length;
+            for (int token = 0; token < seq_len; ++token)
+                table_ij[next[v_ij[token]]++] = token;
             }
 }
 

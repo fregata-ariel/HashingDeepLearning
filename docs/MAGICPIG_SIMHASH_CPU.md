@@ -47,11 +47,13 @@ K15 maps 32767 to 32768, outside positive signed int16. The fixture records that
 boundary before any out-of-range cast, whose runtime-specific result is not
 claimed. This is binary16 storage precision, independent of projection rounding.
 
-Focused repair: [#65, guard or replace binary16 SimHash code packing for K >=12](https://github.com/fregata-ariel/HashingDeepLearning/issues/65). A maintained implementation should either reject K outside
+Integrated repair: [#65, guard binary16 SimHash code packing for K >=12](https://github.com/fregata-ariel/HashingDeepLearning/issues/65). A maintained implementation should either reject K outside
 its exact supported domain or use integer accumulation/storage consistently in
 fill/decode and native table allocation. Add native CPU Torch checks when a
 maintained tensor runtime exists, include K11/K12 and K14/K15 boundaries, and
-keep the archive unchanged. No repair is silently applied in #55.
+keep the archive unchanged. #55 remains historical characterization; the
+maintained #65 boundary now rejects K outside1..11 before allocation/mutation,
+with independent exhaustive native-code-domain tests.
 
 ## Reproduce
 

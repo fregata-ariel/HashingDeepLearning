@@ -14,7 +14,7 @@ The `attention` suite executes the maintained `qk_kernel`, `qk_kernel_full`,
 `softmax_kernel_optimized`, `wv_kernel`, `wv_kernel_dim128_full`, and actual
 `SparseAttentionServer` constructor/destructor, `alloc`, `fill`, `clear`,
 `attention`, `dynamic_attention`, `full_attention`, and four getters.
-Production function bodies are extracted unchanged. This verifies selected CPU
+Maintained function bodies are extracted verbatim, including the reviewed repairs. This verifies selected CPU
 composition and ownership support, with supplied candidate multisets.
 
 The test dependency adapter is explicit. It models contiguous caller-owned
@@ -64,8 +64,8 @@ empty heads bypass correction, so undefined empty norms are never read.
 There are 832 nonempty head compositions, 16,544 probability checks, 66,368 BF16 output
 coordinate checks, 432 ownership checks, 32 corrected-score checks, and 175 boundary cases (including 90 empty server heads and26 invalid caller cases) including dimension/group rejection. Portable absolute
 budgets are `3e-5` corrected score and probability, `0.004` output (including BF16 quantization), and
-`5e-5` base-2 metadata. Native budgets are `0.002`, `0.008`, and `0.03`; the
-metadata budget is the existing polynomial bootstrap budget. Local maxima were
+`5e-5` base-2 metadata. Native budgets are `0.002`, `0.008`, and `0.03`; these fixtures retain
+the historical bootstrap tolerances. Pre-#74 observed maxima were
 portable `2.70259e-6 / 9.71851e-4 / 1.35911e-5`, native
 `0.00123006 / 0.00215608 / 0.00695390`. These observed errors characterize fixed
 moderate fixtures, not universal bounds on the approximation. The directly

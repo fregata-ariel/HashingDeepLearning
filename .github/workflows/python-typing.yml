@@ -6,10 +6,13 @@ on:
     paths:
       - "mypy.ini"
       - "ports/**/*.py"
-      - "ports/mongoose/lsh_lib/clsh.pyi"
+      - "ports/**/*.pyi"
       - "typings/**"
       - "papers/traceability.json"
       - "tools/audit_python_annotations.py"
+      - "tools/maintained_python_inventory.json"
+      - "tests/traceability/test_python_typing_inventory.py"
+      - "docs/MAGICPIG*.md"
       - "tools/check_reformer_attention_types.py"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
@@ -20,10 +23,13 @@ on:
     paths:
       - "mypy.ini"
       - "ports/**/*.py"
-      - "ports/mongoose/lsh_lib/clsh.pyi"
+      - "ports/**/*.pyi"
       - "typings/**"
       - "papers/traceability.json"
       - "tools/audit_python_annotations.py"
+      - "tools/maintained_python_inventory.json"
+      - "tests/traceability/test_python_typing_inventory.py"
+      - "docs/MAGICPIG*.md"
       - "tools/check_reformer_attention_types.py"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
@@ -37,33 +43,27 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Record the exact tested checkout
+        run: |
+          echo "::notice title=Tested merge candidate::commit=$(git rev-parse HEAD);tree=$(git rev-parse 'HEAD^{tree}')"
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Install type-check dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install mypy numpy torch tensorboard
+          python -m pip install mypy==2.4.0 numpy==2.3.5 tensorboard==2.21.0
+          python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip check
 
-      - name: Audit all maintained Python annotations
+      - name: Verify typing inventory and CI enrollment contracts
         run: |
-          python tools/audit_python_annotations.py \
-            --root ports \
-            --expected-files 31
+          python tests/traceability/test_python_typing_inventory.py
 
-      - name: Strict-check all MONGOOSE Python sources
-        env:
-          MYPYPATH: ${{ github.workspace }}/ports/mongoose:${{ github.workspace }}/typings
-        shell: bash
+      - name: Audit annotations and strict-check every maintained Python group
         run: |
-          mapfile -t sources < <(find ports/mongoose -type f -name '*.py' -print | sort)
-          echo "MONGOOSE_PYTHON_FILES=${#sources[@]}"
-          test "${#sources[@]}" -eq 23
-          python -m mypy --config-file mypy.ini \
-            "${sources[@]}" \
-            ports/mongoose/lsh_lib/clsh.pyi
+          python tools/audit_python_annotations.py --root ports --mypy
 
       - name: Audit Reformer attention section
         env:
@@ -73,24 +73,6 @@ jobs:
             --output /tmp/reformer_attention_core.py
           python -m mypy --config-file mypy.ini \
             /tmp/reformer_attention_core.py
-
-      - name: Strict-check Original SLIDE Python examples
-        shell: bash
-        run: |
-          mapfile -t sources < <(find ports/slide-original/python_examples -type f -name '*.py' -print | sort)
-          echo "ORIGINAL_SLIDE_PYTHON_FILES=${#sources[@]}"
-          test "${#sources[@]}" -eq 4
-          MYPYPATH="${{ github.workspace }}/ports/slide-original/python_examples:${{ github.workspace }}/typings" \
-            python -m mypy --config-file mypy.ini "${sources[@]}"
-
-      - name: Strict-check Optimized SLIDE Python examples
-        shell: bash
-        run: |
-          mapfile -t sources < <(find ports/slide-optimized-avx512/python_examples -type f -name '*.py' -print | sort)
-          echo "OPTIMIZED_SLIDE_PYTHON_FILES=${#sources[@]}"
-          test "${#sources[@]}" -eq 4
-          MYPYPATH="${{ github.workspace }}/ports/slide-optimized-avx512/python_examples:${{ github.workspace }}/typings" \
-            python -m mypy --config-file mypy.ini "${sources[@]}"
 
       - name: Run SLIDE Python example contract checks
         run: |

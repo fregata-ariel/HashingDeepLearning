@@ -88,8 +88,8 @@ surrogate; the native FlashInfer append invocation is not selected or executed.
 - No true FlashInfer runtime, Torch ABI/BF16 conversion, FBGEMM dispatch,
   OpenMP/concurrent server, native GPU ownership or pretrained generation
   has been verified. No model weights or datasets are downloaded.
-- Existing repair Issues #65-#68 and #72-#77 remain open; deferred
-  native-GPU milestone #62 is unchanged. #60 covers connected
+- Repairs #65–#68/#72–#77/#86 and MP5 are closed; deferred
+  native-GPU task #62 remains separate. #60 is integrated and covers connected
   hash/retrieval/correction/attention/cache steps; #61 covers strict typing,
   final docs and CI integration.
 

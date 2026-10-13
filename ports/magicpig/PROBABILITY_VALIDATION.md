@@ -45,14 +45,14 @@ than the old cancellation allowance. The cos=0,K=16,L=2 regression deliberately
 replaces the old known-defect expectation: true inclusion `2^-32` must agree
 with the positive FP64 reference and differ from cancelled zero.
 
-330 stable-probability cases include 54 independently generated 160-digit
-Decimal references (positive exhaustive binomial masses, stored as rounded
-long-double literals), 252 extended-precision cosine/K/L cases, two algorithm
-transition cases, four large-count/underflow/endpoint cases and 18 direct-double
-near-+1 corner references. The additional angular oracle derives acos using a
-Decimal positive asin series and Machin pi, without host libm. Exact binary
-cosines `1-2^-53`, `1-2^-52`, `1-2^-40` cross K=1/16/INT_MAX and L=2/512.
-The old near-one collision formula fails this new regression before repair.
+330 stable-probability cases include72 independently generated160-digit
+Decimal references (54 zero-cosine binomial rows and18 direct-double near-+1
+corners),252 extended-precision cosine/K/L cases, two algorithm transitions
+and four large-count/underflow/endpoint cases. References use complete positive
+binomial masses, stored as rounded long-double literals. The angular oracle
+derives acos using a Decimal positive asin series and Machin pi without host
+libm. Exact binary cosines `1-2^-53`, `1-2^-52`, `1-2^-40` cross K=1/16/INT_MAX
+and L=2/512. The old near-one collision formula fails this regression.
 K reaches
 2048 in Decimal references and INT_MAX in the exact L=2 log identity; L reaches
 512 in full references and INT_MAX in a saturation check. The retained bit

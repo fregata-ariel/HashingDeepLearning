@@ -20,7 +20,10 @@ and two attention-cache owners alive throughout both refill cycles. The bridge
 returns outputs and intermediates as JSON; subprocess errors, sanitizer
 messages, nonzero exits and unexpected trailing output fail the Python run.
 The evidence records executable and bridge-fixture hashes, selected source
-block hashes, compiler options, and the immutable-source gate.
+block hashes, compiler options, and the immutable-source gate. The current
+driver verifies `executable_sha256`, `descriptor_sha256` and `source_sha256`
+against the enrolled bridge before Python execution, then checks the fixture
+returned `bridge_executable_sha256` against the executable actually passed.
 
 ## Connected execution and independent oracle
 
@@ -64,21 +67,25 @@ oracle to 1e-12; actual merged BF16 output uses the stated rounding budget.
 All head lengths are uniform and positive, buffers have padded capacity 32,
 and only supported dimension/group paths are counted as numerical passes.
 
-## Dense path and existing limitations
+## Dense path and execution scope
 
-The original `SparseAttentionServer::full_attention` calls
-`softmax_kernel_optimized`, whose partial-tile denominator includes padded
-candidates (known #72). A resident append changes length 2 to 3 to 4, so that
-method cannot supply a correct dense partition for this fixture. The explicit
-CPU replacement for the unexecuted FlashInfer dense branch instead composes
-actual maintained `qk_kernel_full`, `softmax_kernel_full` and
-`wv_kernel_dim128_full`. Full Softmax changes padded storage but computes the
-valid-subset normalization correctly; rounded capacity is explicitly provided.
-This is a supported selected-body composition, not a repaired or validated
-original full-attention server path. Full-selection offload similarly executes
-actual QK/full-Softmax/WV without probability correction. Selecting every token
-in the always-corrected sparse path would generally differ from dense; the
-fixture does not assert otherwise.
+The resident partition explicitly composes actual maintained `qk_kernel_full`,
+`softmax_kernel_full` and `wv_kernel_dim128_full` as the CPU substitute for the
+unexecuted FlashInfer dense branch. Full-selection offload similarly executes
+actual QK/full-Softmax/WV without probability correction. The bridge still uses
+these selected dense bodies after the maintained #72 repair; it does not call
+`SparseAttentionServer::full_attention` for either dense partition. The repaired
+full-attention server has separate attention-fixture checks; this composition
+cannot establish its execution or dispatch.
+
+Originally this choice also avoided the pre-repair optimized partial-tile
+denominator defect. That defect and full-Softmax padding writes are historical:
+current maintained full/optimized Softmax accepts exact logical candidate
+capacity and excludes padding in reductions and writes. The composition keeps
+capacity32 for owner/cache layout convenience, not as a Softmax padding
+requirement. Selecting every token in the always-corrected sparse path would
+generally differ from dense; the full-selection fixture intentionally chooses
+its explicit uncorrected p=1 baseline.
 
 The portable lane, Tensor, serial-copy and BF16 conversion substitutes are the
 existing selected-body adapter models. The composition adapter supplies one
@@ -88,7 +95,9 @@ No Torch extension, OpenMP scheduling, FBGEMM linkage/dispatch, real FlashInfer
 cache append/merge, CUDA, model weights, dataset, model generation, accuracy or
 throughput is executed. Native SIMD/AVX/BF16 instructions are unexecuted by this
 suite, including when the common driver runs other capability-gated suites.
-Repairs #65–#68 and #72–#77 stay separate and are not closed by this contract.
+Repairs #65–#68 and #72–#77 have their own regression evidence and Issue
+acceptance checks. Composition executes current maintained arithmetic but does
+not close those checks by inference from its connected workload.
 
 ## Tolerances and actual mutation sensitivity
 
@@ -113,5 +122,5 @@ The sanitized driver compiles the actual bridge with ASan/UBSan and keeps
 LeakSanitizer enabled. The Python host adapter is not sanitizer-instrumented;
 its connected calls execute the exact instrumented bridge and propagate its
 failures, so sanitizer coverage includes the workload rather than only the
-bridge self-test. Immutable archived sources and maintained production bodies
-remain unchanged.
+bridge self-test. Maintained production bodies now include the CPU repairs;
+immutable archived sources remain unchanged.

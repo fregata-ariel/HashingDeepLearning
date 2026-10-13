@@ -5,7 +5,7 @@
       "id": "MAGICPIG-PROBABILITY-CPU",
       "paper": "magicpig-2024",
       "paper_location": "Section 4.3 Equations 9-11",
-      "mechanism": "At-least-two-table inclusion and regularized correction; finite estimator bias and maintained input-domain validation (#67).",
+      "mechanism": "Stable at-least-two-table log inclusion and regularized correction (#68); finite estimator bias and maintained input-domain validation (#67).",
       "relation": "support",
       "implementation": {
         "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
@@ -16,21 +16,29 @@
         "id": "MAGICPIG-PROBABILITY-CPU"
       },
       "conditions": {
-        "execution": "portable selected scalar body, no Torch/CUDA/model dependencies",
+        "execution": "portable selected scalar helper and transform bodies, no Torch/CUDA/model dependencies",
         "seed": "fixed literal deterministic fixture, no RNG",
-        "oracle": "Exhaustive independent bit/table outcomes and FP64 binomial mass; finite estimator expectations.",
+        "oracle": "Exhaustive independent bit/table outcomes; positive FP64/extended-precision binomial masses; 54 independently generated 160-digit Decimal reference literals; finite estimator expectations.",
         "regularizer": "+1e-4 source variant",
         "gpu_execution": "postponed",
-        "correction_absolute_tolerance": "2e-5 + 6e-7 / (FP64 inclusion + 1e-4); ceiling 0.00602",
+        "correction_absolute_tolerance": "2e-6 for bounded FP32 regularized corrections",
         "correction_cases": 141,
         "domain_cases": 42,
         "exhaustive_bit_states": 15108,
-        "assertions": 745,
+        "assertions": 3203,
         "estimator_model": "64 exhaustive outcomes for two synthetic independent candidate table-hit processes; conditional on nonempty set, not shared geometric LSH hyperplanes",
         "invalid_domains": "Invalid scalar domains throw before any borrowed scores are mutated; accepted cosine overshoot limited to 8 FP32 epsilons; no index upper-bound inference.",
-        "observed_local_maximum_absolute_error": 0.00416361416368
+        "observed_local_maximum_absolute_error": 4.68169922385e-07,
+        "stable_probability_cases": 330,
+        "decimal_reference_cases": 54,
+        "log_probability_tolerance": "2e-11 + 1e-15*abs(reference_log)",
+        "positive_probability_relative_tolerance": "5e-12 for normally representable double probabilities",
+        "observed_log_probability_maximum_error": 1.03376805782e-07,
+        "observed_probability_maximum_relative_error": 4.94225823583e-14,
+        "direct_double_corner_cases": 18,
+        "direct_double_corner_oracle": "160-digit Decimal Machin pi and positive asin angular series, full positive-binomial masses; cosine1-2^-53/52/40, K1/16/INT_MAX,L2/512"
       },
-      "note": "Support: supplied logits only, not end-to-end unbiased self-normalized attention. Issue #67 repairs scalar-domain validation; Issue #68 tiny inclusion cancellation remains characterized. Exceptions require safe transport at OpenMP caller boundaries."
+      "note": "Support: supplied logits only, not end-to-end unbiased self-normalized attention. Issue #67 repairs scalar-domain validation; Issue #68 repairs tiny-inclusion arithmetic and deliberately replaces the old cancellation expectation. Explicit+1e-4 smoothing remains. Exceptions require safe transport at OpenMP caller boundaries."
     }
   ]
 }

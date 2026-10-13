@@ -2,6 +2,6 @@
   "name": "baseline",
   "test_file": "tests/traceability/test_magicpig_cpu_baseline.cpp",
   "definitions": {
-    "library/sparse_attention/sparse_attention.cc": ["transform_kernel", "softmax_kernel"]
+    "library/sparse_attention/sparse_attention.cc": ["magicpig_inclusion_log_probability", "transform_kernel", "softmax_kernel"]
   }
 }

@@ -5,7 +5,7 @@
   "native_avx512": true,
   "definitions": {
     "library/sparse_attention/sparse_attention.cc": [
-      "qk_kernel", "qk_kernel_full", "transform_kernel", "softmax_kernel", "softmax_kernel_full",
+      "qk_kernel", "qk_kernel_full", "magicpig_inclusion_log_probability", "transform_kernel", "softmax_kernel", "softmax_kernel_full",
       "softmax_kernel_optimized", "wv_kernel", "wv_kernel_dim128_full",
       "magicpig_prepare_attention_scores",
       "SparseAttentionServer::SparseAttentionServer", "SparseAttentionServer::~SparseAttentionServer",

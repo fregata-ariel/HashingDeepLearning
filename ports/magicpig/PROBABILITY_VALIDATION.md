@@ -19,16 +19,55 @@ unit norms and scale 2; QK kernels and LSH allocation/scheduling are not run.
 The FP64 reference uses `acos`, the binomial mass and the source's explicit
 `+1e-4` smoothing. That smoothing changes the unsmoothed paper estimator.
 
-Near zero inclusion, FP32 subtraction magnifies relative probability error.
-The correction bound is `2e-5 + 6e-7/(reference_inclusion + 1e-4)` (ceiling
-0.00602): a conditioning allowance for up to `6e-7` absolute inclusion error,
-plus the base scalar/log rounding allowance. It is a fixture acceptance budget,
-not a proof for arbitrary K/L. The tested maximum correction error is about
-0.004164. A separate 141st correction checks K=16,L=2,cosine=0: the positive
-FP64 inclusion `2^-32` vanishes in the source subtraction. It must match the
-zero-inclusion regularized result within `1e-6` and differ from the FP64
-positive-inclusion correction by more than `1e-6`. This is characterization of
-a reproduced numerical defect, not a claim of exact small-probability accuracy.
+## Stable tiny inclusion (#68)
+
+The maintained helper `magicpig_inclusion_log_probability` returns the natural
+logarithm of the at-least-two-table probability. It computes the bit collision
+log probability with `log(acos(-cosine)/pi)` for nonpositive cosine and
+`log1p(-acos(cosine)/pi)` for positive cosine. These symmetric angular forms
+avoid cancellation near -1 and avoid rounding a near-one collision probability
+before a large K magnifies its logarithm near +1.
+For expected table hits `L*p <= 0.5`, it starts with the positive two-hit
+binomial mass in log space and sums subsequent positive masses by recurrence.
+Successive ratios are below 0.25, so work remains bounded even for INT_MAX
+counts. For larger expected hit counts, the excluded zero/one-hit mass is
+computed with `log1p` and the included mass with `expm1`; this branch stays
+away from the severe cancellation region. Intermediates use `long double`.
+
+The logarithm remains finite for positive inclusion below exponent range.
+Cosine=-1 is the genuine zero endpoint and returns negative infinity;
+cosine=1 returns zero. The transform combines inclusion with the explicit
+`+1e-4` smoothing through log-addition before FP32 score conversion. This
+retains the released estimator variant; it does not remove its bias.
+
+The original 141 corrections now use a fixed absolute budget `2e-6` rather
+than the old cancellation allowance. The cos=0,K=16,L=2 regression deliberately
+replaces the old known-defect expectation: true inclusion `2^-32` must agree
+with the positive FP64 reference and differ from cancelled zero.
+
+330 stable-probability cases include 54 independently generated 160-digit
+Decimal references (positive exhaustive binomial masses, stored as rounded
+long-double literals), 252 extended-precision cosine/K/L cases, two algorithm
+transition cases, four large-count/underflow/endpoint cases and 18 direct-double
+near-+1 corner references. The additional angular oracle derives acos using a
+Decimal positive asin series and Machin pi, without host libm. Exact binary
+cosines `1-2^-53`, `1-2^-52`, `1-2^-40` cross K=1/16/INT_MAX and L=2/512.
+The old near-one collision formula fails this new regression before repair.
+K reaches
+2048 in Decimal references and INT_MAX in the exact L=2 log identity; L reaches
+512 in full references and INT_MAX in a saturation check. The retained bit
+outcome enumeration still covers 15,108 states independently.
+
+Log comparison budget is `2e-11 + 1e-15*abs(reference_log)`. Probability relative
+error must be at most `5e-12` whenever the probability is normally representable
+in double. These are verified fixture budgets, not a claim of arbitrary-libm
+correct rounding. Observed maximum log error is `1.034e-7` in the INT_MAX-K
+case (log magnitude about `2.977e9`); maximum relative probability error is
+`4.943e-14`. Original plus additional regularized correction error is at most
+`4.682e-7`, within the `2e-6` FP32 budget.
+
+Reproduce reference literals with
+`python3 tools/generate_magicpig_probability_reference.py --check`.
 
 The estimator reference separately enumerates 64 outcomes for two synthetic,
 independent candidate table-hit processes. Shared geometric LSH hyperplanes can
@@ -40,7 +79,7 @@ bias of the ratio estimator. No production Softmax or estimator server is
 executed by this mathematical example, and no finite unbiased-attention claim
 is made.
 
-## Domain validation (#67) and pending stability repair
+## Domain validation (#67)
 
 The maintained boundary now throws `std::invalid_argument` for nonfinite scores,
 nonpositive or nonfinite query/key norms and scaling, negative counts, K<1,
@@ -57,12 +96,13 @@ products, nonfinite and zero/negative inputs, invalid counts/parameters, null
 buffers, later invalid entries, and unrepresentable corrected scores. Invalid
 entries leave scores and input buffers unchanged. The independent moderate
 FP64 and estimator references above are preserved. The focused plain and
-ASan/UBSan/LeakSanitizer runs pass 745 assertions with leak checking enabled.
+ASan/UBSan/LeakSanitizer runs pass 3203 assertions with leak checking enabled.
 
 Native server callers must validate outside OpenMP regions or transport
 exceptions to the joining thread; exceptions may not cross an OpenMP region.
 Full Torch wrapper exception handling and index ownership are separate server
 integration checks. This selected scalar suite makes no Torch/GPU claim.
-[#68](https://github.com/fregata-ariel/HashingDeepLearning/issues/68) remains the
-separate stable-small-inclusion repair. Its tiny-cancellation characterization
-still applies after #67. Deterministic inputs use no RNG.
+[#68](https://github.com/fregata-ariel/HashingDeepLearning/issues/68) is the
+separate maintained stable-small-inclusion repair described above. Deterministic
+inputs use no RNG. Portable baseline and attention composition sanitizer runs
+also pass; native SIMD was skipped by the CPU capability guard in this machine.

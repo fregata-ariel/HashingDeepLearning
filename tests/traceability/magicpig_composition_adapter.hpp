@@ -2,6 +2,9 @@
 // Combine the existing explicit host dependency substitutes, with one Tensor ABI.
 #include "magicpig_attention_adapter.hpp"
 #include <cassert>
+#ifndef TORCH_CHECK
+#define TORCH_CHECK(condition, message) do { if (!(condition)) throw std::invalid_argument(message); } while (false)
+#endif
 #define LSH_THREADS 64
 inline void fast_memcpy_avx512(int* dst, const int* src, size_t n) { std::copy_n(src,n,dst); }
 // The maintained lsh.h declaration, with dependency includes replaced and

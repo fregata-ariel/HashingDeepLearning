@@ -356,7 +356,7 @@ void low_level_boundaries(Metrics& metrics) {
             near(full_score[j], expected.probabilities[j], 3e-6, unused, "full softmax valid probabilities");
         }
         require(full_score[padded] == 8 && full_score[capacity + 1] == 8, "full softmax padding capacity canaries");
-        if (padded != count) require(full_score[count] != 8, "full softmax mutates padded slots");
+        if (padded != count) require(full_score[count] == 8, "full softmax preserves padded slots");
         ++metrics.boundary_cases;
     }
     for (int count : {0, 1, 15, 16, 17, 31, 32}) {
@@ -538,7 +538,7 @@ int run() {
               << " max_corrected_score_error=" << metrics.corrected_score_error << " max_probability_error=" << metrics.probability_error
               << " max_output_error=" << metrics.output_error << " max_metadata_error=" << metrics.metadata_error << '\n'
               << "MAGICPIG-ATTENTION-BOUNDARIES-CPU: PASS cases=" << metrics.boundary_cases
-              << " qk_exact_nnz=verified softmax_padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty_server=zero_output_negative_infinity_metadata OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
+              << " qk_exact_nnz=verified softmax_logical_tail=verified unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty_server=zero_output_negative_infinity_metadata OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
     return 0;
 }
 }

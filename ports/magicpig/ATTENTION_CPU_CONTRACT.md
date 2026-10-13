@@ -1,4 +1,4 @@
-# MagicPIG selected attention CPU contract (#58, repairs #75/#76)
+# MagicPIG selected attention CPU contract (#58, repairs #75/#76/#77)
 
 The `attention` suite executes the maintained `qk_kernel`, `qk_kernel_full`,
 `transform_kernel`, `softmax_kernel`, `softmax_kernel_full`,
@@ -35,20 +35,24 @@ inclusion correction remains even when all rows are supplied.
 | Path | Conditions |
 |---|---|
 | Static/dynamic sparse server | 2 layers, 2 batches, 2 KV heads, 2 query groups; dim16/32/128; nnz1/15/16/17/31/32; unique unsorted or repeated supplied IDs |
-| Full server | dim128; groups1/4/8; 2 batches, 2 KV heads; nnz16/32 identical across KV/query heads |
+| Full server | dim128; groups1/4/8; 2 batches, 2 KV heads; nnz16/32 uniform and varying across KV and individual query heads; two layers |
 | Capacity | 32 valid initialized index/score slots per head, QK uses logical nnz only; output/metadata guards |
 | Ownership | alloc once, fill copies source arrays, getter mutation aliases caches, clear updates existing views, server outlives views, destructor sanitizer checked |
 
-The full server uses `nnz[i]` with both KV and query-head indexing; this suite
-uses uniform values. A separate defined-memory reproducer expands KV lengths
-[16,32] into per-query lengths [16,16,16,16,32,32,32,32] with four groups.
-For zero logits and values of one, the second KV head outputs 0.5 instead of the
-independent dense value 1.0: normalization uses 32 rows while WV sums only 16.
-Independently varying GQA lengths remain unsupported pending a separate repair. Queries and keys/values are distinct across heads/batches/layers to
-exercise stride routing.
+Repair #77 defines `nnz` as one count per flattened batch/query head:
+`[batch_size * num_attention_heads]`. QK, Softmax and WV all read `nnz[i]`,
+and shared key/value cache routing is `i / num_attention_groups`.
+Queries within one GQA group may have distinct lengths. The original
+[16,16,16,16,32,32,32,32] all-one-value regression now produces dense1.0
+for the second KV group. Additional FP64 fixtures vary lengths within groups,
+between KV heads, between batches and between two layers; keys/values and
+queries differ across these axes. Shape, layer and every count are validated
+before any score/output/metadata write. Negative and over-capacity counts and
+a KV-sized count vector are rejected. Empty full-server counts are explicitly
+rejected until repair #73 is composed; empty QK remains supported separately.
 
-There are 682 head compositions, 13,312 probability checks, 47,168 BF16 output
-coordinate checks, 432 ownership checks, 32 corrected-score checks, and 55 boundary cases including dimension/group rejection. Portable absolute
+There are 786 head compositions, 15,808 probability checks, 60,480 BF16 output
+coordinate checks, 432 ownership checks, 32 corrected-score checks, and 60 boundary cases including dimension/group rejection. Portable absolute
 budgets are `3e-5` corrected score and probability, `0.004` output (including BF16 quantization), and
 `5e-5` base-2 metadata. Native budgets are `0.002`, `0.008`, and `0.03`; the
 metadata budget is the existing polynomial bootstrap budget. Local maxima were
@@ -84,6 +88,7 @@ this check also detects additive logit shifts that normalization would hide.
   capacities, head divisibility, repeated allocation, expired views and OpenMP
   races remain unsupported.
 
-Repair #76 adds explicit rejection policy; accepted arithmetic is unchanged. It is not whole-extension build
+Repairs #75/#76/#77 enforce logical candidate bounds, dimension/group policy
+and consistent query-head length routing. It is not whole-extension build
 success, LSH-to-attention end-to-end validation, model generation, accuracy or
 performance reproduction. GPU tests remain postponed.

@@ -225,6 +225,52 @@ void full_server(int groups, int count, Metrics& metrics) {
     }
     require(output.back() == 0x3f80, "full output capacity canary");
 }
+void varying_full_server(int groups, Metrics& metrics) {
+    constexpr int dim = 128, capacity = 32, batches = 2, kvheads = 2;
+    const int heads = batches * kvheads * groups;
+    SparseAttentionServer server;
+    server.alloc(2, kvheads * groups, kvheads, dim, batches, capacity);
+    std::vector<bfloat16> keys(batches * kvheads * capacity * dim), values(keys.size());
+    std::vector<float> norms(batches * kvheads * capacity);
+    for (int row = 0; row < batches * kvheads * capacity; ++row) {
+        for (int d = 0; d < dim; ++d) {
+            keys[row * dim + d] = magicpig_attention_model::encode(float(((row * 3 + d * 5) % 23) - 11) / 32);
+            values[row * dim + d] = magicpig_attention_model::encode(float(((row * 7 + d * 3) % 31) - 15) / 32);
+        }
+        norms[row] = float(norm(keys.data() + row * dim, dim));
+    }
+    for (int layer = 0; layer < 2; ++layer) {
+    for (int batch = 0; batch < batches; ++batch) {
+        const int start = batch * kvheads * capacity;
+        server.fill(layer, batch, torch::Tensor(keys.data() + start * dim, {kvheads, capacity, dim}),
+                    torch::Tensor(values.data() + start * dim, {kvheads, capacity, dim}), torch::Tensor(norms.data() + start, {kvheads, capacity}));
+    }
+    std::vector<float> query(heads * dim), metadata(2 * heads);
+    std::vector<bfloat16> output(heads * dim + 1, 0x3f80);
+    std::vector<int> counts(heads);
+    // Both KV-head lengths and individual queries within a GQA group differ.
+    for (int head = 0; head < heads; ++head) counts[head] = ((head / groups + head % groups + layer) % 2) ? 16 : 32;
+    for (int head = 0; head < heads; ++head) for (int d = 0; d < dim; ++d)
+        query[head * dim + d] = float(((head * 5 + d * 7) % 29) - 14) / 32;
+    server.full_attention(layer, torch::Tensor(output.data(), {heads, dim}), torch::Tensor(metadata.data(), {2, heads}),
+                          torch::Tensor(query.data(), {heads, dim}), torch::Tensor(counts.data(), {heads}));
+    auto* scores = static_cast<float*>(server.get_score().data_ptr());
+    for (int head = 0; head < heads; ++head) {
+        const int kv = head / groups;
+        std::vector<int> selected(counts[head]);
+        std::iota(selected.begin(), selected.end(), 0);
+        const auto expected = oracle(keys.data() + kv * capacity * dim, values.data() + kv * capacity * dim,
+                                     query.data() + head * dim, selected, dim, false);
+        check_result(scores + head * capacity, output.data() + head * dim, metadata.data(), head, heads, expected, metrics);
+    }
+    require(output.back() == 0x3f80, "varying full output capacity canary");
+    // Refill a second layer with different data to detect stale cache routing.
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+        keys[i] = magicpig_attention_model::encode(float((int(i) % 13) - 6) / 32);
+        values[i] = magicpig_attention_model::encode(float((int(i) % 17) - 8) / 32);
+    }
+    }
+}
 void low_level_boundaries(Metrics& metrics) {
     constexpr int dim = 32, capacity = 32;
     std::vector<bfloat16> key(capacity * dim), value(key.size());
@@ -328,10 +374,8 @@ void low_level_boundaries(Metrics& metrics) {
                 "dimension rejection precedes writes");
         ++metrics.boundary_cases;
     }
-    // Full server mixes KV-head nnz[i] and query-head nnz[i]. For lengths
-    // [16,32] expanded to four queries per KV head, the second head normalizes
-    // 32 ones but WV sums only 16 of them: observed output 0.5, dense oracle 1.
-    // This is a defined-memory restriction reproducer, not a correctness pass.
+    // Regression #77: KV lengths [16,32] expanded over four query heads.
+    // All-one V with zero logits must produce one for every query head.
     {
         constexpr int full_dim = 128, full_heads = 8, full_capacity = 32;
         SparseAttentionServer server;
@@ -350,12 +394,49 @@ void low_level_boundaries(Metrics& metrics) {
                               torch::Tensor(zero_query.data(), {full_heads, full_dim}),
                               torch::Tensor(lengths.data(), {full_heads}));
         double unused = 0;
-        near(decode(result[4 * full_dim]), 0.5, 1e-6, unused, "varying GQA length observed half output");
+        near(decode(result[4 * full_dim]), 1.0, 1e-6, unused, "varying GQA length regression equals dense output");
         std::vector<int> selected(full_capacity); std::iota(selected.begin(), selected.end(), 0);
         const auto expected = oracle(zero_keys.data() + full_capacity * full_dim,
                                      one_values.data() + full_capacity * full_dim,
                                      zero_query.data() + 4 * full_dim, selected, full_dim, false);
         require(expected.output[0] == 1.0, "varying GQA length independent dense expectation");
+        ++metrics.boundary_cases;
+    }
+    {
+        constexpr int heads = 8, capacity = 32, dim = 128;
+        SparseAttentionServer server;
+        server.alloc(1, heads, 2, dim, 1, capacity);
+        std::vector<float> query(heads * dim, 0), metadata(2 * heads, 77);
+        std::vector<bfloat16> result(heads * dim, 0x3f80);
+        std::vector<int> counts(heads, 16);
+        auto* scores = static_cast<float*>(server.get_score().data_ptr());
+        std::fill_n(scores, heads * capacity, 91);
+        for (int invalid : {-1, 0, capacity + 1}) {
+            counts.back() = invalid;
+            bool rejected = false;
+            try { server.full_attention(0, torch::Tensor(result.data(), {heads, dim}),
+                      torch::Tensor(metadata.data(), {2, heads}), torch::Tensor(query.data(), {heads, dim}),
+                      torch::Tensor(counts.data(), {heads})); }
+            catch (const std::invalid_argument&) { rejected = true; }
+            require(rejected && std::all_of(result.begin(), result.end(), [](auto x){return x == 0x3f80;}) &&
+                    std::all_of(metadata.begin(), metadata.end(), [](auto x){return x == 77;}) &&
+                    std::all_of(scores, scores + heads * capacity, [](auto x){return x == 91;}), "invalid late-head nnz rejects before every write");
+            ++metrics.boundary_cases;
+        }
+        counts.back() = 16;
+        bool rejected = false;
+        try { server.full_attention(0, torch::Tensor(result.data(), {heads, dim}),
+                  torch::Tensor(metadata.data(), {2, heads}), torch::Tensor(query.data(), {heads, dim}),
+                  torch::Tensor(counts.data(), {heads - 1})); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected && scores[0] == 91 && result[0] == 0x3f80 && metadata[0] == 77, "KV-sized nnz vector rejected before writes");
+        ++metrics.boundary_cases;
+        rejected = false;
+        try { server.full_attention(0, torch::Tensor(result.data(), {heads, dim}),
+                  torch::Tensor(metadata.data(), {2, heads}), torch::Tensor(query.data(), {heads, dim}),
+                  torch::Tensor(counts.data(), {heads, 1})); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected && scores[0] == 91 && result[0] == 0x3f80 && metadata[0] == 77, "nnz rank contract rejects before writes");
         ++metrics.boundary_cases;
     }
     // Fixed full WV and full server reject unsupported dimension/group policy.
@@ -396,6 +477,7 @@ int run() {
         sparse_server(dim, count, true, true, metrics);
     }
     for (int groups : {1, 4, 8}) for (int count : {16, 32}) full_server(groups, count, metrics);
+    for (int groups : {1, 4, 8}) varying_full_server(groups, metrics);
     low_level_boundaries(metrics);
     std::cout << std::setprecision(12)
               << "MAGICPIG-ATTENTION-CPU: PASS compositions=" << metrics.compositions
@@ -404,7 +486,7 @@ int run() {
               << " max_corrected_score_error=" << metrics.corrected_score_error << " max_probability_error=" << metrics.probability_error
               << " max_output_error=" << metrics.output_error << " max_metadata_error=" << metrics.metadata_error << '\n'
               << "MAGICPIG-ATTENTION-BOUNDARIES-CPU: PASS cases=" << metrics.boundary_cases
-              << " qk_exact_nnz=verified softmax_padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=characterized_half_output empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
+              << " qk_exact_nnz=verified softmax_padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
     return 0;
 }
 }

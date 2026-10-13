@@ -1,5 +1,14 @@
 # MagicPIG selected attention CPU contract (#58, repairs #73/#75/#76/#77)
 
+The supported Hosted native sanitizer configuration is Ubuntu24.04 with
+`g++-14`, all ASan/UBSan/LeakSanitizer checks enabled. Actual GCC13.3 runs
+reproduced misaligned ASan stack stores in a Softmax local reduction and later
+an unrelated16-float fixture initializer copy (`vmovdqa64`); changing only the
+compiler to GCC14 preserved native ISA/oracles and completed the combined
+diagnostic. Issue86 explicitly aligns the local SIMD reduction array and pins
+the supported CI compiler. Other native sanitizer compiler combinations are
+unverified; portable checks and hardware capability skips remain separate.
+
 The `attention` suite executes the maintained `qk_kernel`, `qk_kernel_full`,
 `transform_kernel`, `softmax_kernel`, `softmax_kernel_full`,
 `softmax_kernel_optimized`, `wv_kernel`, `wv_kernel_dim128_full`, and actual

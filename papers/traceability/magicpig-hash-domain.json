@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-HASH-DOMAIN-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 SimHash table construction; maintained restriction of archived binary16 packing",
+      "mechanism": "Reject unsupported K at maintained native LSH allocation before owner mutation; verify every accepted integer key/query code routes to its unique token across two collision tables.",
+      "relation": "variant",
+      "implementation": {"file": "ports/magicpig/library/lsh/lsh.cc", "symbol": "LSH::alloc"},
+      "test": {"file": "tests/traceability/test_magicpig_hash_domain_cpu.cpp", "id": "MAGICPIG-HASH-DOMAIN-CPU"},
+      "conditions": {
+        "execution": "Actual maintained selected allocation/fastfill/retrieve/destructor bodies; contiguous host Torch metadata shim, no Torch runtime",
+        "accepted_K": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "rejected_K": [-2147483648, -1, 0, 12, 14, 15, 16, 31, 2147483647],
+        "accepted_code_checks": 4094,
+        "rejection_checks": 18,
+        "oracle": "Independent literal integer bits/powers reconstruct every code0..2^K-1; each code appears in both key tables and query coordinates and must retrieve exactly its token ID",
+        "boundary_policy": "Real TORCH_CHECK rejects K outside1..11 before shifts, bucket count, member writes or allocation. Invalid calls on fresh and populated owners leave state reusable/unchanged. Valid allocation remains alloc-once.",
+        "archived_packing": "Existing MAGICPIG-SIMHASH-CPU separately exhausts actual archived fill-packing AST for4094 codes at K1..11 and characterizes binary16 rounding at K12+; archive is unchanged",
+        "gpu_execution": "postponed",
+        "torch_extension": "not built"
+      },
+      "note": "Deliberate maintained accepted-domain policy for Issue65, not integer-packing support at K>=12 or a new Python model port. The archived key/query packing remains historical and its outside-domain loss examples are retained. Actual CPU Torch confirmation awaits a maintained tensor integration; host metadata checks and integer tests do not establish Torch ABI, BF16 projection rounding or model generation. K/L/scaling policy of probability correction remains a separate Issue67."
+    }
+  ]
+}

@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import subprocess
 from pathlib import Path
 from typing import cast
 
+SPARSE_SOURCE = "ports/magicpig/library/sparse_attention/sparse_attention.cc"
 NATIVE_EXP_MARKER = "MAGICPIG-EXP-NATIVE-CPU cases=2821"
 
 
@@ -22,7 +24,7 @@ def record(value: object, label: str) -> dict[str, object]:
     return cast(dict[str, object], value)
 
 
-def notices(summary: dict[str, object], commit: str, require_native_exp: bool = False) -> tuple[str, list[tuple[str, str]]]:
+def notices(summary: dict[str, object], commit: str, require_native_exp: bool = False, expected_sparse_source_hash: str | None = None) -> tuple[str, list[tuple[str, str]]]:
     """Reject incomplete/native-marker/leak-disabled evidence before reporting.
 
     Portable host exp never establishes the native #74 regression. Absence of
@@ -37,6 +39,11 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
     results = [record(item, "suite") for item in cast(list[object], raw_results)]
     require(all(item.get("status") == "pass" for item in results), "CPU suite did not pass")
     for item in results:
+        if expected_sparse_source_hash is not None:
+            sources = record(item.get("source_sha256", {}), "suite source hashes")
+            if SPARSE_SOURCE in sources:
+                require(sources[SPARSE_SOURCE] == expected_sparse_source_hash,
+                        "tested sparse attention source differs from checkout")
         mode = item.get("mode")
         require(isinstance(mode, str) and mode in {"portable", "portable_python", "avx512", "bf16"}, "unknown CPU suite execution mode")
         if mode == "portable_python":
@@ -46,7 +53,8 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
             require(item.get("leak_check_explicitly_disabled") is False, "CPU evidence disabled leak detection")
     require(any(item.get("mode") == "portable" for item in results),
             "combined CPU reporting requires actual portable C++ execution")
-    capability_modes = record(record(summary.get("capabilities"), "capability").get("modes"), "capability modes")
+    capability = record(summary.get("capabilities"), "capability")
+    capability_modes = record(capability.get("modes"), "capability modes")
     output: list[tuple[str, str]] = []
     for mode in ("avx512", "bf16"):
         decision = record(capability_modes.get(mode), mode)
@@ -73,7 +81,9 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
     python_count = len(results) - cpp_count
     output.append((f"MagicPIG CPU {phase}",
                    f"PASS; suites={len(results)}; cpp_suites={cpp_count}; cpp_leaks_disabled=False; "
-                   f"python_adapters={python_count} (not sanitizer instrumented); commit={commit}"))
+                   f"python_adapters={python_count} (not sanitizer instrumented); "
+                   f"gcc_major={capability.get('gcc_major', 'unknown')}; "
+                   f"sparse_attention_sha256={expected_sparse_source_hash or 'not supplied'}; commit={commit}"))
     return phase, output
 
 
@@ -92,7 +102,9 @@ def main() -> None:
     parser.add_argument("--evidence", type=Path, action="append", required=True)
     args = parser.parse_args()
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
-    require_exp = native_exp_enrolled(Path(__file__).resolve().parents[1])
+    root = Path(__file__).resolve().parents[1]
+    require_exp = native_exp_enrolled(root)
+    source_hash = hashlib.sha256((root / SPARSE_SOURCE).read_bytes()).hexdigest()
     output: list[tuple[str, str, str]] = []
     phases: set[str] = set()
     failed = False
@@ -102,7 +114,7 @@ def main() -> None:
         require(phase not in phases, f"duplicate {phase} evidence")
         phases.add(phase)
         try:
-            observed, entries = notices(record(json.loads(path.read_text()), "summary"), commit, require_exp)
+            observed, entries = notices(record(json.loads(path.read_text()), "summary"), commit, require_exp, source_hash)
             require(observed == phase, "evidence sanitizer mode disagrees with its phase path")
         except (OSError, ValueError) as error:
             # A failed driver does not leave final success evidence. Preserve

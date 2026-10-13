@@ -180,7 +180,8 @@ class WorkflowContracts(unittest.TestCase):
         self.assertIn('OMP_NUM_THREADS: "4"', text)
         self.assertIn("-fopenmp -fsanitize=address,undefined", text)
         self.assertIn("runs-on: ubuntu-24.04", text)
-        self.assertIn("sudo apt-get install -y g++-14", text)
+        self.assertEqual(text.count("sudo apt-get install -y g++-14"), 1)
+        self.assertIn("ASAN_OPTIONS: detect_leaks=1", text)
         self.assertIn("g++-14 -std=c++17 -O1", text)
         openmp = text.split("      - name: Bounded OpenMP attention ownership regression\n", 1)[1].split("      - name:", 1)[0]
         self.assertNotIn("-mavx512", openmp)

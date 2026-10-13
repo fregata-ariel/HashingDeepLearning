@@ -83,6 +83,17 @@ class ReportingContracts(unittest.TestCase):
             self.assertIn("AddressSanitizer: SEGV%0A_mm512_storeu_ps", text)
             self.assertNotIn("MagicPIG CPU sanitized::PASS", text)
 
+    def test_tested_source_hash_matches_checkout_before_any_pass_notice(self) -> None:
+        data = self.evidence(True)
+        expected = "a" * 64
+        data["capabilities"]["gcc_major"] = 14
+        data["results"][0]["source_sha256"] = {reporter.SPARSE_SOURCE: expected}
+        _, entries = reporter.notices(data, "commit", expected_sparse_source_hash=expected)
+        self.assertTrue(any("sparse_attention_sha256=" + expected in text and "gcc_major=14" in text for _, text in entries))
+        data["results"][0]["source_sha256"][reporter.SPARSE_SOURCE] = "b" * 64
+        with self.assertRaisesRegex(ValueError, "source differs from checkout"):
+            reporter.notices(data, "commit", expected_sparse_source_hash=expected)
+
     def test_python_only_summary_cannot_claim_aggregate_sanitizer_pass(self) -> None:
         for sanitize in (False, True):
             data = self.evidence(sanitize)

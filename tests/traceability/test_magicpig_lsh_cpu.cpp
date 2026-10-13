@@ -74,8 +74,7 @@ void check_results(const std::vector<int>& guarded,const std::vector<int>& nnz,
 int main(int argc, char** argv) {
     try {
         if(argc==2 && std::string(argv[1])=="--fastfill-probe") {
-            // Execute the unmodified incomplete path in a dedicated process.
-            // Normal sanitizer success never runs this known-leaking path.
+            // Issue #66 repair: this regression must be clean with LSan enabled.
             LSH lsh; lsh.alloc(2,tables,1,1,1,1,capacity);
             std::vector<int> hashes(tables*4,0);
             lsh.fastfill(0,0,torch::Tensor(hashes.data(),{1,tables,4}));
@@ -83,10 +82,10 @@ int main(int argc, char** argv) {
             std::vector<int> output(capacity+2,sentinel);
             int count=lsh.retrieve(0,0,query.data(),output.data()+1);
             std::vector<int> got(output.data()+1,output.data()+1+count);
-            require(got==std::vector<int>{0},"fastfill characterization changed: re-review defect");
+            require(got==std::vector<int>({0,1,2,3}),"fastfill repaired token population regressed");
             require(output.front()==sentinel && output.back()==sentinel,"fastfill guard");
-            std::cout << "MAGICPIG-FASTFILL-DEFECT: expected {0,1,2,3}; actual {0}; table content remains zero; unfreed mo_ij allocation per table\n" << std::flush;
-            return 0; // With LSan enabled, process exit must report leaked allocations.
+            std::cout << "MAGICPIG-FASTFILL-REPAIRED: expected {0,1,2,3}; actual {0,1,2,3}; clean owned temporary teardown\n" << std::flush;
+            return 0;
         }
         require(argc==1,"unknown fixture argument");
         { LSH never_allocated; }

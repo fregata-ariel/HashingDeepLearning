@@ -7,34 +7,55 @@ const __m512 MAGIC_FLOAT_BIAS = _mm512_set1_ps(12582912.0f); // Bias for integer
 const __m512 ONE_VEC = _mm512_set1_ps(1.0f);
 const __m512 LN2_PART_VEC = _mm512_set1_ps(0.69314718056f); // ln(2) for scaling
 
-// Polynomial coefficients for 2^f approximation (Taylor expansion for small values)
-const __m512 EXP_POLY_COEFFS[4] = {
+// Degree-six Taylor coefficients for 2^f with |f| <= 1/2.
+const __m512 EXP_POLY_COEFFS[7] = {
     _mm512_set1_ps(1.0000000000f),
     _mm512_set1_ps(0.6931471806f),
     _mm512_set1_ps(0.2402265069f),
     _mm512_set1_ps(0.05550410866f),
+    _mm512_set1_ps(0.009618129108f),
+    _mm512_set1_ps(0.001333355815f),
+    _mm512_set1_ps(0.000154035304f),
 };
 
-// Approximation of exp using AVX512
+/**
+ * AVX512 exp policy (#74): finite x in [-87,88] uses a degree-six
+ * centered polynomial (|fraction| <= 1/2) and a normal binary exponent.
+ * Mathematical polynomial relative remainder <= 2.5e-7; the independent
+ * native FP64 gate allows 2e-5 including FP32 scaling/FMA/reconstruction.
+ * All other lanes use the platform expf: subnormal results/underflow, overflow,
+ * +Inf -> +Inf, -Inf -> 0, NaN -> NaN. IEEE round-to-nearest and gradual
+ * underflow are assumed; no fast-math/FTZ is enabled by these checks.
+ * Special/large lanes are replaced with zero BEFORE integer conversion and
+ * bit construction. Portable host-exp lanes do not validate this function.
+ * Support: TRACE_TEST_ID: MAGICPIG-EXP-NATIVE-CPU.
+ */
 __m512 avx512_exp_ps(__m512 x) {
-    // Step 1: Scale x to base-2 exponent
-    __m512 scaled = _mm512_mul_ps(x, LOG2E_VEC);
+    const __mmask16 ordinary =
+        _mm512_cmp_ps_mask(x, _mm512_set1_ps(-87.0f), _CMP_GE_OQ) &
+        _mm512_cmp_ps_mask(x, _mm512_set1_ps(88.0f), _CMP_LE_OQ);
+    const __m512 bounded = _mm512_maskz_mov_ps(ordinary, x);
+    const __m512 scaled = _mm512_mul_ps(bounded, LOG2E_VEC);
+    const __m512 rounded = _mm512_roundscale_ps(
+        scaled, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+    const __m512i int_part = _mm512_cvttps_epi32(rounded);
+    const __m512 frac_part = _mm512_sub_ps(scaled, rounded);
+    const __m512 int_exp = _mm512_castsi512_ps(_mm512_slli_epi32(
+        _mm512_add_epi32(int_part, _mm512_set1_epi32(127)), 23));
 
-    // Step 2: Split into integer and fractional parts
-    __m512i int_part = _mm512_cvttps_epi32(scaled); // Integer part
-    __m512 frac_part = _mm512_sub_ps(scaled, _mm512_cvtepi32_ps(int_part)); // Fractional part
-
-    // Step 3: Compute 2^integer_part using bit manipulation
-    __m512 int_exp = _mm512_castsi512_ps(_mm512_slli_epi32(_mm512_add_epi32(int_part, _mm512_set1_epi32(127)), 23));
-
-    // Step 4: Compute 2^frac_part using polynomial approximation
-    __m512 poly = EXP_POLY_COEFFS[3];
-    poly = _mm512_fmadd_ps(poly, frac_part, EXP_POLY_COEFFS[2]);
-    poly = _mm512_fmadd_ps(poly, frac_part, EXP_POLY_COEFFS[1]);
-    poly = _mm512_fmadd_ps(poly, frac_part, EXP_POLY_COEFFS[0]);
-
-    // Step 5: Combine integer and fractional parts
-    return _mm512_mul_ps(int_exp, poly);
+    __m512 poly = EXP_POLY_COEFFS[6];
+    for (int i = 5; i >= 0; --i)
+        poly = _mm512_fmadd_ps(poly, frac_part, EXP_POLY_COEFFS[i]);
+    __m512 result = _mm512_mul_ps(int_exp, poly);
+    if (ordinary != 0xFFFF) {
+        float inputs[16], outputs[16];
+        _mm512_storeu_ps(inputs, x);
+        _mm512_storeu_ps(outputs, result);
+        for (int i = 0; i < 16; ++i)
+            if (!(ordinary & (1u << i))) outputs[i] = expf(inputs[i]);
+        result = _mm512_loadu_ps(outputs);
+    }
+    return result;
 }
 
 /**
@@ -325,8 +346,8 @@ const int *indices) {
  * expsum[0] is base-2 log-sum-exp, not a raw sum. Buffers remain caller-owned.
  * Bootstrap uses host QK/WV; #58 also composes actual selected QK/WV bodies.
  * Nonempty candidates require finite logits. Portable lanes replace exp
- * with host exp. Native AVX512F/FMA runs the actual polynomial on bounded
- * shifted logits with a separate approximation tolerance. No Torch extension,
+ * with host exp. Native AVX512F/FMA runs the actual centered polynomial with
+ * explicit extreme/special fallback and a separate approximation tolerance. No Torch extension,
  * LSH sampling, OpenMP scheduling or GPU execution is inferred.
  * @par Traceability relation
  * Support: selected arithmetic bootstrap; TRACE_TEST_ID: MAGICPIG-BASELINE-CPU.
@@ -404,10 +425,11 @@ float *expsum) {
  * Borrowed raw scores require exactly nnz floats: complete SIMD tiles and a
  * scalar tail use only logical candidates in maximum, sum and writes.
  * Positive finite head_dim_scale is sqrt(head_dim); metadata uses base-2.
- * Empty support performs no score access and reports -Inf metadata; native extreme exponential
- * fails (#74). Metadata uses base-2 units. Portable isolated sanitizer probes
- * require the exact diagnostic and selected caller; native masked diagnostics
- * are not inferred. Support: TRACE_TEST_ID: MAGICPIG-SOFTMAX-DEFECT-CPU.
+ * Empty support performs no score access and reports -Inf metadata.
+ * Native exp handles extreme shifts safely; finite input logits are required.
+ * Exact-capacity sanitizer regressions never rely on allocated padding.
+ * Support: TRACE_TEST_ID: MAGICPIG-SOFTMAX-BOUNDARY-CPU.
+ * TRACE_TEST_ID: MAGICPIG-SOFTMAX-EXTREME-CPU.
  */
 void softmax_kernel_optimized(
     float *score,

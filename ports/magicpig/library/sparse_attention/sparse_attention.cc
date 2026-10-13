@@ -63,9 +63,9 @@ __m512 avx512_exp_ps(__m512 x) {
  * MagicPIG arXiv v4, Sections 4.3 and 4.4: selected CPU attention support.
  * @par Implementation note
  * Borrowed BF16 keys/FP32 query; dim divisible by16. Supplied IDs form a
- * multiset. Both IDs and initialized scores require round_up(nnz,16) capacity;
- * padded scores accumulate prior values. #75/#76 track logical tail/dimension
- * repairs. Independent same-quantized FP64 QK and defined-memory witnesses.
+ * multiset. Repair #75 reads/initializes/writes only the logical nnz; exact
+ * candidate/score allocations are supported, and nnz0 accesses no buffers.
+ * Repair #76 rejects unsupported dimensions before writes. FP64 dot oracle.
  * Support: TRACE_TEST_ID: MAGICPIG-ATTENTION-BOUNDARIES-CPU.
  */
 void qk_kernel(
@@ -78,15 +78,16 @@ const int nnz)
 {
     if (HEAD_DIM <= 0 || HEAD_DIM % 16 != 0) throw std::invalid_argument("FP32 QK head_dim must be a positive multiple of 16");
 
+  if (nnz < 0) throw std::invalid_argument("QK nnz must be nonnegative");
+  if (nnz == 0) return;
   memset(attn_weight, 0, sizeof(float) * nnz);
   float w_f32[16];
-  int nnz_16 = (nnz % 16 == 0) ? (nnz): (nnz + 16 - nnz % 16);
-  for (int io = 0; io < (nnz_16 / 16); ++io) {
+  for (int io = 0; io < nnz; io += 16) {
     
     for (int jo = 0; jo < (HEAD_DIM / 16); ++jo) {
       __m512 x_tile = _mm512_loadu_ps(query + jo * 16);
-      for (int ii = 0; ii < 16; ++ii) {
-        const int i = io * 16 + ii;
+      for (int ii = 0; ii < std::min(16, nnz - io); ++ii) {
+        const int i = io + ii;
         const int row = ind[i];
 
         Bfloat16ToFloat_avx512(key + row * HEAD_DIM + jo * 16, w_f32, 16);
@@ -94,7 +95,7 @@ const int nnz)
 
         __m512 wx = _mm512_mul_ps(w_tile, x_tile);
         float sum = _mm512_reduce_add_ps(wx);
-        attn_weight[io * 16 + ii] += sum;
+        attn_weight[io + ii] += sum;
       }
     }
 
@@ -107,8 +108,8 @@ const int nnz)
  * @par Implementation note
  * Borrowed keys/query use uint16_t BF16 storage; caller owns all buffers.
  * Preserves bootstrap nnz=16/dim32 and covers dim32/64/128, nnz0/16/32.
- * Partial tiles require valid indices and initialized score capacity rounded
- * to16. Unsupported dimensions16/48/80 truncate; repairs #75/#76 track this.
+ * Repair #75 partial tiles use exact logical candidate/score lengths. Empty
+ * calls access no buffers; repair #76 rejects nonmultiple32 dimensions.
  * Native execution requires AVX512F/BW/BF16 and GCC >=11, checked before the
  * SIMD binary starts. Storage alias replaces the FBGEMM header only; no
  * Torch/FBGEMM extension or conversion/dispatch/ownership claim is made.
@@ -126,16 +127,16 @@ const int nnz)
 {
     if (HEAD_DIM <= 0 || HEAD_DIM % 32 != 0) throw std::invalid_argument("BF16 QK head_dim must be a positive multiple of 32");
 
+    if (nnz < 0) throw std::invalid_argument("BF16 QK nnz must be nonnegative");
+    if (nnz == 0) return;
     memset(attn_weight, 0, sizeof(float) * nnz);
-    int nnz_16 = (nnz % 16 == 0) ? nnz : (nnz + 16 - nnz % 16);
-
-    for (int io = 0; io < (nnz_16 / 16); ++io) {
+    for (int io = 0; io < nnz; io += 16) {
         for (int jo = 0; jo < (HEAD_DIM / 32); ++jo) {
             // Load 32 bfloat16 values from query into x_tile
             __m512bh x_tile = __m512bh(_mm512_loadu_epi16(reinterpret_cast<const void*>(query + jo * 32)));
 
-            for (int ii = 0; ii < 16; ++ii) {
-                const int i = io * 16 + ii;
+            for (int ii = 0; ii < std::min(16, nnz - io); ++ii) {
+                const int i = io + ii;
                 const int row = ind[i];
 
                 // Load 32 bfloat16 values from key into w_tile
@@ -148,7 +149,7 @@ const int nnz)
                 float sum = _mm512_reduce_add_ps(result);
 
                 // Update attn_weight
-                attn_weight[io * 16 + ii] += sum;
+                attn_weight[io + ii] += sum;
             }
         }
     }

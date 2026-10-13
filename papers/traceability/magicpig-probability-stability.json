@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-PROBABILITY-STABILITY-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 Equations9-11",
+      "mechanism": "Issue68 stable natural-log inclusion from positive binomial tails or log1p/expm1; retain explicit+1e-4 smoothing.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "magicpig_inclusion_log_probability"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_probability_cpu.cpp",
+        "id": "MAGICPIG-PROBABILITY-STABILITY-CPU"
+      },
+      "conditions": {
+        "execution": "selected actual maintained scalar helper and transform, no Torch/GPU/OpenMP",
+        "stable_probability_cases": 312,
+        "decimal_references": 54,
+        "decimal_generation": "160-digit Python Decimal positive full-binomial masses; rounded long-double literals embedded in fixture and reproducible with generator --check",
+        "extended_precision_grid": 252,
+        "algorithm_transition_cases": 2,
+        "extreme_endpoint_cases": 4,
+        "range": "Decimal K1..2048,L2..512; exact L2 log identity at KINT_MAX; saturation at LINT_MAX; genuine zero/unit endpoints distinguished",
+        "log_absolute_tolerance": "2e-11+1e-15*abs(reference_log)",
+        "positive_probability_relative_tolerance": "5e-12 for normally representable double probability",
+        "FP32_regularized_correction_tolerance": "2e-6",
+        "tiny_regression": "cos0,K16,L2 must retain inclusion2^-32 and differ from old cancelled-zero correction",
+        "regularizer": "+1e-4 preserved as biased source variant",
+        "sanitizers": "ASan/UBSan/LeakSanitizer enabled",
+        "archive": "unchanged"
+      },
+      "note": "Finite log inclusion is preserved beyond exponent range; its exponent may legitimately underflow. Fixture error budgets do not establish correctly-rounded arbitrary libm outputs. Native SIMD skipped by capability guard in this host."
+    }
+  ]
+}

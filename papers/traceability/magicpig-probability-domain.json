@@ -24,7 +24,7 @@
         "empty": "valid nnz=0 is no-op and allows null buffers",
         "sanitizers": "ASan/UBSan/LSan with leak checking enabled",
         "source_archive": "unchanged",
-        "stability": "Issue68 remains separate"
+        "stability": "Issue68 separately repairs stable log inclusion and regularized correction"
       },
       "note": "Raw kernel cannot establish index upper bounds. Server callers must validate outside OpenMP regions or capture and transport worker exceptions after joining; native wrapper runtime is not evidence from this suite."
     }

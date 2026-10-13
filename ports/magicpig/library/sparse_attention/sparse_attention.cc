@@ -196,6 +196,57 @@ void qk_kernel_full(
 
 
 /**
+ * Stable log of the >=2-hit binomial tail (Issue #68). No FP32 complement
+ * subtraction: small expected hit counts use a positive tail recurrence,
+ * larger counts use log1p/expm1. The logarithm stays finite for positive
+ * inclusion even when its probability is below floating-point range.
+ * TRACE_TEST_ID: MAGICPIG-PROBABILITY-STABILITY-CPU.
+ */
+void magicpig_inclusion_log_probability(
+const double cosine, const int k, const int l, double *log_inclusion) {
+  if (!log_inclusion || !std::isfinite(cosine) || cosine < -1 || cosine > 1 ||
+      k < 1 || l < 2)
+    throw std::invalid_argument("invalid inclusion probability parameters");
+  if (cosine == -1) {
+    *log_inclusion = -std::numeric_limits<double>::infinity();
+    return;
+  }
+  if (cosine == 1) {
+    *log_inclusion = 0;
+    return;
+  }
+  // acos(-c)/pi equals 1-acos(c)/pi without cancelling near c=-1.
+  const long double collision = std::acos(-static_cast<long double>(cosine)) /
+                                std::acos(-1.0L);
+  const long double log_table = k * std::log(collision);
+  const long double p = std::exp(log_table);
+  long double result;
+  if (static_cast<long double>(l) * p <= 0.5L) {
+    // P2 = C(L,2) p^2 (1-p)^(L-2); all later terms are positive.
+    // For L*p<=0.5, successive ratios are <0.25 and the sum converges
+    // quickly even for INT_MAX tables. If p underflows, later terms are
+    // below machine precision while 2*log_table remains representable.
+    const long double log_p2 = std::log(static_cast<long double>(l)) +
+        std::log(static_cast<long double>(l - 1)) - std::log(2.0L) +
+        2 * log_table + (l - 2) * std::log1p(-p);
+    long double sum = 1, term = 1;
+    for (int hits = 2; hits < l; ++hits) {
+      term *= (static_cast<long double>(l - hits) / (hits + 1)) * p / (1 - p);
+      sum += term;
+      if (term <= std::numeric_limits<long double>::epsilon() * sum) break;
+    }
+    result = log_p2 + std::log(sum);
+  } else {
+    const long double excluded_log = (l - 1) * std::log1p(-p) +
+                                    std::log1p((l - 1) * p);
+    result = std::log(-std::expm1(excluded_log));
+  }
+  if (!std::isfinite(result) || result > 0)
+    throw std::overflow_error("inclusion log probability outside finite range");
+  *log_inclusion = static_cast<double>(result);
+}
+
+/**
  * @par Paper mapping
  * MagicPIG arXiv v4, Section 4.3 Equations 9-11: probability correction.
  * @par Implementation note
@@ -210,7 +261,8 @@ void qk_kernel_full(
  * excursions of at most 8*FLT_EPSILON are rounded to the nearest endpoint;
  * larger excursions are rejected. Empty valid input is a no-op. Caller must
  * provide valid borrowed buffers and indices; this signature has no capacity.
- * Tiny inclusion probabilities still suffer FP32 cancellation (Issue #68).
+ * Issue #68 computes stable log inclusion and retains explicit +1e-4
+ * smoothing; finite tiny positive probabilities no longer cancel to zero.
  * @par Traceability relation
  * Support: probability/domain characterization;
  * TRACE_TEST_ID: MAGICPIG-PROBABILITY-CPU.
@@ -244,14 +296,14 @@ const int *indices) {
         if (cosine < -1.0 - cosine_tolerance || cosine > 1.0 + cosine_tolerance)
           throw std::invalid_argument("probability cosine outside tolerance");
         cosine = std::max(-1.0, std::min(1.0, cosine));
-        float theta = acosf(float(cosine));
-        float proba = (1 - theta / M_PI);
-        float p = powf(proba, k);
-        float q = 1 - p;
-        float w = 1  - powf(q, l-1) * (l * p + q);
-        if (!std::isfinite(w) || w + 1e-4 <= 0)
-          throw std::overflow_error("probability arithmetic outside finite range");
-        corrected[j] = score[j] / sqrt_dim - logf(w + 1e-4);
+        double log_inclusion;
+        magicpig_inclusion_log_probability(cosine, k, l, &log_inclusion);
+        // Preserve the released estimator variant explicitly: +1e-4. The
+        // log-add formulation also works when exp(log_inclusion) underflows.
+        const double log_regularizer = std::log(1e-4);
+        const double correction = log_regularizer +
+            std::log1p(std::exp(log_inclusion - log_regularizer));
+        corrected[j] = static_cast<float>(double(score[j]) / sqrt_dim - correction);
         if (!std::isfinite(corrected[j]))
           throw std::overflow_error("corrected probability score outside finite range");
     }

@@ -38,10 +38,12 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
     require(isinstance(raw_results, list) and bool(raw_results), "missing CPU suite results")
     results = [record(item, "suite") for item in cast(list[object], raw_results)]
     require(all(item.get("status") == "pass" for item in results), "CPU suite did not pass")
+    recorded_sparse_source = False
     for item in results:
         if expected_sparse_source_hash is not None:
             sources = record(item.get("source_sha256", {}), "suite source hashes")
             if SPARSE_SOURCE in sources:
+                recorded_sparse_source |= item.get("mode") != "portable_python"
                 require(sources[SPARSE_SOURCE] == expected_sparse_source_hash,
                         "tested sparse attention source differs from checkout")
         mode = item.get("mode")
@@ -51,6 +53,8 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
         else:
             require(item.get("sanitize") is summary["sanitize"], "suite sanitizer mode differs from summary")
             require(item.get("leak_check_explicitly_disabled") is False, "CPU evidence disabled leak detection")
+    require(expected_sparse_source_hash is None or recorded_sparse_source,
+            "combined CPU reporting lacks tested sparse attention source")
     require(any(item.get("mode") == "portable" for item in results),
             "combined CPU reporting requires actual portable C++ execution")
     capability = record(summary.get("capabilities"), "capability")

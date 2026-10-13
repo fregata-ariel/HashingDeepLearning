@@ -26,7 +26,8 @@ class ReportingContracts(unittest.TestCase):
             "avx512": {"eligible": False, "reason": "missing CPU/OS features: avx512f"},
             "bf16": {"eligible": False, "reason": "missing CPU/OS features: avx512_bf16"}}},
             "results": [{"suite": "baseline", "mode": "portable", "status": "pass", "sanitize": sanitize,
-                         "leak_check_explicitly_disabled": False}]}
+                         "leak_check_explicitly_disabled": False,
+                         "source_sha256": {reporter.SPARSE_SOURCE: reporter.hashlib.sha256((ROOT / reporter.SPARSE_SOURCE).read_bytes()).hexdigest()}}]}
 
     def native(self, marker: str) -> dict:
         data = self.evidence()
@@ -93,6 +94,18 @@ class ReportingContracts(unittest.TestCase):
         data["results"][0]["source_sha256"][reporter.SPARSE_SOURCE] = "b" * 64
         with self.assertRaisesRegex(ValueError, "source differs from checkout"):
             reporter.notices(data, "commit", expected_sparse_source_hash=expected)
+
+    def test_lsh_only_result_cannot_claim_tested_sparse_source(self) -> None:
+        data = self.evidence(True)
+        data["results"][0]["suite"] = "lsh_retrieval"
+        data["results"][0]["source_sha256"] = {"ports/magicpig/library/lsh/lsh.cc": "b" * 64}
+        with self.assertRaisesRegex(ValueError, "lacks tested sparse attention source"):
+            reporter.notices(data, "commit", expected_sparse_source_hash="a" * 64)
+        data["results"].append({"suite": "cache_merge", "mode": "portable_python", "status": "pass",
+                                "sanitizer": "not_applicable_python_adapter",
+                                "source_sha256": {reporter.SPARSE_SOURCE: "a" * 64}})
+        with self.assertRaisesRegex(ValueError, "lacks tested sparse attention source"):
+            reporter.notices(data, "commit", expected_sparse_source_hash="a" * 64)
 
     def test_python_only_summary_cannot_claim_aggregate_sanitizer_pass(self) -> None:
         for sanitize in (False, True):

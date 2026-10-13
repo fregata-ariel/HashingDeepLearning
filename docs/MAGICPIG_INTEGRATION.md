@@ -184,7 +184,7 @@ or claim unrestricted correctness, whole-extension execution or GPU validation.
 The next dependent task is #59 (cache/normalizer merge); #60/#61 remain separate.
 
 
-## MP3 cache/merge work in progress (#59)
+## MP3 cache/merge integrated checkpoint (#59)
 
 Task branch: `research/magicpig-mp3-cache-merge`, cut from reviewed
 integration `53f816e3577f3e471876dcfce723a168a11b02b6`.
@@ -195,9 +195,10 @@ provenance, disjoint static/offload/new-token partitions, base-2 LSE
 and the **unverified** Torch/FlashInfer/device boundary.
 
 This work does not change `third_party/magicpig` or production arithmetic.
-Before #59 closes, record exact PR head/CI/reviewed merge candidate here
-and in #59. #60 and #61 stay separate. CPU-only fixtures do not
-override known repairs or the postponed GPU milestone.
+PR #79's reviewed head is `78a655bafd4dd879e85e4307cf70fbb41424feeb`;
+integration merge is `b1a006d2ccaf15eaf8e1e751127101f74317114f`.
+The PR/Issue retain applicable Hosted CI records. #60 and #61 stay separate.
+CPU-only fixtures do not override known repairs or the postponed GPU milestone.
 
 PR [#79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) review
 follow-up corrects the CPU fixture's formerly shape-free cache copies and
@@ -205,6 +206,43 @@ token-ID-parity probability assignment. The pinned dense caller supplies padded
 `max_length` buffers; this is a fixture correction, not a demonstrated native
 dense-fill defect. Both 0.4/0.65 sampled probabilities, fixed-shape copies,
 host capacity negatives and clear/refill state are checked. Merge algebra
-continues to use the independent union-attention oracle. Updated Hosted CI
-evidence must be matched to the final PR head before integration; the prior
-successful run for `f816a50` does not validate these follow-up edits.
+continues to use the independent union-attention oracle. The final reviewed
+head must be used for recovery; the prior successful run for `f816a50` does
+not validate these follow-up edits.
+
+## MP3 contracts/typing preparation (#61)
+
+The [contract and CI index](../ports/magicpig/CONTRACTS_AND_CI.md) links each
+core mechanism to stable test IDs and its dtype/shape/layout, mutation,
+ownership and capacity restrictions. Native Doxygen/ledger gates already
+cover the selected C++ implementation. Python orchestration remains immutable
+archival source with selected-AST host support tests; `ports/magicpig/`
+deliberately has zero maintained Python sources/stubs at this checkpoint.
+
+The exact maintained Python/stub inventory now includes a named zero-file
+MagicPIG group. The annotation audit rejects undeclared files or replacements;
+every enrolled nonempty group uses identical strict mypy checks; MagicPIG
+additionally forbids explicit Any. Future maintained MagicPIG sources need deliberate enrollment,
+typed/docstring contracts and only narrow stubs for imported runtime APIs.
+Existing workflows cover `.py`/`.pyi`, inventory and contract changes without
+adding a recurring GPU or model-download workflow.
+
+## MP3 recovery checkpoint
+
+| Task | Branch / PR | Exact reviewed head / integration | Remaining dependency or action |
+| --- | --- | --- | --- |
+| #53–#58 | Existing issue/PR records | Selected mechanism checkpoints already in the #59 base `53f816e3577f3e471876dcfce723a168a11b02b6` | Keep #65–#68 and #72–#77 repair records distinct from scoped mechanism verification. |
+| #59 | `research/magicpig-mp3-cache-merge` / [PR #79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) | Head `78a655bafd4dd879e85e4307cf70fbb41424feeb`; merge `b1a006d2ccaf15eaf8e1e751127101f74317114f` | Existing PR/Issue contain Hosted CI/check records; recover the final reviewed head, including fixture review corrections. |
+| #60 | `research/magicpig-mp3-cpu-composition` / pending PR record | Pending reviewed head, merge revision and CI URLs | Integrate the independent CPU composition oracle and update this row with exact applicable evidence. |
+| #61 | `research/magicpig-mp3-contracts-ci` / pending PR record | Preparation base `b1a006d2ccaf15eaf8e1e751127101f74317114f`; final head/merge/CI URLs pending | Rebase/merge after #60, independently review contracts/typing, pass combined applicable exact-head and merge-candidate gates, then record evidence before closure. |
+| #62 | Deferred native GPU task | Unexecuted; no recurring job/date | Explicit native GPU restart, verified extension/link closure and runtime/device tests required. |
+
+Concrete restart: inspect #60/#61 and their existing task PRs before creating
+new work; start from the recorded integration merge, restore the task branches,
+and run the commands in `CONTRACTS_AND_CI.md`. Use the existing checkout or
+an isolated ordinary clone as appropriate; do not create a worktree unless
+the user requests one. Retain CPU evidence JSON, capability skip reasons,
+fixture/source hashes and CI links for the exact final revisions. After #60
+is integrated, replace the pending recovery cells and revalidate #61 on that
+base. Close MP1/MP2/MP3 parents only after their combined applicable gates pass;
+deferred GPU work and open repair issues must remain explicit.

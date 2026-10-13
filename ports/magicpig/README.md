@@ -18,6 +18,9 @@ Archived `install.sh` installs historical CUDA/FlashInfer packages and must not
 be used as the routine CPU setup. Python originals remain archival until their
 maintained scope, runtime substitutions and strict typing are deliberately
 enrolled. The existing 31-file maintained Python inventory is unchanged here.
+The explicit zero-file MagicPIG inventory, future-source enrollment guards,
+native contract index and existing CI gates are described in
+[CONTRACTS_AND_CI.md](CONTRACTS_AND_CI.md).
 
 Run source identity checks from the repository root:
 

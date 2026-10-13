@@ -5,6 +5,7 @@ on:
     branches: [research/lsh-lineage-vendor]
     paths:
       - "papers/**"
+      - "docs/MAGICPIG*.md"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
@@ -32,6 +33,7 @@ on:
     branches: [research/lsh-lineage-vendor]
     paths:
       - "papers/**"
+      - "docs/MAGICPIG*.md"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"

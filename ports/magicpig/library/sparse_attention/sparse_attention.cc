@@ -1115,7 +1115,8 @@ torch::Tensor nnz_pt)
  * no Torch conversion/ABI or OpenMP scheduling is established. Supported
  * sparse dimensions16/32/128 and candidate multisets are compared with an
  * independent dense FP64 oracle on the same supplied subset. Full path uses
- * dim128/groups1/4/8/uniform nnz; varying GQA lengths reproduce repair #77.
+ * dim128/groups1/4/8; repair #77 uses one nnz per batch/query head across
+ * QK, Softmax and WV, with shared KV selected by query_head/groups.
  * All-candidate corrected sparse differs from uncorrected dense by design.
  * Support: TRACE_TEST_ID: MAGICPIG-ATTENTION-CPU.
  */
@@ -1251,6 +1252,12 @@ torch::Tensor nnz_pt)
 {
     if (!this->allocated || this->head_dim != 128 || (this->num_attention_groups != 1 && this->num_attention_groups != 4 && this->num_attention_groups != 8)) throw std::invalid_argument("full_attention requires dim128 and query groups 1, 4 or 8");
 
+    if (layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid full_attention layer");
+    const int query_heads = this->batch_size * this->num_attention_heads;
+    if (nnz_pt.dim() != 1 || nnz_pt.size(0) != query_heads) throw std::invalid_argument("full_attention nnz must contain one count per flattened batch/query head");
+    const int* counts = static_cast<const int*>(nnz_pt.data_ptr());
+    for (int i = 0; i < query_heads; ++i)
+        if (counts[i] <= 0 || counts[i] > this->max_length) throw std::invalid_argument("full_attention requires counts in [1,max_length]; empty support tracked by #73");
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1259,12 +1266,12 @@ torch::Tensor nnz_pt)
     int * nnz = static_cast<int *>(nnz_pt.data_ptr());
     float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
     float * expsum = max_value + this->batch_size * this->num_attention_heads;
-    for (int i = 0; i < this->batch_size * this->num_key_value_heads; ++i){
+    for (int i = 0; i < query_heads; ++i){
         qk_kernel_full(
-          key + i * this->max_length * this->head_dim,
-          query + i * this->head_dim * this->num_attention_groups,
-          this->attention_score + i * this->max_length * this->num_attention_groups,
-          this->num_attention_groups,
+          key + (i / this->num_attention_groups) * this->max_length * this->head_dim,
+          query + i * this->head_dim,
+          this->attention_score + i * this->max_length,
+          1,
           this->head_dim,
           nnz[i],
           this->max_length
@@ -1281,15 +1288,15 @@ torch::Tensor nnz_pt)
         );
       }
 
-    for (int i = 0; i < this->batch_size * this->num_key_value_heads; ++i){
+    for (int i = 0; i < query_heads; ++i){
         wv_kernel_dim128_full(
-            value + i * this->max_length * this->head_dim,
-            this->attention_score + i * this->max_length * this->num_attention_groups,
-            output + i * this->head_dim * this->num_attention_groups,
+            value + (i / this->num_attention_groups) * this->max_length * this->head_dim,
+            this->attention_score + i * this->max_length,
+            output + i * this->head_dim,
             this->head_dim,
             this->max_length,
             nnz[i],
-            this->num_attention_groups
+            1
         );
       }
 

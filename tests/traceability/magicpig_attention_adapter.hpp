@@ -72,6 +72,7 @@ public:
         if (!data) throw std::invalid_argument("null model tensor");
         for (auto dim : shape_) if (dim < 0) throw std::invalid_argument("negative model dimension");
     }
+    int64_t dim() const { return shape_.size(); }
     int64_t size(std::size_t i) const { return shape_.at(i); }
     void* data_ptr() const { return data_; }
     Tensor to(int dtype) const {

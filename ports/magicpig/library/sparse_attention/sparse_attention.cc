@@ -382,7 +382,7 @@ float *expsum) {
 
     // Step 3: Horizontal sum of `sum_vec`
     float exp_sum = 0.0f;
-    float temp[16];
+    alignas(64) float temp[16];
     _mm512_storeu_ps(temp, sum_vec);
     for (int i = 0; i < 16; ++i) {
         exp_sum += temp[i];

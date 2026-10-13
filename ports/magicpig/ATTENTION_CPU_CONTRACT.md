@@ -128,3 +128,15 @@ actual OpenMP enabled and `OMP_THREAD_LIMIT=4` on the portable arithmetic
 backend. This verifies rejected domains are handled before workers and that
 the supported small composition runs through the real OpenMP runtime; it
 does not establish native SIMD or unrestricted production thread scheduling.
+
+## Repair #86 local SIMD reduction storage
+
+`softmax_kernel` explicitly aligns its16-float local reduction array to64
+bytes. The existing nnz1 actual-attention fixture exercises this local store
+with no complete16-candidate score tile; summation order, numerical budgets
+and logical score bounds are unchanged. The change follows an actual Hosted
+GCC13 sanitizer fault at this local `_mm512_storeu_ps` call, while the same
+native plain fixture passed. The failing instruction and exact compiler cause
+must be established from the original executable's disassembly; source-level
+stack alignment alone does not establish a GCC defect. Repair native execution
+and complete sanitizer results require the dedicated Hosted validation run.

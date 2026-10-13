@@ -1,7 +1,7 @@
 // Actual qk_kernel_bf16_impl is extracted before this fixture. BF16 uint16_t
 // storage matches archived FBGEMM Types.h. No conversion/dispatch library runs.
-// Full nnz tiles need ceil(nnz/16) accessible IDs/scores; HEAD_DIM multiples of
-// 32 are supported. Padded tails/dimension truncation are safe characterizations.
+// Exact logical candidate/score allocations are supported, including partial
+// tiles; unsupported dimensions reject before writes. Native CPU gate required.
 // TRACE_TEST_ID: MAGICPIG-BF16-SELECTED-CPU
 // TRACE_TEST_ID: MAGICPIG-BF16-BOUNDARY-CPU
 #include <array>
@@ -40,22 +40,24 @@ void check_case(int dim, int nnz, bool nontrivial, bool padded_tail,
                                        : .0625f * (((r * 3 + d * 7) % 17) - 8);
     keys[r * dim + d] = encode(originals[r * dim + d]);
   }
-  std::vector<int> ids(std::max(1,padded));
-  for (int i = 0; i < padded; ++i) ids[i] = (i * 7 + 3) % rows;
-  // Original body zeros only [0,nnz), but accumulates the full padded tile.
+  std::vector<int> ids(nnz);
+  for (int i = 0; i < nnz; ++i) ids[i] = (i * 7 + 3) % rows;
+  // Both exact allocations and guarded logical-length buffers are tested.
   constexpr float seed = .75f;
-  std::vector<float> guarded(padded + 2, seed);
+  std::vector<float> guarded(nnz + 2, seed);
+  std::vector<float> exact(nnz, seed);
+  qk_kernel_bf16_impl(keys.data(),ids.data(),query.data(),exact.data(),dim,nnz);
   guarded.front() = 321.25f; guarded.back() = -123.5f;
   qk_kernel_bf16_impl(keys.data(),ids.data(),query.data(),guarded.data()+1,dim,nnz);
   require(guarded.front() == 321.25f && guarded.back() == -123.5f, "BF16 QK guard changed");
-  for (int i = 0; i < padded; ++i) {
+  for (int i = 0; i < nnz; ++i) {
     double expected = 0, unquantized = 0, sum_abs = 0;
     for (int d = 0; d < dim; ++d) {
       const double term = decode_oracle(query[d]) * decode_oracle(keys[ids[i]*dim+d]);
       expected += term; sum_abs += std::abs(term);
       unquantized += static_cast<double>(original_query[d]) * originals[ids[i]*dim+d];
     }
-    if (i >= nnz) expected += seed;
+    require(exact[i] == guarded[i+1], "BF16 exact and guarded allocations agree");
     const double error = std::abs(guarded[i+1] - expected);
     const double bound = (dim + 2) * std::numeric_limits<float>::epsilon() * (sum_abs + seed) + 1e-6;
     require(std::isfinite(guarded[i+1]) && error <= bound, "BF16 QK quantized dense-dot mismatch");
@@ -85,10 +87,16 @@ int main() {
       native_bf16_test::check_case(dim,nnz,nontrivial,false,maximum,quantization,checks);
     for(int dim : {32,64,128}) for(int nnz : {1,15,17,31}) for(bool nontrivial : {false,true})
       native_bf16_test::check_case(dim,nnz,nontrivial,true,maximum,quantization,checks);
+    qk_kernel_bf16_impl(nullptr,nullptr,nullptr,nullptr,32,0);
+    std::array<float,2> invalid{13,17};
+    bool negative_rejected=false;
+    try { qk_kernel_bf16_impl(nullptr,nullptr,nullptr,invalid.data(),32,-1); }
+    catch(const std::invalid_argument&) { negative_rejected=true; }
+    native_bf16_test::require(negative_rejected&&invalid[0]==13&&invalid[1]==17,"negative BF16 nnz rejects before writes");
     native_bf16_test::dimension_rejection();
     std::cout << "MAGICPIG_BF16_BODY_PASS supported_cases=18 padded_tail_cases=24 score_checks=" << checks
               << " dimension_rejection_cases=8 max_fp32_accumulator_error=" << maximum
               << " max_input_quantization_error=" << quantization
-              << " native_conversion=false padded_tail_requires_accessible_ids_and_scores=true\n";
+              << " native_conversion=false exact_logical_nnz=true\n";
   } catch(const std::exception& e) { std::cerr << e.what() << '\n'; return 1; }
 }

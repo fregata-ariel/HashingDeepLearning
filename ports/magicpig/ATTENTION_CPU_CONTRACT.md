@@ -1,4 +1,4 @@
-# MagicPIG selected attention CPU contract (#58, repair #76)
+# MagicPIG selected attention CPU contract (#58, repairs #75/#76)
 
 The `attention` suite executes the maintained `qk_kernel`, `qk_kernel_full`,
 `transform_kernel`, `softmax_kernel`, `softmax_kernel_full`,
@@ -36,7 +36,7 @@ inclusion correction remains even when all rows are supplied.
 |---|---|
 | Static/dynamic sparse server | 2 layers, 2 batches, 2 KV heads, 2 query groups; dim16/32/128; nnz1/15/16/17/31/32; unique unsorted or repeated supplied IDs |
 | Full server | dim128; groups1/4/8; 2 batches, 2 KV heads; nnz16/32 identical across KV/query heads |
-| Capacity | 32 valid initialized index/score slots per head, including rounded QK padding; output/metadata guards |
+| Capacity | 32 valid initialized index/score slots per head, QK uses logical nnz only; output/metadata guards |
 | Ownership | alloc once, fill copies source arrays, getter mutation aliases caches, clear updates existing views, server outlives views, destructor sanitizer checked |
 
 The full server uses `nnz[i]` with both KV and query-head indexing; this suite
@@ -48,7 +48,7 @@ Independently varying GQA lengths remain unsupported pending a separate repair. 
 exercise stride routing.
 
 There are 682 head compositions, 13,312 probability checks, 47,168 BF16 output
-coordinate checks, 432 ownership checks, 32 corrected-score checks, and dimension/group rejection cases. Portable absolute
+coordinate checks, 432 ownership checks, 32 corrected-score checks, and 55 boundary cases including dimension/group rejection. Portable absolute
 budgets are `3e-5` corrected score and probability, `0.004` output (including BF16 quantization), and
 `5e-5` base-2 metadata. Native budgets are `0.002`, `0.008`, and `0.03`; the
 metadata budget is the existing polynomial bootstrap budget. Local maxima were
@@ -60,10 +60,12 @@ this check also detects additive logit shifts that normalization would hide.
 
 ## Characterized restrictions
 
-* QK rounds candidate loops to 16, reads padded indices and writes padded scores.
-  Only valid `nnz` scores are cleared, so padded scores accumulate onto previous
-  initialized values. Caller must supply capacity and valid row IDs through
-  `round_up(nnz,16)`; this suite does not claim nnz-sized buffers are safe.
+* Repair #75 QK reads, clears and writes exactly logical `nnz` candidates,
+  without rounding the final candidate tile. Exact-sized indices/scores and
+  guarded scores pass nnz0/1/15/16/17/31/32 against same-quantized FP64 dots.
+  Empty QK returns before buffer access, permitting null buffers, and negative
+  nnz rejects before writes. Native BF16 repeats exact/guarded allocation tests
+  behind the compiler/CPU/OS capability gate.
 * Full Softmax scales and normalizes padded score slots. Valid probabilities are
   checked independently, with capacity canaries beyond the rounded region.
 * Repair #76 rejects nonpositive or nonmultiple-of-16 sparse FP32 QK/WV
@@ -77,8 +79,8 @@ this check also detects additive logit shifts that normalization would hide.
 * `alloc` rejects invalid/nondivisible dimensions and repeated allocation before
   mutating server state. Sparse groups2 remain supported.
 * Empty candidates are not called in this suite. The separate Softmax suite
-  covers empty inputs and exact score-allocation tail diagnostics; QK exact
-  nnz allocation is not tested here. Invalid layer/request IDs, counts,
+  covers empty inputs and exact score-allocation tail diagnostics; QK exact logical
+  allocation and empty-buffer safety are tested; empty server awaits #73. Invalid layer/request IDs, counts,
   capacities, head divisibility, repeated allocation, expired views and OpenMP
   races remain unsupported.
 

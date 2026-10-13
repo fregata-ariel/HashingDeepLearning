@@ -59,18 +59,15 @@ execute the probability correction or Softmax path.
 The expanded native fixture retains `MAGICPIG-BF16-SELECTED-CPU` and adds
 `MAGICPIG-BF16-BOUNDARY-CPU`. Eighteen supported cases cross dimensions 32,64,128,
 nnz 0,16,32 and exactly representable/nontrivial input families. Twenty-four
-additional partial-tile cases use nnz 1,15,17,31 with initialized physical ID
-and score capacity rounded up to 16. There are 864 score checks across both
-groups, using FP64 dots of the same quantized inputs and the bound
+additional partial-tile cases use nnz1/15/17/31. Repair #75 tests
+exact logical ID/score allocations and guarded logical scores rather than
+requiring accessible padding. There are672 score checks across both groups,
+using FP64 dots of the same quantized inputs and the bound
 `(head_dim+2)*float_epsilon*(sum_abs+0.75) + 1e-6`.
 
-The source computes complete 16-row tiles even for a partial logical nnz and
-zeroes only logical score entries. The padded fixture explicitly checks that
-preexisting 0.75 padding receives the extra dot products; guard entries outside
-physical capacity remain unchanged. This reproduces the current padded-buffer
-contract and does not establish support for arrays allocated at exact logical
-nnz. Empty QK uses valid storage and performs no score writes; it says nothing
-about empty Softmax, whose domain is tested separately.
+Empty QK accesses no buffers, including a null-buffer witness; negative counts
+reject before writes. This says nothing about empty Softmax/server behavior,
+which is addressed separately in #73. No score outside logical nnz is touched.
 
 Repair #76 rejects dimensions0/16/31/33/48/80/127/129 with
 `std::invalid_argument` before any input reads or score writes, rather than

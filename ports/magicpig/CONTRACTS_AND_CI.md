@@ -130,18 +130,19 @@ forces unsupported SIMD flags nor validates unrestricted production scheduling.
 ## Final CPU recovery checkpoint
 
 #61 is rebased on integration `59edfec2fe54dd6783afec2a0562aab62f70d84f` after
-all eleven reviewed repairs. The exact [dependency and recovery table]
-(../../docs/MAGICPIG_INTEGRATION.md#mp3-recovery-checkpoint) records every task
-PR/head/merge and CI link. #59/#60 and MP1/MP2/MP5 are closed. The prepared
-#61 branch must still pass its own exact-candidate workflows before root
-records its PR/head/merge/check URLs and closes #61, MP3 and parent #52.
+all eleven reviewed repairs. The exact [dependency and recovery table](../../docs/MAGICPIG_INTEGRATION.md#mp3-recovery-checkpoint) records every task
+PR/head/merge and CI link. #59/#60 and MP1/MP2/MP5 are closed. The final
+[PR #93](https://github.com/fregata-ariel/HashingDeepLearning/pull/93) and
+[Issue #61](https://github.com/fregata-ariel/HashingDeepLearning/issues/61) retain
+reviewed head/candidate/merge/check URLs and the closure status of #61, MP3 and
+parent #52 after their exact-candidate workflows pass.
 
 Supported CI preserves Ubuntu24, explicit GCC14 and
 `ASAN_OPTIONS=detect_leaks=1`. The validated compact reporter replaces the
 publisher's inline implementation while checking recorded sparse-source hashes
 against the current checkout and exposing that SHA/GCC major in both aggregate
-notices. The temporary diagnostic workflow is excluded and will be retired
-through the authorized publication workflow; it is not imported here.
+notices. The temporary diagnostic workflow is excluded from integration. Its retirement
+status is recorded in the linked final publication checkpoint.
 
 Postponed #62 requires a separate native GPU restart. No CPU result here claims
 Torch/FBGEMM extension linkage, FlashInfer execution, asynchronous transfer or

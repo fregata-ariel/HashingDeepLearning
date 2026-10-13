@@ -90,7 +90,7 @@ Integration branch: `research/lsh-lineage-vendor`.
 Initial MagicPIG base: `0c4d05887edfd0dbc2625653bace913679a2da93`.
 The formal milestones are MP1 #9, MP2 #10, MP3 #11 and deferred MP4 #12;
 MP5 #13 covers CPU repairs #65–#68/#72–#77/#86. MP1/MP2/MP5 are closed. Parent #52
-remains open while #61 closeout and its applicable gates are pending.
+closure is recorded in [Issue #61](https://github.com/fregata-ariel/HashingDeepLearning/issues/61) and [PR #93](https://github.com/fregata-ariel/HashingDeepLearning/pull/93) after the final applicable gates.
 Current assignments/status are in the linked GitHub issues.
 
 | Task | Proposed branch | Dependencies |
@@ -238,7 +238,7 @@ the useful temporary diagnostic boundaries without adding a new workflow.
 | #53–#58 | Existing issue/PR records | Selected mechanism checkpoints already in the #59 base `53f816e3577f3e471876dcfce723a168a11b02b6` | Scoped tasks and MP1/MP2 milestones closed. MP5 repair records remain separate. |
 | #59 | `research/magicpig-mp3-cache-merge` / [PR #79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) | Head `78a655bafd4dd879e85e4307cf70fbb41424feeb`; merge `b1a006d2ccaf15eaf8e1e751127101f74317114f` | Closed; integration CI [38417441911](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38417441911) passed. |
 | #60 | `research/magicpig-mp3-cpu-composition` / [PR #80](https://github.com/fregata-ariel/HashingDeepLearning/pull/80) | Head `ab5d19f3af56b500c6999d534e4b037a615bce6b`; candidate `e2d438475226fc3c815d5ea708ba557a336870f0`; merge `8ec0115d3e61aec23f812f48966ff7d34286aea8`, tree `216572b8bebbd1e2048636f44013daf594c07243` | Closed; PR CI [38424598732](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38424598732) and integration CI [38425592161](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38425592161) passed for the identical candidate/integration tree. |
-| #61 | `research/magicpig-mp3-contracts-ci` / publication record pending | Final arithmetic base `59edfec2fe54dd6783afec2a0562aab62f70d84f`; prepared branch rebased after all repairs | Independently reviewed preparation; run final local gates and applicable exact-candidate Hosted workflows, then record final PR/head/merge/CI before closure. |
+| #61 | `research/magicpig-mp3-contracts-ci` / [PR #93](https://github.com/fregata-ariel/HashingDeepLearning/pull/93) | Final arithmetic base `59edfec2fe54dd6783afec2a0562aab62f70d84f`; final reviewed head/candidate/merge/CI are retained in PR #93 and Issue #61 | Independent review and local gates passed; the linked Issue/PR checkpoint records exact Hosted results, closure status and restart action. |
 | #65 | `fix/magicpig-hash-packing-domain` / [PR #82](https://github.com/fregata-ariel/HashingDeepLearning/pull/82) | Head `4a6994ac2673459f8803dd7ade5dccd2ca3071d4`; merge `c8710a16ebf1af5bbd8d8439ed9f9a60857538a6` | Closed; PR CI [38427390230](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38427390230); source/dependency checkpoint included in `66f9855`. |
 | #66 | `fix/magicpig-fastfill-population` / [PR #81](https://github.com/fregata-ariel/HashingDeepLearning/pull/81) | Head `67c4180acc0a629aef17a77017009b0de539068e`; merge `e86c7f338e2f6f806224e0bad26b65d3e70a1e2b` | Closed; PR CI [38426808802](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38426808802); source/dependency checkpoint included in `66f9855`. |
 | #76 | `fix/magicpig-attention-dimension-contract` / [PR #83](https://github.com/fregata-ariel/HashingDeepLearning/pull/83) | Head `953b6b411d683162d289d4f11f6c78a87cd06f33`; merge `f52e636310b66d4883b420435f4c3b3152c8b7a0` | Closed; PR CI [38427708026](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38427708026); source/dependency checkpoint included in `66f9855`. |
@@ -307,8 +307,8 @@ exp2821, GCC14 and leak detection enabled. Integration
 [CI38434322398](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38434322398)
 also passed. Final sparse-source SHA256 is
 `3109b8df15ce5a088430ca114729e37b18ad33d70b8bfca15a4f67e50cbccaf7`.
-All eleven repairs and MP5 are closed; MP3/#52 wait for #61's own combined
-applicable gates. GPU #62/MP4 stays deferred. No sanitizer, verification, or
+All eleven repairs and MP5 are closed. Final MP3/#52 closure and #61's combined
+applicable gates are recorded in [PR #93](https://github.com/fregata-ariel/HashingDeepLearning/pull/93) and [Issue #61](https://github.com/fregata-ariel/HashingDeepLearning/issues/61). GPU #62/MP4 stays deferred. No sanitizer, verification, or
 native ISA gate is disabled.
 
 GitHub API access is resolved. Existing task PRs and their actual tested

@@ -232,8 +232,8 @@ adding a recurring GPU or model-download workflow.
 | Task | Branch / PR | Exact reviewed head / integration | Remaining dependency or action |
 | --- | --- | --- | --- |
 | #53–#58 | Existing issue/PR records | Selected mechanism checkpoints already in the #59 base `53f816e3577f3e471876dcfce723a168a11b02b6` | Keep #65–#68 and #72–#77 repair records distinct from scoped mechanism verification. |
-| #59 | `research/magicpig-mp3-cache-merge` / [PR #79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) | Head `78a655bafd4dd879e85e4307cf70fbb41424feeb`; merge `b1a006d2ccaf15eaf8e1e751127101f74317114f` | Existing PR/Issue contain Hosted CI/check records; recover the final reviewed head, including fixture review corrections. |
-| #60 | `research/magicpig-mp3-cpu-composition` / pending PR record | Pending reviewed head, merge revision and CI URLs | Integrate the independent CPU composition oracle and update this row with exact applicable evidence. |
+| #59 | `research/magicpig-mp3-cache-merge` / [PR #79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) | Head `78a655bafd4dd879e85e4307cf70fbb41424feeb`; merge `b1a006d2ccaf15eaf8e1e751127101f74317114f` | PR/integration CI [38414449521](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38414449521) / [38417441911](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38417441911) passed; Issue checkpoint update is queued pending API network access. |
+| #60 | `research/magicpig-mp3-cpu-composition` / pending PR record | Prepared/reviewed branch head `ab5d19f`; task PR/merge-candidate CI and integration remain pending | Integrate the independent CPU composition oracle and update this row with exact applicable evidence. |
 | #61 | `research/magicpig-mp3-contracts-ci` / pending PR record | Preparation base `b1a006d2ccaf15eaf8e1e751127101f74317114f`; final head/merge/CI URLs pending | Rebase/merge after #60, independently review contracts/typing, pass combined applicable exact-head and merge-candidate gates, then record evidence before closure. |
 | #62 | Deferred native GPU task | Unexecuted; no recurring job/date | Explicit native GPU restart, verified extension/link closure and runtime/device tests required. |
 
@@ -246,3 +246,25 @@ fixture/source hashes and CI links for the exact final revisions. After #60
 is integrated, replace the pending recovery cells and revalidate #61 on that
 base. Close MP1/MP2/MP3 parents only after their combined applicable gates pass;
 deferred GPU work and open repair issues must remain explicit.
+
+## Combined CPU repair validation candidate
+
+`research/magicpig-cpu-validation` combines the independently owned #60/#61
+work and CPU repairs #65-#68/#72-#77 for interaction/native testing. It is a
+validation branch, not the integration branch. Exact standalone repair commits
+and test evidence are retained; task PRs, matching merge-candidate CI and
+Issue/Milestone updates remain required before consuming those tasks.
+
+Local combined validation passed12 suites plain and ASan/UBSan/LSan,
+7/10/14/10 source/capability/driver/boundary contracts,10 typing inventory
+contracts, strict maintained typing,69 ledger records and56 native doc audits.
+Native AVX512/BF16 are local hardware skips. A temporary CPU-only diagnostic
+workflow on this branch records actual Hosted capability/execution evidence
+and is retired when task PR gates supersede it. #74 cannot close on a skip.
+
+`api.github.com` is missing from the current runtime allowlist (CONNECT403).
+An additive environment draft is saved; once applied, update #59's prepared
+integration checkpoint, create existing-task PRs for #60/#61 and the repairs,
+assign a CPU repair milestone, and consume tasks only after their concrete
+review/CI/integration gates. MP4/#62 and native Torch/FlashInfer/GPU/model
+boundaries remain separate and postponed.

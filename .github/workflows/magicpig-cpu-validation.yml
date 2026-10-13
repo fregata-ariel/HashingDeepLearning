@@ -1,0 +1,92 @@
+name: Temporary MagicPIG CPU validation
+
+# Retire after reviewed task PR checks supersede this diagnostic branch.
+on:
+  push:
+    branches: [research/magicpig-cpu-validation]
+    paths:
+      - "ports/magicpig/**"
+      - "papers/**"
+      - "tests/traceability/**"
+      - "tools/**"
+      - "docs/MAGICPIG*.md"
+      - ".github/workflows/magicpig-cpu-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  combined-cpu:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: CPU and exact commit
+        run: |
+          git rev-parse HEAD
+          lscpu
+          g++ --version
+      - name: Source, ledger and contract gates
+        run: |
+          python tools/validate_traceability.py --emit-dir magicpig-validation/ledger
+          python tools/audit_traceability_docs.py
+          python tests/traceability/test_magicpig_source_contracts.py
+          python tests/traceability/test_magicpig_capabilities.py
+          python tests/traceability/test_magicpig_cpu_contracts.py
+          python tests/traceability/test_magicpig_boundary_contracts.py
+          python tests/traceability/test_python_typing_inventory.py
+          python tools/generate_magicpig_probability_reference.py --check
+      - name: All portable and capable native suites
+        run: |
+          python tools/check_magicpig_cpu.py --native --build-dir magicpig-validation/plain
+          python tools/check_magicpig_cpu.py --native --sanitize --build-dir magicpig-validation/sanitized
+      - name: Report actual native execution separately from skips
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          for mode in ('plain', 'sanitized'):
+              summary = json.loads(Path(f'magicpig-validation/{mode}/magicpig_cpu_evidence.json').read_text())
+              assert summary['status'] == 'pass'
+              for native_mode in ('avx512', 'bf16'):
+                  results = [r for r in summary['results'] if r['mode'] == native_mode]
+                  if results:
+                      assert all(r['status'] == 'pass' for r in results)
+                      if native_mode == 'avx512':
+                          softmax = next(r for r in results if r['suite'] == 'softmax')
+                          assert 'MAGICPIG-EXP-NATIVE-CPU cases=2821' in softmax['stdout']
+                      print(f'::notice title=MagicPIG {mode} {native_mode}::ACTUALLY EXECUTED PASS; suites={len(results)}; SHA={os.environ["GITHUB_SHA"]}')
+                  else:
+                      reason = summary['capabilities']['modes'][native_mode]['reason']
+                      print(f'::notice title=MagicPIG {mode} {native_mode}::SKIP; {reason}; native repair not verified')
+              print(f'::notice title=MagicPIG combined CPU {mode}::PASS; suites={len(summary["results"])}; leaks_disabled=False; SHA={os.environ["GITHUB_SHA"]}')
+          PY
+      - name: Bounded OpenMP attention ownership regression
+        env:
+          OMP_THREAD_LIMIT: "4"
+          OMP_NUM_THREADS: "4"
+        run: |
+          g++ -std=c++17 -O1 -fno-tree-vectorize -fno-tree-slp-vectorize -fopenmp -fsanitize=address,undefined -g -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie magicpig-validation/sanitized/portable/attention/selected_bodies.cpp -o magicpig-validation/attention-openmp
+          magicpig-validation/attention-openmp
+      - name: Install CPU typing dependencies
+        run: |
+          python -m pip install mypy==2.4.0 numpy==2.3.5 tensorboard==2.21.0
+          python -m pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cpu
+      - name: Strict maintained typing and existing Python contracts
+        env:
+          MYPYPATH: ${{ github.workspace }}/ports/mongoose:${{ github.workspace }}/typings
+        run: |
+          python tools/audit_python_annotations.py --root ports --mypy
+          python tools/check_reformer_attention_types.py --output /tmp/magicpig-reformer-types.py
+          python -m mypy --config-file mypy.ini /tmp/magicpig-reformer-types.py
+          python tests/traceability/test_slide_python_examples.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: magicpig-combined-cpu-validation
+          path: magicpig-validation/

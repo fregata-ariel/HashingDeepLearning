@@ -2,8 +2,9 @@
 
 This index describes the selected v0.2 CPU checkpoint. The immutable reference
 is `ac9aa36c866330ca6ad2ce342a7848d7df6f49bb`; its source inventory must pass
-before numerical tests. Maintained native arithmetic and archived Python are
-unchanged by the contracts/typing closeout. The existing native Doxygen
+before numerical tests. The contracts/typing changes do not alter arithmetic; the current validation
+candidate additionally contains the separately tracked CPU repairs. Archived
+Python remains unchanged. The existing native Doxygen
 contracts are checked by `tools/audit_traceability_docs.py` against the stable
 ledger IDs below.
 
@@ -11,21 +12,23 @@ ledger IDs below.
 
 | Mechanism / stable test ID | Contract and implemented boundary |
 | --- | --- |
-| `MAGICPIG-SIMHASH-CPU` | [SimHash/centering](../../docs/MAGICPIG_SIMHASH_CPU.md): selected archived AST, fixed sign/packing order and append centering; FP64 host tensor replaces Torch/BF16. K1..11 supported; K12+ loss is characterized under #65. |
-| `MAGICPIG-LSH-RETRIEVAL-CPU` | [Retrieval](LSH_CPU_CONTRACT.md): contiguous int32 sorted codes/IDs and outputs, unique IDs per table, at least two distinct table hits; alloc-once owner storage, copied fill inputs, borrowed int8 mask view, capacity and GQA/batch/layer isolation. Direct under these preconditions. |
-| `MAGICPIG-FASTFILL-DEFECT-CPU` | Same retrieval contract: wrong table contents and a temporary-allocation leak are reproduced, with the leak diagnostic strictly validated. This support characterization does not establish fastfill correctness (#66). |
-| `MAGICPIG-PROBABILITY-CPU` | [Probability/correction](PROBABILITY_VALIDATION.md): FP32 borrowed score mutation, FP64 independent exhaustive/binomial expectations, nonzero norms and valid angular domain. Released `+1e-4` is a variant of paper correction; endpoint/conditioning repairs #67/#68 remain separate. |
-| `MAGICPIG-ATTENTION-CPU`, `MAGICPIG-ATTENTION-BOUNDARIES-CPU` | [Attention](ATTENTION_CPU_CONTRACT.md): contiguous BF16 caches, FP32 query/score/normalizer buffers, int32 selected indices/counts; padding through `round_up(nnz,16)`, alloc-once server lifetime, copied fill and borrowed getter views. Sparse dimensions divisible by 16; full WV dimension128 and groups1/4/8. |
-| `MAGICPIG-BASELINE-CPU`, `MAGICPIG-SOFTMAX-BOUNDARY-CPU`, `MAGICPIG-SOFTMAX-DEFECT-CPU` | [Softmax](SOFTMAX_CPU_CONTRACT.md): FP32 score mutation, normalized output and base-2 maximum/LSE; portable host exp is a substitution, native polynomial is capability-gated. Tail, empty-set and underflow characterizations remain repairs #72–#74. |
-| `MAGICPIG-BF16-MODEL-CPU`, `MAGICPIG-BF16-BOUNDARY-CPU`, `MAGICPIG-BF16-SELECTED-CPU` | [BF16](BF16_CPU_CONTRACT.md): bit storage/conversion model is distinguished from actual native dot-product execution. Native conversion linkage and runtime dispatch are unexecuted; dimension/padding restrictions remain #75/#76. |
-| `MAGICPIG-CACHE-MERGE-CPU` | [Cache/merge](CACHE_MERGE_CPU_CONTRACT.md): fixed-shape FP64 host copies, padded dense prefill, disjoint static/offload/new-token sets, heterogeneous sampled probabilities, base-2 host merge and clear/refill. Host capacity/append guards do not establish native FlashInfer capacity or stream safety. |
+| `MAGICPIG-SIMHASH-CPU`, `MAGICPIG-HASH-DOMAIN-CPU` | [Hash domain](HASH_DOMAIN_CPU_CONTRACT.md): archived FP16 packing is characterized separately; maintained LSH allocation accepts only K1..11 before allocation/state mutation. Accepted key/query codes are checked exhaustively. |
+| `MAGICPIG-LSH-RETRIEVAL-CPU` | [Retrieval](LSH_CPU_CONTRACT.md): contiguous int16 sorted key codes, int32 indices/query/output; unique IDs per table and at least two distinct table hits. Copied fill inputs, borrowed int8 mask view and bounded owner lifetime. |
+| `MAGICPIG-FASTFILL-REPAIR-CPU`, `MAGICPIG-FASTFILL-REGRESSION-CPU` | [Fastfill](FASTFILL_REPAIR_CPU_CONTRACT.md): guarded int32 unsorted codes, stable token population and request replacement; scoped cursor ownership and clean sanitizer teardown. Historical wrong-table/leak evidence remains tied to its old commit. |
+| `MAGICPIG-PROBABILITY-CPU`, `MAGICPIG-PROBABILITY-DOMAIN-CPU`, `MAGICPIG-PROBABILITY-STABILITY-CPU` | [Correction](PROBABILITY_VALIDATION.md): finite accepted scores, positive norms/scaling, K>=1/L>=2 and tolerance-limited cosine clamping. Stable log inclusion probability retains the explicit +1e-4 variant. Server QK/correction is staged before worker dispatch or exposed output writes. |
+| `MAGICPIG-ATTENTION-CPU`, `MAGICPIG-ATTENTION-BOUNDARIES-CPU` | [Attention](ATTENTION_CPU_CONTRACT.md): BF16 caches, FP32 query/score/normalizer and int32 IDs/counts. Logical nnz controls QK accesses. Full nnz is rank-one [batch*query_heads], including differing grouped-head lengths; KV ownership uses query_head/groups. Empty output is zero with -Inf maximum/LSE. Explicit dimension/group checks precede output writes. |
+| `MAGICPIG-BASELINE-CPU`, `MAGICPIG-SOFTMAX-BOUNDARY-CPU`, `MAGICPIG-SOFTMAX-EMPTY-CPU`, `MAGICPIG-SOFTMAX-EXTREME-CPU`, `MAGICPIG-EXP-NATIVE-CPU` | [Softmax](SOFTMAX_CPU_CONTRACT.md): exact logical allocations, normalized probabilities and base-2 maximum/LSE; empty rows touch no scores and emit -Inf metadata. Native exponential has range/special-value regressions, whose actual AVX512 execution requires a capable runner. Finite metadata requires representability in FP32. |
+| `MAGICPIG-BF16-MODEL-CPU`, `MAGICPIG-BF16-BOUNDARY-CPU`, `MAGICPIG-BF16-SELECTED-CPU` | [BF16](BF16_CPU_CONTRACT.md): conversion model is distinct from native dot execution. Native QK requires supported multiple-of-32 dimensions and logical nnz; capability-based skips do not verify native execution. Real conversion linkage/dispatch remains unexecuted. |
+| `MAGICPIG-CACHE-MERGE-CPU` | [Cache/merge](CACHE_MERGE_CPU_CONTRACT.md): shaped FP64 host copies, padded prefill, disjoint tokens, heterogeneous probabilities, base-2 host merge, capacity negatives and clear/refill. Host guards/append do not establish native FlashInfer capacity or stream safety. |
+| `MAGICPIG-COMPOSITION-BRIDGE-CPU`, `MAGICPIG-CPU-COMPOSITION-CPU` | [Connected composition](CPU_COMPOSITION_CONTRACT.md): actual retrieved IDs feed maintained correction/attention, then selected cache/merge across24 decode steps/12 reuse cycles; independent FP64 union and actual executed stale/correction mutations. Bridge executable/fixture/source/descriptor identities are checked. |
 
-All server/view tests require the owner to outlive borrowed views. Real Torch
-ownership, dtype/device conversion and concurrent native scheduling are outside
-the substitutes. Varying full-attention GQA lengths remain unsupported (#77).
-CPU composition (#60) must add its independent combined oracle and recovery
-record before #61 closes; independently passing mechanisms do not establish
-that combined result.
+All borrowed views require their owner to remain alive. The selected-body
+adapters replace Torch, dependency conversion/copy and scheduling; they do not
+establish unrestricted extension or GPU runtime correctness. The independent
+composition oracle executes the connected path, rather than inferring it from
+separate mechanism passes. Repair code is now present in the validation
+candidate; Issue completion still requires reviewed task integration and
+matching Hosted evidence.
 
 ## Deliberate maintained Python inventory
 
@@ -61,7 +64,9 @@ The inventory runner automatically checks enrolled future sources and stubs.
 | `traceability.yml` | Source identity/inventory, ledger and native-doc audit; source/capability/driver/boundary contracts; all enrolled MagicPIG portable C++/Python suites; plain and ASan/UBSan/LSan runs. Existing `papers/**`, `ports/magicpig/**`, archive, driver and `tests/traceability/**` filters cover additions; `docs/MAGICPIG*.md` also triggers recovery/doc changes. |
 | `python-typing.yml` | Inventory/CI contract regressions, annotation audit, identical strict mypy checks for every nonempty maintained group, existing Reformer and SLIDE checks. `.py`, `.pyi`, inventory, stubs, auditor, regression and MagicPIG documentation changes trigger the gate. |
 
-No new workflow or recurring GPU job is introduced. Routine MagicPIG numerical
+No new permanent workflow or recurring GPU job is introduced. A temporary
+CPU validation-branch workflow records combined/native evidence while GitHub
+API access is pending; retire it after reviewed task PR gates supersede it. Routine MagicPIG numerical
 CI uses tiny deterministic fixtures without CUDA, FlashInfer, model weights or
 dataset downloads. The separate existing typing workflow installs Torch for
 its maintained MONGOOSE checks; that installation is not MagicPIG extension

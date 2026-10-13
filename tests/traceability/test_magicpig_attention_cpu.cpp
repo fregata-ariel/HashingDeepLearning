@@ -296,22 +296,22 @@ void low_level_boundaries(Metrics& metrics) {
     for (int j = 0; j < capacity; ++j) actual_difference = std::max(actual_difference, std::abs(double(corrected_score[j]) - dense_score[j]));
     require(actual_difference > 0.001, "actual all-candidate correction differs from actual dense");
     ++metrics.boundary_cases;
-    // QK also silently omits a coordinate when HEAD_DIM is not divisible by 16.
-    std::vector<bfloat16> partial_key(32 * 17, 0);
-    std::vector<float> partial_query(17, 0), partial_score(32, 0);
-    partial_key[16] = 0x3f80; // Key/query dot is exactly one in the omitted coordinate.
-    partial_query[16] = 1;
-    std::vector<int> partial_ids(32, 0);
-    qk_kernel(partial_key.data(), partial_ids.data(), partial_query.data(), partial_score.data(), 17, 16);
-    require(partial_score[0] == 0, "QK unsupported dimension omits nonzero tail");
-    ++metrics.boundary_cases;
-    // WV silently drops HEAD_DIM%16; characterize defined memory accesses only.
-    std::vector<bfloat16> partial_output(18, 0x3f80);
-    std::vector<float> weight(1, 1);
-    std::vector<int> first(1, 0);
-    wv_kernel(value.data(), first.data(), weight.data(), partial_output.data(), 17, 1);
-    require(partial_output[16] == 0x3f80 && partial_output[17] == 0x3f80, "WV unsupported dimension tail untouched");
-    ++metrics.boundary_cases;
+    // Unsupported dimensions reject before any score/output writes or input reads.
+    for (int bad_dim : {0, -16, 1, 15, 17, 31, 33, 127, 129}) {
+        std::vector<float> score(2, 71);
+        std::vector<bfloat16> output(2, 0x3f80);
+        bool qk_rejected = false, wv_rejected = false, full_rejected = false;
+        try { qk_kernel(nullptr, nullptr, nullptr, score.data(), bad_dim, 1); }
+        catch (const std::invalid_argument&) { qk_rejected = true; }
+        try { wv_kernel(nullptr, nullptr, nullptr, output.data(), bad_dim, 1); }
+        catch (const std::invalid_argument&) { wv_rejected = true; }
+        try { qk_kernel_full(nullptr, nullptr, score.data(), 1, bad_dim, 1, 1); }
+        catch (const std::invalid_argument&) { full_rejected = true; }
+        require(qk_rejected && wv_rejected && full_rejected, "unsupported dimension rejected");
+        require(score[0] == 71 && score[1] == 71 && output[0] == 0x3f80 && output[1] == 0x3f80,
+                "dimension rejection precedes writes");
+        ++metrics.boundary_cases;
+    }
     // Full server mixes KV-head nnz[i] and query-head nnz[i]. For lengths
     // [16,32] expanded to four queries per KV head, the second head normalizes
     // 32 ones but WV sums only 16 of them: observed output 0.5, dense oracle 1.
@@ -342,11 +342,36 @@ void low_level_boundaries(Metrics& metrics) {
         require(expected.output[0] == 1.0, "varying GQA length independent dense expectation");
         ++metrics.boundary_cases;
     }
-    // Full WV's group=2 path returns without writing; it is unsupported.
-    std::vector<bfloat16> unsupported_output(2 * 128, 0x3f80);
-    wv_kernel_dim128_full(value.data(), weight.data(), unsupported_output.data(), 128, capacity, 1, 2);
-    require(std::all_of(unsupported_output.begin(), unsupported_output.end(), [](auto x) { return x == 0x3f80; }), "full WV unsupported group silent return");
-    ++metrics.boundary_cases;
+    // Fixed full WV and full server reject unsupported dimension/group policy.
+    for (int dim : {16, 32, 127, 128, 129}) for (int group : {0, 1, 2, 4, 8}) {
+        if (dim == 128 && (group == 1 || group == 4 || group == 8)) continue;
+        std::vector<bfloat16> result(2, 0x3f80);
+        bool rejected = false;
+        try { wv_kernel_dim128_full(nullptr, nullptr, result.data(), dim, 32, 1, group); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected && result[0] == 0x3f80 && result[1] == 0x3f80, "full WV rejects before input/output access");
+        ++metrics.boundary_cases;
+    }
+    for (int dim : {16, 32, 128}) for (int group : {1, 2, 4, 8}) {
+        if (dim == 128 && group != 2) continue;
+        SparseAttentionServer server;
+        server.alloc(1, group, 1, dim, 1, 1);
+        std::vector<float> query(group * dim, 0), metadata(2 * group, 77);
+        std::vector<bfloat16> result(group * dim, 0x3f80);
+        std::vector<int> counts(group, 1);
+        auto* scores = static_cast<float*>(server.get_score().data_ptr());
+        std::fill_n(scores, group, 91);
+        bool rejected = false;
+        try { server.full_attention(0, torch::Tensor(result.data(), {group, dim}),
+                  torch::Tensor(metadata.data(), {2, group}), torch::Tensor(query.data(), {group, dim}),
+                  torch::Tensor(counts.data(), {group})); }
+        catch (const std::invalid_argument&) { rejected = true; }
+        require(rejected && std::all_of(result.begin(), result.end(), [](auto x){return x == 0x3f80;}) &&
+                std::all_of(metadata.begin(), metadata.end(), [](auto x){return x == 77;}) &&
+                std::all_of(scores, scores + group, [](auto x){return x == 91;}), "full server rejects before writes");
+        ++metrics.boundary_cases;
+    }
+
 }
 int run() {
     Metrics metrics;
@@ -363,7 +388,7 @@ int run() {
               << " max_corrected_score_error=" << metrics.corrected_score_error << " max_probability_error=" << metrics.probability_error
               << " max_output_error=" << metrics.output_error << " max_metadata_error=" << metrics.metadata_error << '\n'
               << "MAGICPIG-ATTENTION-BOUNDARIES-CPU: PASS cases=" << metrics.boundary_cases
-              << " rounded_capacity=explicit padded_mutation=characterized varying_GQA_lengths=characterized_half_output empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
+              << " rounded_capacity=explicit padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=characterized_half_output empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
     return 0;
 }
 }

@@ -5,6 +5,7 @@
 #include "fbgemm/FbgemmConvert.h"
 #include<immintrin.h>
 #include<vector>
+#include<stdexcept>
 #include<omp.h>
 using namespace fbgemm;
 #define ATTENTION_THREADS 64

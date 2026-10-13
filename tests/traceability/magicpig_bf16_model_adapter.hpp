@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <stdexcept>
 using bfloat16 = std::uint16_t;
 inline std::vector<float> magicpig_captured_accumulators;
 inline float magicpig_decode_bf16(bfloat16 x) {

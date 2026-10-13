@@ -46,6 +46,11 @@ LSH::~LSH(){
  * Allocate once per owner, with valid positive/divisible head dimensions and
  * bounded K/length products. Reallocation and unchecked integer overflow are
  * outside the selected CPU contract. Torch ABI and OpenMP remain unverified.
+ * Accepted K is 1..11: all 2^K codes are exactly representable by the archived
+ * FP16 key/query packing. Reject K outside that domain before changing owner
+ * state or computing bucket counts (Issue #65 maintained rejection policy).
+ * @par Traceability relation
+ * Variant; TRACE_TEST_ID: MAGICPIG-HASH-DOMAIN-CPU.
  */
 void LSH::alloc(
 int K, 
@@ -56,7 +61,7 @@ int num_key_value_heads,
 int batch_size,
 int max_length)
 {
-
+    TORCH_CHECK(K >= 1 && K <= 11, "LSH K must be in [1,11] for exact FP16 hash packing");
     this->K = K;
     this->L = L;
     this->num_buckets = static_cast<int>(pow(2, this->K));

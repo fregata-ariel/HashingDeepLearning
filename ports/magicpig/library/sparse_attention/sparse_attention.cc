@@ -902,6 +902,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(dynamic,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -963,6 +970,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(dynamic,1) num_threads(64)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel_bf16_impl(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -1038,6 +1052,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -1101,6 +1122,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(64)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel_bf16_impl(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -1151,7 +1179,7 @@ torch::Tensor nnz_pt)
     if (nnz_pt.dim() != 1 || nnz_pt.size(0) != query_heads) throw std::invalid_argument("full_attention nnz must contain one count per flattened batch/query head");
     const int* counts = static_cast<const int*>(nnz_pt.data_ptr());
     for (int i = 0; i < query_heads; ++i)
-        if (counts[i] <= 0 || counts[i] > this->max_length) throw std::invalid_argument("full_attention requires counts in [1,max_length]; empty support tracked by #73");
+        if (counts[i] < 0 || counts[i] > this->max_length) throw std::invalid_argument("full_attention requires counts in [0,max_length]");
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1173,6 +1201,10 @@ torch::Tensor nnz_pt)
     }
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        if (nnz[i] == 0) {
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         softmax_kernel_optimized(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1253,6 +1285,10 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        if (nnz[i] == 0) {
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1345,6 +1381,10 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        if (nnz[i] == 0) {
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],

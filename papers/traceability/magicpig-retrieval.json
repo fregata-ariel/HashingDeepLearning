@@ -23,26 +23,26 @@
         "gpu_execution": "postponed",
         "torch_extension": "not built"
       },
-      "note": "Valid-input sorted-fill path only. Tensor shim does not validate production Torch dtype/device/contiguity or ABI. get_mask remains non-owning and is never dereferenced after owner destruction. No missing get_table_* definitions are claimed. Known-defective fastfill is isolated into a separate diagnostic, never repaired or silently executed in successful lifecycle tests."
+      "note": "Valid-input sorted-fill path only. Tensor shim does not establish production Torch dtype/device/contiguity or ABI. get_mask remains non-owning and is never dereferenced after owner destruction. No missing get_table_* definitions are claimed. The historically defective fastfill has a separate Issue66 repair suite; this fixture's subprocess now requires its repaired literal result and clean exit."
     },
     {
-      "id": "MAGICPIG-FASTFILL-DEFECT-CPU",
+      "id": "MAGICPIG-FASTFILL-REGRESSION-CPU",
       "paper": "magicpig-2024",
-      "paper_location": "Section 4.3 candidate selection; implementation-specific incomplete alternate fill path",
-      "mechanism": "Dedicated process executes maintained fastfill and characterizes incomplete table content plus its unfreed temporary allocation.",
+      "paper_location": "Section 4.3 candidate selection; regression for repaired alternate fill path",
+      "mechanism": "Dedicated process executes repaired maintained fastfill and requires its independently expected four-token candidate set, normal exit and no sanitizer diagnostic.",
       "relation": "support",
       "implementation": {"file": "ports/magicpig/library/lsh/lsh.cc", "symbol": "LSH::fastfill"},
-      "test": {"file": "tests/traceability/test_magicpig_lsh_cpu.cpp", "id": "MAGICPIG-FASTFILL-DEFECT-CPU"},
+      "test": {"file": "tests/traceability/test_magicpig_lsh_cpu.cpp", "id": "MAGICPIG-FASTFILL-REGRESSION-CPU"},
       "conditions": {
-        "execution": "Explicit --fastfill-probe subprocess; never successful ordinary lifecycle execution",
+        "execution": "Explicit --fastfill-probe subprocess using maintained repaired body; no known leak is accepted",
         "fixture": "One layer/request/head, K=2, L=4, four tokens all hashing to bucket zero",
-        "oracle": "Literal accepted IDs {0,1,2,3}; actual maintained fastfill retrieval {0}, because content is never written",
-        "leak": "mo_ij new int[num_buckets] per table has no delete; four 16-byte allocations total 64 bytes for this fixture",
-        "expected_diagnostic": "MAGICPIG-FASTFILL-DEFECT marker; hosted sanitizer diagnostic must separately establish LeakSanitizer detection rather than treating arbitrary failure as expected",
-        "local_limit": "LeakSanitizer /proc access may be unavailable; explicit local-only disabled leak checks do not validate this leak diagnostic",
+        "oracle": "Literal accepted IDs {0,1,2,3}; each ID must appear once after repaired stable token table population",
+        "temporary_ownership": "Scoped vector cursors replace historical unfreed bucket allocations",
+        "expected_diagnostic": "Exact MAGICPIG-FASTFILL-REPAIRED result marker, zero exit and empty stderr; sanitizer-enabled leak checks record clean, ordinary or explicitly leak-disabled runs record not_checked",
+        "local_limit": "Explicitly disabled local leak checking does not establish leak freedom; hosted sanitizer validation keeps LeakSanitizer enabled",
         "gpu_execution": "postponed"
       },
-      "note": "Defect characterization, not a passing alternative-fill correctness test. The original body remains unchanged; unsupported until separately repaired and revalidated."
+      "note": "Support regression for deliberate maintained Issue66 repair, supplementing MAGICPIG-FASTFILL-REPAIR-CPU's independent parity/lifecycle/boundary suite. Historical Issue56/PR70 reproduced {0} and64bytes/four allocations; immutable archive and those commit/CI records retain that evidence. The old expected-defect executable mapping is retired after repair, not claimed to pass on the corrected body. Torch ABI/GPU remain unverified."
     }
   ]
 }

@@ -130,9 +130,10 @@ it is recorded as `not_applicable_python_adapter` in both plain/sanitized runs.
 Default execution includes enrolled C++ and Python suites; focused `--suite`
 selection covers both. Maintained production Python inventory remains 31 files.
 
-The driver also supplies isolated expected-defect probe validation for future
-LSH enrollment: exact wrong-result marker, fatal sanitizer outcome, allocation
-site and count must match. Generic crashes or other UB do not satisfy it.
+The driver also checks the isolated repaired fastfill regression: exact candidate
+IDs/marker, zero exit and no diagnostics. Historical wrong-result/leak evidence
+remains in Issue56/PR70 and the unchanged archive; it is no longer a successful
+outcome for the maintained repaired body.
 
 ## Retrieval/lifetime checkpoint (#56)
 
@@ -145,14 +146,18 @@ and hashes the actual AVX512F copy helper before running it. OpenMP remains
 serial. [Contract](LSH_CPU_CONTRACT.md) records alloc-once, per-table index
 uniqueness, borrowed-view lifetime and Torch ABI exclusions.
 
-The isolated fastfill probe reproduces expected {0,1,2,3} versus actual {0}.
-Full hosted sanitizer mode must positively detect 64 bytes/four allocations
-at LSH::fastfill; exact marker/result/site/count and exit status are checked,
-rejecting generic crashes or other sanitizer errors. Local leak-disabled runs
-record `not_checked`. Fastfill remains unsupported under [repair #66](https://github.com/fregata-ariel/HashingDeepLearning/issues/66),
-not a passing alternative fill. Source arithmetic and immutable archive remain
-unchanged. Default portable suites at this checkpoint are baseline, simhash
-and lsh_retrieval; probability integrates separately in #57.
+At the Issue56 checkpoint, the isolated fastfill probe reproduced `{0}` instead
+of `{0,1,2,3}` and positively detected64bytes/four temporary allocation leaks.
+Those historical results remain in PR70/Issue56 and the immutable archive.
+Issue66 now repairs maintained population and temporary ownership. The subprocess
+requires the correct literal IDs, normal exit and empty stderr; hosted sanitizer
+execution must be clean. Local leak-disabled or ordinary runs record
+`not_checked`. The enrolled `lsh_fastfill` suite adds15360independent head checks,
+14input rejections and clear/shorter/empty refill lifecycle checks; see the
+[repair contract](FASTFILL_REPAIR_CPU_CONTRACT.md). This is a deliberate production
+variant; the archive and valid sorted-fill arithmetic remain unchanged. Default
+portable suites at the historical Issue56 checkpoint were baseline, simhash and
+lsh_retrieval; probability integrated separately in #57.
 
 ## Probability/domain checkpoint (#57)
 

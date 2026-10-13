@@ -3,7 +3,8 @@
 Issue #56 executes the maintained LSH constructor/destructor, `alloc`, `fill`,
 `retrieve`, `batch_retrieve`, `clear` and `get_mask` bodies without linking Torch.
 The executable includes exact selected bodies from `library/lsh/lsh.cc`; the
-historical source snapshot and production arithmetic remain unchanged.
+historical source snapshot remains unchanged. Issue66 deliberately repairs the
+maintained `fastfill` implementation; sorted-fill retrieval arithmetic is retained.
 
 `magicpig_lsh_adapter.hpp` supplies a visibly separate non-owning contiguous
 Tensor view, TensorOptions/from_blob substitutes and the maintained class layout.
@@ -48,26 +49,24 @@ views after owner destruction. `get_table_start`, `get_table_end` and `get_table
 are declared in `lsh.h` but lack source definitions/bindings; no tests or claims
 cover them.
 
-## Isolated fastfill defect diagnostic
+## Historical fastfill defect and maintained regression
 
-The same fixture's `--fastfill-probe` executes the exact alternate `fastfill`
-body in a separate process. Four literal tokens all collide in four tables; the
-independent expected set is `{0,1,2,3}`, but retrieval returns `{0}`. The body
-updates bucket counts/prefixes and never writes token indices to `table`, which
-remains zero from allocation. It also allocates `mo_ij` once per table and never
-frees it (64 bytes across four allocations for this fixture).
+Issue56/PR70 recorded the archived alternate path returning `{0}` instead of
+the independently expected `{0,1,2,3}`: prefixes were filled without token IDs,
+and one temporary per table leaked64bytes/four allocations. Those historical
+commit/CI records and the immutable archive retain the characterization.
 
-The ordinary passing suite compiles/hashes this body but never executes its
-leaking path. The explicit diagnostic must retain the exact defect marker and
-wrong-result check. Hosted sanitizer validation additionally requires a positive
-LeakSanitizer allocation-site report; an unrelated sanitizer/process failure is
-not evidence of the expected leak. Use an unoptimized dedicated leak build when
-necessary to prevent the unused allocation being optimized away. An explicit
-local-only leak-disable option may work around sandbox `/proc` restrictions,
-but that outcome proves neither leak freedom nor a successful leak diagnostic.
+Issue66 deliberately repairs maintained table population and uses scoped cursor
+ownership. The same fixture's `--fastfill-probe` now runs the repaired body and
+requires exactly `{0,1,2,3}`, a normal zero exit, the exact repaired marker and no
+stderr diagnostics. Any leak, sanitizer error, wrong IDs/marker or fake success
+fails even when the process exits zero. Hosted sanitizer execution records
+`leak_status=clean`; ordinary and explicitly leak-disabled runs record
+`not_checked`. The driver records `fastfill_regression`, not a reproduced defect.
 
-`fastfill` remains unsupported; [repair #66](https://github.com/fregata-ariel/HashingDeepLearning/issues/66) tracks it. A focused repair needs both table population and
-temporary ownership, with valid-input equivalence to sorted `fill` and a clean
-sanitizer run before it can join the ordinary passing contract. No GPU execution,
-Torch extension build, model generation, sampling recall or performance claim is
-made by this CPU contract.
+The dedicated [repair contract](FASTFILL_REPAIR_CPU_CONTRACT.md) defines int32
+CPU/layout/range checks before mutation, targeted repeat-fill replacement and
+independent15360head parity/lifecycle checks plus14boundary rejections. The
+metadata shim is not real Torch validation/ABI evidence. No GPU execution,
+Torch extension build, model generation, sampling recall or performance claim
+is made by this CPU contract.

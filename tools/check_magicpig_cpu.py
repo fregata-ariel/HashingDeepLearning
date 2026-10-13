@@ -218,16 +218,10 @@ def capabilities(cxx: str, build: Path, requested: bool) -> dict[str, object]:
 
 
 def validate_fastfill_probe(probe: subprocess.CompletedProcess[str], sanitize: bool, disable_leaks: bool) -> str:
-    if "MAGICPIG-FASTFILL-DEFECT: expected {0,1,2,3}; actual {0}" not in probe.stdout:
-        raise RuntimeError(f"fastfill characterization marker missing: {probe.stdout}\n{probe.stderr}")
-    if sanitize and not disable_leaks:
-        expected = "SUMMARY: AddressSanitizer: 64 byte(s) leaked in 4 allocation(s)"
-        if probe.returncode != 1 or "LeakSanitizer: detected memory leaks" not in probe.stderr or expected not in probe.stderr or "LSH::fastfill" not in probe.stderr or "runtime error:" in probe.stderr or "ERROR: AddressSanitizer:" in probe.stderr:
-            raise RuntimeError(f"unexpected fastfill sanitizer outcome ({probe.returncode}): {probe.stdout}\n{probe.stderr}")
-        return "expected_leak_reproduced"
-    if probe.returncode:
-        raise RuntimeError(f"fastfill probe failed: {probe.stdout}\n{probe.stderr}")
-    return "not_checked"
+    expected = "MAGICPIG-FASTFILL-REPAIRED: expected {0,1,2,3}; actual {0,1,2,3}; clean owned temporary teardown"
+    if probe.stdout.strip() != expected or probe.returncode != 0 or probe.stderr.strip():
+        raise RuntimeError(f"fastfill repair regression failed ({probe.returncode}): {probe.stdout}\n{probe.stderr}")
+    return "clean" if sanitize and not disable_leaks else "not_checked"
 
 
 def validate_boundary_probe(probe: subprocess.CompletedProcess[str], contract: dict[str, str], records: list[dict[str, object]], translation: Path, executable: Path) -> dict[str, object]:
@@ -332,12 +326,12 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
         env["ASAN_OPTIONS"] = env.get("ASAN_OPTIONS", "") + ":detect_leaks=0"
     output = checked([str(executable)], env=env)
     print(output, end="" if output.endswith("\n") else "\n")
-    defect_probe = None
+    fastfill_regression = None
     if suite.name == "lsh_retrieval":
         probe = subprocess.run([str(executable), "--fastfill-probe"], capture_output=True, text=True, env=env)
         leak_status = validate_fastfill_probe(probe, sanitize, disable_leaks)
-        defect_probe = {"status": "known_defect_reproduced", "leak_status": leak_status, "returncode": probe.returncode, "stdout": probe.stdout, "stderr": probe.stderr}
-        print(f"MAGICPIG_FASTFILL_CHARACTERIZED mode={mode} leak_status={leak_status}")
+        fastfill_regression = {"status": "repair_regression_pass", "leak_status": leak_status, "returncode": probe.returncode, "stdout": probe.stdout, "stderr": probe.stderr}
+        print(f"MAGICPIG_FASTFILL_REPAIRED mode={mode} leak_status={leak_status}")
     boundary_probes = []
     if sanitize and mode == "portable":
         for contract in suite.probes:
@@ -347,7 +341,7 @@ def compile_run(suite: Suite, mode: str, build: Path, cxx: str, sanitize: bool, 
             print(f"MAGICPIG_BOUNDARIES_CHARACTERIZED suite={suite.name} count={len(boundary_probes)}")
     headers = {str(p.relative_to(ROOT)): digest(p) for p in sorted(PORT.rglob("*.h"))}
     evidence = {"suite": suite.name, "mode": mode, "status": "pass", "sanitize": sanitize, "leak_check_explicitly_disabled": disable_leaks, "compiler_command": command, "translation_sha256": digest(translation), "executable_sha256": digest(executable), "source_sha256": sources, "recorded_native_header_sha256": headers, "definitions": records, "fixture": str(suite.test_file.relative_to(ROOT)), "fixture_sha256": digest(suite.test_file), "descriptor_sha256": digest(suite.descriptor), "adapter_sha256": {str(p.relative_to(ROOT)): digest(p) for p in adapters}, "stdout": output, "gpu_validated": False, "torch_extension_validated": False}
-    evidence["defect_probe"] = defect_probe
+    evidence["fastfill_regression"] = fastfill_regression
     evidence["boundary_probes"] = boundary_probes
     evidence["boundary_probe_execution"] = "portable_sanitized" if sanitize and mode == "portable" else "not_checked_in_this_mode"
     evidence_path.write_text(json.dumps(evidence, indent=2) + "\n")

@@ -54,7 +54,7 @@
       "id": "MAGICPIG-BF16-BOUNDARY-CPU",
       "paper": "magicpig-2024",
       "paper_location": "Sections 4.3 and 4.4; implementation-specific BF16 dot-product boundary support",
-      "mechanism": "Actual capability-gated native BF16 QK on complete tiles and explicitly padded partial tiles against FP64 quantized dots; unsupported head dimensions characterized separately.",
+      "mechanism": "Actual capability-gated native BF16 QK with exact logical allocations against FP64 quantized dots; unsupported dimensions rejected before reads/writes.",
       "relation": "support",
       "implementation": {
         "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
@@ -80,30 +80,36 @@
           32
         ],
         "supported_cases": 18,
-        "padded_nnz": [
+        "score_checks": 672,
+        "absolute_bound": "(head_dim+2)*float_epsilon*(sum_abs+0.75)+1e-6",
+        "unsupported_head_dimensions": [
+          0,
+          16,
+          31,
+          33,
+          48,
+          80,
+          127,
+          129
+        ],
+        "storage_adapter": "uint16_t alias; input quantizer is a source-derived software model, no FBGEMM conversion runtime",
+        "unsupported_cpu": "explicit skip, not numerical pass",
+        "gpu_execution": "postponed",
+        "dimension_rejection_cases": 8,
+        "dimension_policy": "Repair #76: positive multiples32 accepted; dimensions0/16/31/33/48/80/127/129 reject before reads/writes.",
+        "capacity": "Repair #75 exact logical candidate/score allocations and guarded logical scores; padding not accessed.",
+        "tail_policy": "Partial final tiles touch only logical nnz; nnz0 allows null buffers; negative nnz rejects before writes.",
+        "partial_nnz": [
           1,
           15,
           17,
           31
         ],
-        "padded_tail_cases": 24,
-        "score_checks": 864,
-        "padded_tail_contract": "Accessible initialized IDs and score capacity ceil(nnz/16)*16 required. Source zeros logical scores only and accumulates into seeded padded scores; seeded behavior asserted separately from logical QK correctness.",
-        "absolute_bound": "(head_dim+2)*float_epsilon*(sum_abs+0.75)+1e-6",
-        "unsupported_head_dimensions": [
-          16,
-          48,
-          80
-        ],
-        "observed_local_maximum_fp32_accumulator_error": 7.45058e-08,
-        "observed_local_maximum_input_quantization_error": 0.000169936,
-        "storage_adapter": "uint16_t alias; input quantizer is a source-derived software model, no FBGEMM conversion runtime",
-        "unsupported_cpu": "explicit skip, not numerical pass",
-        "gpu_execution": "postponed",
-        "dimension_rejection_cases": 8,
-        "dimension_policy": "Repair #76: positive multiples32 accepted; dimensions0/16/31/33/48/80/127/129 reject before reads/writes."
+        "partial_tail_cases": 24,
+        "historical_pre_repair_maximum_fp32_accumulator_error": 7.45058e-08,
+        "historical_pre_repair_maximum_input_quantization_error": 0.000169936
       },
-      "note": "Retains MAGICPIG-BF16-SELECTED-CPU bootstrap trace ID. Padded tails require physical capacity beyond logical nnz and are safe characterization, not exact-length buffer support. Unsupported dimensions silently truncate and are recorded as defects, not accepted dense-dot inputs. No full server BF16 dispatch or extension ABI/linkage claim."
+      "note": "Retains MAGICPIG-BF16-SELECTED-CPU bootstrap trace ID. Repairs #75/#76 permit exact logical candidate/score lengths and reject unsupported dimensions. Native runtime remains capability-gated; local portable tests do not claim BF16 arithmetic execution. No full server BF16 dispatch or extension ABI/linkage claim."
     }
   ]
 }

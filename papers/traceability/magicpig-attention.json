@@ -51,18 +51,18 @@
         "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU"
       },
       "conditions": {
-        "cases": 48,
-        "nnz": "1/15/16/17/31/32",
-        "capacity": "Both indices and scores allocated to round_up(nnz,16); initialized score padding and valid row IDs; guards after capacity",
-        "padding_observation": "qk_kernel zeros only nnz but accumulates through round_up(nnz,16), preserving prior padding value; softmax_kernel_full scales/normalizes padded slots while valid probabilities remain correct",
+        "cases": 55,
+        "nnz": "0/1/15/16/17/31/32",
+        "capacity": "Repair #75 exact logical candidate/score allocations plus guarded logical scores; server score stride remains capacity32.",
+        "padding_observation": "QK touches only logical nnz; preexisting capacity padding remains unchanged. Full softmax padding remains characterized pending #74.",
         "dimension_observation": "Repair #76: FP32 QK/WV reject nonpositive/nonmultiple16 dimensions before reads/writes; dimensions near16/32/128 checked.",
         "full_group_observation": "Repair #76: full server and fixed WV reject dimensions other than128 or groups outside1/4/8 before writes; valid groups remain FP64 checked.",
-        "empty_candidates": "not called here; unsafe empty behavior is characterized separately",
+        "empty_candidates": "QK zero candidates access no buffers including null-buffer witness; empty server handled separately in #73.",
         "invalid_parameters": "not validated by maintained server; unsupported capacity, dimension, layer/request, divisibility, reallocation and expired views are not claimed safe",
         "gpu_execution": "postponed",
         "varying_gqa_lengths_observation": "Actual full server with groups4/KVheads2 and query lengths [16,16,16,16,32,32,32,32], zero logits and BF16 values1 produces head4 output0.5 versus independent dense1. KV-indexed nnz in QK/WV differs from query-indexed nnz in Softmax; verified full support remains uniform lengths only."
       },
-      "note": "Repair #76 validates dimensions and groups before writes. QK tails and varying GQA lengths remain tracked by #75/#77."
+      "note": "Repairs #75/#76 enforce logical QK bounds and supported dimensions/groups. Varying GQA lengths remain #77."
     }
   ]
 }

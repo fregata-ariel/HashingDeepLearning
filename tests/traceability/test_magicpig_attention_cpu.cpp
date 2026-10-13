@@ -249,13 +249,8 @@ void low_level_boundaries(Metrics& metrics) {
             double unused = 0;
             near(score[j], expected, 1e-6, unused, "QK supplied subset");
         }
-        if (padded != count) {
-            double dot = 0;
-            for (int d = 0; d < dim; ++d) dot += decode(key[ids[count] * dim + d]) * query[d];
-            double unused = 0;
-            near(score[count], 8 + dot, 1e-6, unused, "QK padded slot preserves stale value then accumulates");
-            require(score[padded] == 8 && score[capacity + 1] == 8, "QK allocated capacity canaries");
-        }
+        require(std::all_of(score.begin() + count, score.end(), [](auto x){return x == 8;}),
+                "QK logical nnz leaves padding and canaries untouched");
         qk_kernel_full(key.data(), query.data(), full_score.data(), 1, dim, count, capacity);
         std::vector<int> sequential(count);
         std::iota(sequential.begin(), sequential.end(), 0);
@@ -269,6 +264,27 @@ void low_level_boundaries(Metrics& metrics) {
         if (padded != count) require(full_score[count] != 8, "full softmax mutates padded slots");
         ++metrics.boundary_cases;
     }
+    for (int count : {0, 1, 15, 16, 17, 31, 32}) {
+        std::vector<int> exact_ids(ids.begin(), ids.begin() + count);
+        std::vector<float> exact_scores(count, 83);
+        qk_kernel(key.data(), exact_ids.data(), query.data(), exact_scores.data(), dim, count);
+        std::vector<float> guarded(count + 2, 83);
+        qk_kernel(key.data(), exact_ids.data(), query.data(), guarded.data() + 1, dim, count);
+        require(guarded.front() == 83 && guarded.back() == 83, "QK exact logical score canaries");
+        for (int j = 0; j < count; ++j) {
+            double expected = 0, unused = 0;
+            for (int d = 0; d < dim; ++d) expected += decode(key[exact_ids[j] * dim + d]) * query[d];
+            near(exact_scores[j], expected, 1e-6, unused, "QK exact allocation FP64 oracle");
+            near(guarded[j + 1], expected, 1e-6, unused, "QK guarded exact logical oracle");
+        }
+        ++metrics.boundary_cases;
+    }
+    qk_kernel(nullptr, nullptr, nullptr, nullptr, dim, 0);
+    std::vector<float> invalid_score(2, 83);
+    bool negative_rejected = false;
+    try { qk_kernel(nullptr, nullptr, nullptr, invalid_score.data(), dim, -1); }
+    catch (const std::invalid_argument&) { negative_rejected = true; }
+    require(negative_rejected && invalid_score[0] == 83 && invalid_score[1] == 83, "negative QK nnz rejects before writes");
     // All supplied rows still form corrected sparse attention, not full dense:
     // released inclusion correction and +1e-4 remain part of its distribution.
     std::vector<int> all(capacity); std::iota(all.begin(), all.end(), 0);
@@ -388,7 +404,7 @@ int run() {
               << " max_corrected_score_error=" << metrics.corrected_score_error << " max_probability_error=" << metrics.probability_error
               << " max_output_error=" << metrics.output_error << " max_metadata_error=" << metrics.metadata_error << '\n'
               << "MAGICPIG-ATTENTION-BOUNDARIES-CPU: PASS cases=" << metrics.boundary_cases
-              << " rounded_capacity=explicit padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=characterized_half_output empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
+              << " qk_exact_nnz=verified softmax_padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=characterized_half_output empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
     return 0;
 }
 }

@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 3
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -54,29 +54,71 @@ jobs:
           python tools/generate_magicpig_probability_reference.py --check
       - name: All portable and capable native suites
         run: |
-          python tools/check_magicpig_cpu.py --native --build-dir magicpig-validation/plain
-          python tools/check_magicpig_cpu.py --native --sanitize --build-dir magicpig-validation/sanitized
+          python - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('tools').resolve()))
+          import check_magicpig_cpu as driver
+          def escape(text):
+              return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          probe = Path('magicpig-validation/native-probe')
+          probe.mkdir(parents=True, exist_ok=True)
+          capabilities = driver.capabilities('g++', probe, True)
+          (probe / 'capabilities.json').write_text(json.dumps(capabilities, indent=2) + '\n')
+          print('::notice title=Actual CPU OS compiler capability probe::' + escape(json.dumps(capabilities, sort_keys=True)), flush=True)
+          failures = []
+          for mode in ('plain', 'sanitized'):
+              command = [sys.executable, 'tools/check_magicpig_cpu.py', '--native', '--build-dir', f'magicpig-validation/{mode}']
+              if mode == 'sanitized':
+                  command.append('--sanitize')
+              result = subprocess.run(command, capture_output=True, text=True)
+              log = Path(f'magicpig-validation/{mode}.log')
+              log.write_text(result.stdout + '\nSTDERR\n' + result.stderr)
+              print(result.stdout, end='', flush=True)
+              if result.returncode:
+                  failures.append(mode)
+                  detail = f'SHA={os.environ["GITHUB_SHA"]}; mode={mode}; returncode={result.returncode}; ' + (result.stderr or result.stdout)[-16000:]
+                  print('::error title=MagicPIG actual validation failure::' + escape(detail), flush=True)
+          if failures:
+              raise SystemExit('Validation failed: ' + ','.join(failures))
+          PY
       - name: Report actual native execution separately from skips
+        if: always()
         run: |
           python - <<'PY'
           import json, os
           from pathlib import Path
+          def escape(text):
+              return text.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
           for mode in ('plain', 'sanitized'):
-              summary = json.loads(Path(f'magicpig-validation/{mode}/magicpig_cpu_evidence.json').read_text())
-              assert summary['status'] == 'pass'
-              print('CAPABILITY_EVIDENCE', mode, json.dumps(summary['capabilities'], sort_keys=True))
+              summary_path = Path(f'magicpig-validation/{mode}/magicpig_cpu_evidence.json')
+              if summary_path.exists():
+                  summary = json.loads(summary_path.read_text())
+                  assert summary['status'] == 'pass'
+                  results = summary['results']
+                  capabilities = summary['capabilities']
+              else:
+                  results = [json.loads(path.read_text()) for path in Path(f'magicpig-validation/{mode}').glob('*/*/evidence.json')]
+                  probe_path = Path('magicpig-validation/native-probe/capabilities.json')
+                  capabilities = json.loads(probe_path.read_text()) if probe_path.exists() else None
+                  print(f'::notice title=MagicPIG incomplete {mode}::SHA={os.environ["GITHUB_SHA"]}; full summary absent; partial pass evidence is not all-suite success')
               for native_mode in ('avx512', 'bf16'):
-                  results = [r for r in summary['results'] if r['mode'] == native_mode]
-                  if results:
-                      assert all(r['status'] == 'pass' for r in results)
-                      if native_mode == 'avx512':
-                          softmax = next(r for r in results if r['suite'] == 'softmax')
-                          assert 'MAGICPIG-EXP-NATIVE-CPU cases=2821' in softmax['stdout']
-                      print(f'::notice title=MagicPIG {mode} {native_mode}::ACTUALLY EXECUTED PASS; suites={len(results)}; SHA={os.environ["GITHUB_SHA"]}')
-                  else:
-                      reason = summary['capabilities']['modes'][native_mode]['reason']
-                      print(f'::notice title=MagicPIG {mode} {native_mode}::SKIP; {reason}; native repair not verified')
-              print(f'::notice title=MagicPIG combined CPU {mode}::PASS; suites={len(summary["results"])}; leaks_disabled=False; SHA={os.environ["GITHUB_SHA"]}')
+                  executed = [r for r in results if r['mode'] == native_mode]
+                  for result in executed:
+                      assert result['status'] == 'pass'
+                      detail = f'SHA={os.environ["GITHUB_SHA"]}; mode={mode}; ISA={native_mode}; suite={result["suite"]}; actually executed PASS'
+                      if result['suite'] == 'softmax':
+                          assert 'MAGICPIG-EXP-NATIVE-CPU cases=2821' in result['stdout']
+                          detail += '; MAGICPIG-EXP-NATIVE-CPU cases=2821'
+                      print('::notice title=Actual native suite evidence::' + escape(detail))
+                  if not executed:
+                      decision = capabilities['modes'][native_mode] if capabilities else None
+                      if decision and not decision['eligible']:
+                          print(f'::notice title=MagicPIG {mode} {native_mode}::SKIP; {decision["reason"]}; native repair not verified')
+                      else:
+                          print(f'::notice title=MagicPIG {mode} {native_mode}::No passing native suite evidence; eligible ISA may have failed before evidence publication; native repair not verified')
+              if summary_path.exists():
+                  print(f'::notice title=MagicPIG combined CPU {mode}::PASS; suites={len(results)}; leaks_disabled=False; SHA={os.environ["GITHUB_SHA"]}')
           PY
       - name: Bounded OpenMP attention ownership regression
         env:

@@ -236,24 +236,34 @@ const int *indices) {
  * @par Paper mapping
  * MagicPIG arXiv v4, Sections 4.3 and 4.4: normalized attention support.
  * @par Implementation note
- * Borrowed score buffer has nnz finite logits and nnz must be positive.
+ * Borrowed score buffer has nnz finite logits, nnz >= 0. At zero, score may
+ * be null: no writes, maximum and base-2 LSE are both -Inf (zero mass).
  * Mutates scores to probabilities; max_value[0] is the base-2 maximum and
  * expsum[0] is base-2 log-sum-exp, not a raw sum. Buffers remain caller-owned.
  * Bootstrap uses host QK/WV; #58 also composes actual selected QK/WV bodies.
- * Empty candidates remain unsupported (repair #73). Portable lanes replace exp
+ * Nonempty candidates require finite logits. Portable lanes replace exp
  * with host exp. Native AVX512F/FMA runs the actual polynomial on bounded
  * shifted logits with a separate approximation tolerance. No Torch extension,
  * LSH sampling, OpenMP scheduling or GPU execution is inferred.
  * @par Traceability relation
  * Support: selected arithmetic bootstrap; TRACE_TEST_ID: MAGICPIG-BASELINE-CPU.
  * TRACE_TEST_ID: MAGICPIG-SOFTMAX-BOUNDARY-CPU.
+ * TRACE_TEST_ID: MAGICPIG-SOFTMAX-EMPTY-CPU.
  */
 void softmax_kernel(
 float *score, 
 const int nnz,
 float *max_value,
-float *expsum) { 
+float *expsum) {
+    // Empty support is the zero-mass domain: no score access, no probabilities.
+    // Keep the ABI; -Inf base-2 metadata tells the caller this row has no mass.
+    if (nnz == 0) {
+        max_value[0] = -INFINITY;
+        expsum[0] = -INFINITY;
+        return;
+    }
 
+  
   const int nnz_16 = (nnz % 16 == 0) ? nnz : nnz + 16 - nnz % 16;
 
     // Step 1: Find the maximum value (reduction max)
@@ -310,7 +320,7 @@ float *expsum) {
  * @par Implementation note
  * Complete tiles only for correctness support; partial-tile masking includes
  * padding in maximum/sum and writes beyond logical length (repair #72).
- * Empty metadata is -Inf without status (#73); native extreme exponential
+ * Empty support performs no score access and reports -Inf metadata; native extreme exponential
  * fails (#74). Metadata uses base-2 units. Portable isolated sanitizer probes
  * require the exact diagnostic and selected caller; native masked diagnostics
  * are not inferred. Support: TRACE_TEST_ID: MAGICPIG-SOFTMAX-DEFECT-CPU.
@@ -321,6 +331,14 @@ void softmax_kernel_optimized(
     const float head_dim_scale, // sqrt(head_dim)
     float *max_value,
     float *expsum) {
+    // Empty support is the zero-mass domain: no score access, no probabilities.
+    // Keep the ABI; -Inf base-2 metadata tells the caller this row has no mass.
+    if (nnz == 0) {
+        max_value[0] = -INFINITY;
+        expsum[0] = -INFINITY;
+        return;
+    }
+
 
     int nnz_16 = (nnz + 15) & ~15; // Round up to the nearest multiple of 16
 
@@ -368,7 +386,7 @@ void softmax_kernel_optimized(
  * @par Implementation note
  * Positive nnz, finite moderate logits, dimension scale positive. Borrowed
  * scores need rounded-to16 physical capacity: source scales and normalizes
- * padding (#72). Empty max dereference remains unsupported (#73). Returned
+ * padding (#72). Empty support never touches scores and reports -Inf metadata. Returned
  * max and LSE use base2; no raw exponential sum or natural-log claim.
  * Support: see MAGICPIG-SOFTMAX-BOUNDARY-CPU in the sparse Softmax contract.
  */
@@ -378,7 +396,15 @@ const int nnz,
 float sqrt_dim,
 float *max_value,
 float *expsum
-) { 
+) {
+    // Empty support is the zero-mass domain: no score access, no probabilities.
+    // Keep the ABI; -Inf base-2 metadata tells the caller this row has no mass.
+    if (nnz == 0) {
+        max_value[0] = -INFINITY;
+        expsum[0] = -INFINITY;
+        return;
+    }
+
   int nnz_16 = (nnz % 16 == 0) ? (nnz): (nnz + 16 - nnz % 16);
   __m512 hdiv = _mm512_set1_ps(sqrt_dim);
   for (int i = 0; i < nnz_16 / 16; ++i){
@@ -876,6 +902,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(dynamic,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -937,6 +970,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(dynamic,1) num_threads(64)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel_bf16_impl(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -1012,6 +1052,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -1075,6 +1122,13 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(64)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        // Empty retrieval has zero output and -infinity base2 metadata.
+        // Do not dispatch correction (norms may be undefined for an empty head).
+        if (nnz[i] == 0) {
+            std::fill_n(output + i * this->head_dim, this->head_dim, bfloat16(0));
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         qk_kernel_bf16_impl(
           key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
           ind + i * this->max_length,
@@ -1125,7 +1179,7 @@ torch::Tensor nnz_pt)
     if (nnz_pt.dim() != 1 || nnz_pt.size(0) != query_heads) throw std::invalid_argument("full_attention nnz must contain one count per flattened batch/query head");
     const int* counts = static_cast<const int*>(nnz_pt.data_ptr());
     for (int i = 0; i < query_heads; ++i)
-        if (counts[i] <= 0 || counts[i] > this->max_length) throw std::invalid_argument("full_attention requires counts in [1,max_length]; empty support tracked by #73");
+        if (counts[i] < 0 || counts[i] > this->max_length) throw std::invalid_argument("full_attention requires counts in [0,max_length]");
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1147,6 +1201,10 @@ torch::Tensor nnz_pt)
     }
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        if (nnz[i] == 0) {
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         softmax_kernel_optimized(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1227,6 +1285,10 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        if (nnz[i] == 0) {
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1319,6 +1381,10 @@ torch::Tensor nnz_pt)
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
+        if (nnz[i] == 0) {
+            max_value[i] = expsum[i] = -INFINITY;
+            continue;
+        }
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],

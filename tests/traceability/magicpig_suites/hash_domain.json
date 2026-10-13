@@ -1,0 +1,8 @@
+{
+  "name": "hash_domain",
+  "test_file": "tests/traceability/test_magicpig_hash_domain_cpu.cpp",
+  "adapter_file": "tests/traceability/magicpig_lsh_adapter.hpp",
+  "definitions": {
+    "library/lsh/lsh.cc": ["LSH::LSH", "LSH::~LSH", "LSH::alloc", "LSH::fastfill", "LSH::retrieve"]
+  }
+}

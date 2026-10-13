@@ -239,15 +239,16 @@ the useful temporary diagnostic boundaries without adding a new workflow.
 | #59 | `research/magicpig-mp3-cache-merge` / [PR #79](https://github.com/fregata-ariel/HashingDeepLearning/pull/79) | Head `78a655bafd4dd879e85e4307cf70fbb41424feeb`; merge `b1a006d2ccaf15eaf8e1e751127101f74317114f` | Closed; integration CI [38417441911](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38417441911) passed. |
 | #60 | `research/magicpig-mp3-cpu-composition` / [PR #80](https://github.com/fregata-ariel/HashingDeepLearning/pull/80) | Head `ab5d19f3af56b500c6999d534e4b037a615bce6b`; candidate `e2d438475226fc3c815d5ea708ba557a336870f0`; merge `8ec0115d3e61aec23f812f48966ff7d34286aea8`, tree `216572b8bebbd1e2048636f44013daf594c07243` | Closed; PR CI [38424598732](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38424598732) and integration CI [38425592161](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38425592161) passed for the identical candidate/integration tree. |
 | #61 | `research/magicpig-mp3-contracts-ci` / pending PR record | Initial formal base `8ec0115d3e61aec23f812f48966ff7d34286aea8`; final base/head/merge/CI URLs pending | Rebase after required CPU repair merges, independently review contracts/typing, pass applicable exact-head/merge-candidate gates, and record evidence before closure. |
-| #65 | `fix/magicpig-hash-packing-domain` / [PR #82](https://github.com/fregata-ariel/HashingDeepLearning/pull/82) | Head `4a6994ac2673459f8803dd7ade5dccd2ca3071d4`; merge `c8710a16ebf1af5bbd8d8439ed9f9a60857538a6` | Closed; PR CI [38427390230](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38427390230); final #61 rebase uses the publisher record. |
-| #66 | `fix/magicpig-fastfill-population` / [PR #81](https://github.com/fregata-ariel/HashingDeepLearning/pull/81) | Head `67c4180acc0a629aef17a77017009b0de539068e`; merge `e86c7f338e2f6f806224e0bad26b65d3e70a1e2b` | Closed; PR CI [38426808802](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38426808802); final #61 rebase uses the publisher record. |
-| #76 | `fix/magicpig-attention-dimension-contract` / [PR #83](https://github.com/fregata-ariel/HashingDeepLearning/pull/83) | Head `953b6b411d683162d289d4f11f6c78a87cd06f33`; merge `f52e636310b66d4883b420435f4c3b3152c8b7a0` | Closed; PR CI [38427708026](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38427708026); final #61 rebase uses the publisher record. |
-| #75 | `fix/magicpig-qk-logical-length` / [PR #84](https://github.com/fregata-ariel/HashingDeepLearning/pull/84) | Head `f9fc523d6d6a4957218b3901c82a0228c4216743`; merge `2fbe4011d269358a1731437603d8f140ab37ce81` | Closed; PR CI [38428117893](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38428117893); final #61 rebase uses the publisher record. |
-| #77 | `fix/magicpig-gqa-length-routing` / [PR #85](https://github.com/fregata-ariel/HashingDeepLearning/pull/85) | Head `5f9b4739d6f997ce5bddeabdf1ef2712dbdf2875`; merge `624da256778f20026427123c962e497d52774285` | Closed; PR CI [38428509041](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38428509041); final #61 rebase uses the publisher record. |
-| #73 | `fix/magicpig-empty-attention-contract` / [PR #87](https://github.com/fregata-ariel/HashingDeepLearning/pull/87) | Head `c71a4bf513b206d11a04dcdc178cfa1a11760933`; merge `c0ebf2d4988b6ad05d5c645b8d1d81de4f5f7406` | Closed; PR CI [38429089001](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38429089001); final #61 rebase uses the publisher record. |
-| #72 | `fix/magicpig-softmax-logical-length` / [PR #88](https://github.com/fregata-ariel/HashingDeepLearning/pull/88) | Head `fe31db83e8e7d6745b8b9d4b155c7cad4364aebc`; integration pending | Draft task PR; validation/integration pending; CI record pending; final #61 rebase uses the publisher record. |
-| #67/#68 | Reviewed probability/caller repairs; task PR records pending | #68 corner follow-up `2ebae0b3e2749629843aeccdfe8c5fb51f7481d4` is independently reviewed preparation evidence | Consume actual task merge refs and matching CI before #61 final rebase. |
-| #74/#86 | Native exponential repair and Hosted sanitizer follow-up | Actual plain2821-case execution observed; sanitized native attention failed at the local reduction store | #86 repair and actual sanitized native rerun are required before native repair acceptance; local compile-only/portable passes cannot substitute. |
+| #65 | `fix/magicpig-hash-packing-domain` / [PR #82](https://github.com/fregata-ariel/HashingDeepLearning/pull/82) | Head `4a6994ac2673459f8803dd7ade5dccd2ca3071d4`; merge `c8710a16ebf1af5bbd8d8439ed9f9a60857538a6` | Closed; PR CI [38427390230](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38427390230); source/dependency checkpoint included in `66f9855`. |
+| #66 | `fix/magicpig-fastfill-population` / [PR #81](https://github.com/fregata-ariel/HashingDeepLearning/pull/81) | Head `67c4180acc0a629aef17a77017009b0de539068e`; merge `e86c7f338e2f6f806224e0bad26b65d3e70a1e2b` | Closed; PR CI [38426808802](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38426808802); source/dependency checkpoint included in `66f9855`. |
+| #76 | `fix/magicpig-attention-dimension-contract` / [PR #83](https://github.com/fregata-ariel/HashingDeepLearning/pull/83) | Head `953b6b411d683162d289d4f11f6c78a87cd06f33`; merge `f52e636310b66d4883b420435f4c3b3152c8b7a0` | Closed; PR CI [38427708026](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38427708026); source/dependency checkpoint included in `66f9855`. |
+| #75 | `fix/magicpig-qk-logical-length` / [PR #84](https://github.com/fregata-ariel/HashingDeepLearning/pull/84) | Head `f9fc523d6d6a4957218b3901c82a0228c4216743`; merge `2fbe4011d269358a1731437603d8f140ab37ce81` | Closed; PR CI [38428117893](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38428117893); source/dependency checkpoint included in `66f9855`. |
+| #77 | `fix/magicpig-gqa-length-routing` / [PR #85](https://github.com/fregata-ariel/HashingDeepLearning/pull/85) | Head `5f9b4739d6f997ce5bddeabdf1ef2712dbdf2875`; merge `624da256778f20026427123c962e497d52774285` | Closed; PR CI [38428509041](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38428509041); source/dependency checkpoint included in `66f9855`. |
+| #73 | `fix/magicpig-empty-attention-contract` / [PR #87](https://github.com/fregata-ariel/HashingDeepLearning/pull/87) | Head `c71a4bf513b206d11a04dcdc178cfa1a11760933`; merge `c0ebf2d4988b6ad05d5c645b8d1d81de4f5f7406` | Closed; PR CI [38429089001](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38429089001); source/dependency checkpoint included in `66f9855`. |
+| #72 | `fix/magicpig-softmax-logical-length` / [PR #88](https://github.com/fregata-ariel/HashingDeepLearning/pull/88) | Head `fe31db83e8e7d6745b8b9d4b155c7cad4364aebc`; merge `60ab9d815ed83d6b9637badb60e1ec4db7b418fb` | Closed; PR CI [38429508218](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38429508218); source/dependency checkpoint included in `66f9855`. |
+| #67 | `fix/magicpig-probability-domain` / [PR #89](https://github.com/fregata-ariel/HashingDeepLearning/pull/89) | Head `760d531ad27539323ad42294044205897aa3c821`; merge `0eb91bd21ab087f7cae69882a31ef75b48e8825b` | Closed; PR CI [38430209389](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38430209389); source/dependency checkpoint included in `66f9855`. |
+| #68 | `fix/magicpig-stable-inclusion-probability` / [PR #90](https://github.com/fregata-ariel/HashingDeepLearning/pull/90) | Head `94155eac00bf78d2925db4b457ace65c90ae1087`; merge `66f9855ba7249edea52b77d7cdc8568484c2a4e9` | Closed; PR CI [38430771944](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38430771944); source/dependency checkpoint included in `66f9855`. |
+| #74/#86 | Native exponential repair and supported sanitizer/compiler follow-up | Paired aligned-source/GCC14 diagnostic `454ef4a8d96500f027cce3ee982a017ef1bc4c40`, [CI38431065221](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38431065221) passed | Formal task merges/checks pending; preserve Ubuntu24 and explicitg++14, then rebase #61 on actual integration refs. |
 | #62 | Deferred native GPU task | Unexecuted; no recurring job/date | Explicit native GPU restart, verified extension/link closure and runtime/device tests required. |
 
 Concrete restart: inspect #60/#61 and their existing task PRs before creating
@@ -260,7 +261,7 @@ required repair merges, replace pending recovery cells and revalidate #61 on
 the actual integration base. Close remaining parents only after their combined applicable gates pass;
 deferred GPU work and open repair issues must remain explicit.
 
-## Reviewed combined preparation evidence
+## Reviewed combined preparation and compiler evidence
 
 Candidate `f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb` passed twelve local
 portable suites plain and ASan/UBSan/LSan, source/capability/driver/boundary
@@ -271,17 +272,31 @@ local hardware skips. The temporary diagnostic exists only on that validation
 branch; #61 does not import its workflow. Permanent existing traceability CI
 retains bounded real OpenMP and API-readable native/checkout notices.
 
-The Hosted Ubuntu24 observation run
+The initial Hosted Ubuntu24 observation
 [38428254057](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38428254057)
-actually passed17 plain portable/Python/native suites, including the native
-2821-case exponential regression. Its sanitized native attention phase failed
-with an ASan SEGV at `_mm512_storeu_ps` in the local Softmax reduction (#86);
-the sanitized native exponential gate was not reached. That is a failure, not
-a hardware skip. Stack-buffer repair candidates and local compilation do not
-establish successful Hosted native revalidation. Formal #61 integration must
-wait for the applicable native repair result and retire the temporary workflow
-without importing it. Permanent phase logs and failure annotations preserve
-this distinction even when a final success-evidence file is absent.
+passed the native plain exponential regression, then failed sanitized native
+attention at a local SIMD reduction store (#86). This is historical failure
+evidence, not a capability skip. The approved aligned storage candidate fixes
+that site; a second GCC13 sanitizer initializer-list copy still failed at an
+actual `vmovdqa64` instruction.
+
+The same-source target comparison on the supported GCC14 compiler passed
+native baseline and direct2821-case exponential sanitizer checks. Diagnostic
+head `454ef4a8d96500f027cce3ee982a017ef1bc4c40`, tree
+`a6d27e1ec277a697ad617e659e0f58496eb0d87b`,
+[CI38431065221](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/38431065221)
+then passed both full17-suite driver phases, bounded OpenMP, strict typing and
+source/ledger/docs/contracts. Its native attention/baseline/retrieval/Softmax
+records are individually annotation-backed in both phases. The earlier verbose
+report exceeded GitHub's ten-notice-per-step limit, so missing sanitized BF16
+and aggregate annotations are covered by successful full-driver return codes,
+not invented individual notices. The permanent validated reporter uses eight
+compact notices to retain all native-mode/aggregate outcomes and suite names.
+
+Formal #86/#74 merges and their exact-candidate CI remain distinct from this
+diagnostic. Final #61 rebase preserves Ubuntu24 and explicitg++14, consumes
+those actual integrations, and retires the temporary workflow without importing
+it. No sanitizer, verification, or native ISA gate is disabled.
 
 GitHub API access is resolved. Existing task PRs and their actual tested
 checkout/tree notices are the authoritative publication/integration record;

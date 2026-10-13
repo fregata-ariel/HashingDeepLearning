@@ -62,7 +62,8 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
                     output.append((f"MagicPIG {phase} native exponential", f"ACTUALLY EXECUTED PASS; {NATIVE_EXP_MARKER}; commit={commit}"))
                 else:
                     output.append((f"MagicPIG {phase} native exponential", f"PENDING #74; 2821-case repair regression not enrolled/executed; commit={commit}"))
-            output.append((f"MagicPIG {phase} {mode}", f"ACTUALLY EXECUTED PASS; suites={len(executed)}; commit={commit}"))
+            names = ",".join(sorted(str(item.get("suite", "unknown")) for item in executed))
+            output.append((f"MagicPIG {phase} {mode}", f"ACTUALLY EXECUTED PASS; suites={len(executed)}; names={names}; commit={commit}"))
         else:
             require(decision["eligible"] is False, f"eligible {mode} has no execution result")
             reason = decision.get("reason")
@@ -115,6 +116,7 @@ def main() -> None:
         else:
             output.extend(("notice", title, value) for title, value in entries)
     require(phases == {"plain", "sanitized"}, "both plain and sanitized execution evidence are required")
+    require(len(output) <= 10, "reporting exceeds GitHub per-step annotation limit")
     for level, title, value in output:
         print(f"::{level} title={escape_notice(title)}::{escape_notice(value)}")
     if failed:

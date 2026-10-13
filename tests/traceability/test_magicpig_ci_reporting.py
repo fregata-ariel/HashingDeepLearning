@@ -125,6 +125,31 @@ class ReportingContracts(unittest.TestCase):
                     reporter.main()
                 self.assertNotIn("::notice", output.getvalue())
 
+    def test_both_actual_native_phases_fit_github_notice_limit(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            arguments = []
+            for name, sanitize in (("plain", False), ("sanitized", True)):
+                data = self.native(reporter.NATIVE_EXP_MARKER + " max_relative_error=1e-6")
+                data["sanitize"] = sanitize
+                for row in data["results"]:
+                    row["sanitize"] = sanitize
+                data["capabilities"]["modes"]["bf16"]["eligible"] = True
+                data["results"].append({"suite": "bf16_tile", "mode": "bf16", "status": "pass",
+                                        "sanitize": sanitize, "leak_check_explicitly_disabled": False})
+                (root / name).mkdir()
+                path = root / name / "evidence.json"
+                path.write_text(json.dumps(data))
+                arguments.extend(["--evidence", str(path)])
+            output = io.StringIO()
+            with patch.object(sys, "argv", ["reporter", *arguments]), patch.object(reporter.subprocess, "check_output", return_value="tested-commit\n"), patch.object(reporter, "native_exp_enrolled", return_value=True), redirect_stdout(output):
+                reporter.main()
+            lines = output.getvalue().splitlines()
+            self.assertEqual(len(lines), 8)
+            self.assertTrue(all(line.startswith("::notice") for line in lines))
+            self.assertIn("MagicPIG sanitized bf16::ACTUALLY EXECUTED PASS; suites=1; names=bf16_tile", output.getvalue())
+            self.assertIn("MagicPIG CPU sanitized::PASS", output.getvalue())
+
     def test_cli_wrong_sanitizer_phase_content_remains_failed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

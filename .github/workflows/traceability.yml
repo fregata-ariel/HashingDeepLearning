@@ -82,6 +82,12 @@ jobs:
           sudo apt-get install -y g++-14
           g++-14 --version
 
+      - name: Install the supported MagicPIG native sanitizer compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-14
+          g++-14 --version
+
       - name: CPU and commit information
         run: |
           uname -a
@@ -118,8 +124,8 @@ jobs:
           python3 tools/generate_magicpig_probability_reference.py --check
           mkdir -p traceability-artifact/magicpig-cpu/plain traceability-artifact/magicpig-cpu/sanitized
           set -o pipefail
-          python3 tools/check_magicpig_cpu.py --native --build-dir traceability-artifact/magicpig-cpu/plain 2>&1 | tee traceability-artifact/magicpig-cpu/plain/run.log
-          python3 tools/check_magicpig_cpu.py --native --sanitize --build-dir traceability-artifact/magicpig-cpu/sanitized 2>&1 | tee traceability-artifact/magicpig-cpu/sanitized/run.log
+          python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --build-dir traceability-artifact/magicpig-cpu/plain 2>&1 | tee traceability-artifact/magicpig-cpu/plain/run.log
+          python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --sanitize --build-dir traceability-artifact/magicpig-cpu/sanitized 2>&1 | tee traceability-artifact/magicpig-cpu/sanitized/run.log
 
       - name: Report actual native execution separately from skips
         if: always()
@@ -133,7 +139,7 @@ jobs:
           OMP_THREAD_LIMIT: "4"
           OMP_NUM_THREADS: "4"
         run: |
-          g++ -std=c++17 -O1 -fno-tree-vectorize -fno-tree-slp-vectorize -fopenmp -fsanitize=address,undefined -g -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie traceability-artifact/magicpig-cpu/sanitized/portable/attention/selected_bodies.cpp -o traceability-artifact/magicpig-cpu/attention-openmp
+          g++-14 -std=c++17 -O1 -fno-tree-vectorize -fno-tree-slp-vectorize -fopenmp -fsanitize=address,undefined -g -fno-sanitize-recover=all -fno-omit-frame-pointer -no-pie traceability-artifact/magicpig-cpu/sanitized/portable/attention/selected_bodies.cpp -o traceability-artifact/magicpig-cpu/attention-openmp
           traceability-artifact/magicpig-cpu/attention-openmp
           echo "::notice title=MagicPIG bounded OpenMP attention::PASS; OMP_THREAD_LIMIT=4; OMP_NUM_THREADS=4; ASan+UBSan+LSan; commit=$(git rev-parse HEAD)"
 

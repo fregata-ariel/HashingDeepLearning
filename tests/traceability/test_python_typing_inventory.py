@@ -148,8 +148,8 @@ class WorkflowContracts(unittest.TestCase):
             paths = self.trigger_paths(text, event)
             for changed in ("ports/magicpig/library/lsh/lsh.cc", "third_party/magicpig/models/attnserver.py", "tests/traceability/test_magicpig_cache_merge_cpu.py", "docs/MAGICPIG_INTEGRATION.md"):
                 self.assertTrue(any(fnmatch.fnmatchcase(changed, p) for p in paths))
-        self.assertIn("python3 tools/check_magicpig_cpu.py --native --build-dir", text)
-        self.assertIn("python3 tools/check_magicpig_cpu.py --native --sanitize --build-dir", text)
+        self.assertIn("python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --build-dir", text)
+        self.assertIn("python3 tools/check_magicpig_cpu.py --cxx g++-14 --native --sanitize --build-dir", text)
         self.assertNotIn("--disable-leak-check", text)
         self.assertNotIn("schedule:", text)
         self.assertNotIn("self-hosted", text)
@@ -179,6 +179,9 @@ class WorkflowContracts(unittest.TestCase):
         self.assertIn('OMP_THREAD_LIMIT: "4"', text)
         self.assertIn('OMP_NUM_THREADS: "4"', text)
         self.assertIn("-fopenmp -fsanitize=address,undefined", text)
+        self.assertIn("runs-on: ubuntu-24.04", text)
+        self.assertIn("sudo apt-get install -y g++-14", text)
+        self.assertIn("g++-14 -std=c++17 -O1", text)
         openmp = text.split("      - name: Bounded OpenMP attention ownership regression\n", 1)[1].split("      - name:", 1)[0]
         self.assertNotIn("-mavx512", openmp)
 

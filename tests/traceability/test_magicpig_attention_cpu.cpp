@@ -271,6 +271,55 @@ void varying_full_server(int groups, Metrics& metrics) {
     }
     }
 }
+void empty_server(bool full, bool dynamic, int groups, Metrics& metrics) {
+    constexpr int dim = 128, capacity = 32, batches = 2, kvheads = 2;
+    const int heads = batches * kvheads * groups;
+    SparseAttentionServer server;
+    server.alloc(2, kvheads * groups, kvheads, dim, batches, capacity);
+    std::vector<bfloat16> keys(batches * kvheads * capacity * dim, 0x3d80), values(keys.size(), 0x3f80);
+    for (std::size_t i = 0; i < keys.size(); ++i) keys[i] = magicpig_attention_model::encode(float((int(i) % 11) - 5) / 32);
+    std::vector<float> norms(batches * kvheads * capacity);
+    for (int row = 0; row < batches * kvheads * capacity; ++row) norms[row] = float(norm(keys.data() + row * dim, dim));
+    std::vector<float> query(heads * dim, 0.125f), qnorm(heads, float(norm(query.data(), dim))), metadata(2 * heads + 2, 77);
+    std::vector<int> counts(heads, 16), ids(heads * capacity);
+    for (int head = 0; head < heads; ++head) {
+        if (head % 3 != 1) { counts[head] = 0; qnorm[head] = 0; }
+        for (int j = 0; j < capacity; ++j) ids[head * capacity + j] = j;
+    }
+    std::vector<bfloat16> output(heads * dim + 2, 0x3f80);
+    for (int layer = 0; layer < 2; ++layer) {
+        for (int batch = 0; batch < batches; ++batch) {
+            const int start = batch * kvheads * capacity;
+            server.fill(layer, batch, torch::Tensor(keys.data() + start * dim, {kvheads, capacity, dim}),
+                        torch::Tensor(values.data() + start * dim, {kvheads, capacity, dim}),
+                        torch::Tensor(norms.data() + start, {kvheads, capacity}));
+        }
+        auto* scores = static_cast<float*>(server.get_score().data_ptr());
+        std::fill_n(scores, heads * capacity, 91);
+        if (full) server.full_attention(layer, torch::Tensor(output.data(), {heads, dim}), torch::Tensor(metadata.data(), {2, heads}),
+                                       torch::Tensor(query.data(), {heads, dim}), torch::Tensor(counts.data(), {heads}));
+        else if (dynamic) server.dynamic_attention(layer, 3, 4, torch::Tensor(output.data(), {heads, dim}), torch::Tensor(metadata.data(), {2, heads}),
+                                       torch::Tensor(query.data(), {heads, dim}), torch::Tensor(qnorm.data(), {heads}),
+                                       torch::Tensor(ids.data(), {heads, capacity}), torch::Tensor(counts.data(), {heads}));
+        else server.attention(layer, 3, 4, torch::Tensor(output.data(), {heads, dim}), torch::Tensor(metadata.data(), {2, heads}),
+                                       torch::Tensor(query.data(), {heads, dim}), torch::Tensor(qnorm.data(), {heads}),
+                                       torch::Tensor(ids.data(), {heads, capacity}), torch::Tensor(counts.data(), {heads}));
+        for (int head = 0; head < heads; ++head) {
+            if (counts[head] == 0) {
+                require(std::all_of(output.begin() + head * dim, output.begin() + (head + 1) * dim, [](auto x){return x == 0;}), "empty server output zero");
+                require(metadata[head] == -INFINITY && metadata[heads + head] == -INFINITY, "empty server max/LSE negative infinity");
+                require(std::all_of(scores + head * capacity, scores + (head + 1) * capacity, [](auto x){return x == 91;}), "empty server leaves scores untouched");
+                ++metrics.boundary_cases;
+            } else {
+                std::vector<int> selected(16); std::iota(selected.begin(), selected.end(), 0);
+                const auto expected = oracle(keys.data() + head / groups * capacity * dim, values.data() + head / groups * capacity * dim,
+                                             query.data() + head * dim, selected, dim, !full);
+                check_result(scores + head * capacity, output.data() + head * dim, metadata.data(), head, heads, expected, metrics);
+            }
+        }
+        require(output[heads * dim] == 0x3f80 && output[heads * dim + 1] == 0x3f80 && metadata[2 * heads] == 77 && metadata[2 * heads + 1] == 77, "empty mixed-head canaries");
+    }
+}
 void low_level_boundaries(Metrics& metrics) {
     constexpr int dim = 32, capacity = 32;
     std::vector<bfloat16> key(capacity * dim), value(key.size());
@@ -411,7 +460,7 @@ void low_level_boundaries(Metrics& metrics) {
         std::vector<int> counts(heads, 16);
         auto* scores = static_cast<float*>(server.get_score().data_ptr());
         std::fill_n(scores, heads * capacity, 91);
-        for (int invalid : {-1, 0, capacity + 1}) {
+        for (int invalid : {-1, capacity + 1}) {
             counts.back() = invalid;
             bool rejected = false;
             try { server.full_attention(0, torch::Tensor(result.data(), {heads, dim}),
@@ -478,6 +527,9 @@ int run() {
     }
     for (int groups : {1, 4, 8}) for (int count : {16, 32}) full_server(groups, count, metrics);
     for (int groups : {1, 4, 8}) varying_full_server(groups, metrics);
+    empty_server(false, false, 2, metrics);
+    empty_server(false, true, 2, metrics);
+    for (int groups : {1, 4, 8}) empty_server(true, false, groups, metrics);
     low_level_boundaries(metrics);
     std::cout << std::setprecision(12)
               << "MAGICPIG-ATTENTION-CPU: PASS compositions=" << metrics.compositions
@@ -486,7 +538,7 @@ int run() {
               << " max_corrected_score_error=" << metrics.corrected_score_error << " max_probability_error=" << metrics.probability_error
               << " max_output_error=" << metrics.output_error << " max_metadata_error=" << metrics.metadata_error << '\n'
               << "MAGICPIG-ATTENTION-BOUNDARIES-CPU: PASS cases=" << metrics.boundary_cases
-              << " qk_exact_nnz=verified softmax_padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty=not_called OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
+              << " qk_exact_nnz=verified softmax_padded_mutation=characterized unsupported_dimensions_groups=rejected varying_GQA_lengths=corrected_query_head_contract empty_server=zero_output_negative_infinity_metadata OpenMP=serial model_conversion=FBGEMM_bits_add_0x8000\n";
     return 0;
 }
 }

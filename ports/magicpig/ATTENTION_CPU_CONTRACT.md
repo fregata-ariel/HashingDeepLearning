@@ -1,4 +1,4 @@
-# MagicPIG selected attention CPU contract (#58, repairs #75/#76/#77)
+# MagicPIG selected attention CPU contract (#58, repairs #73/#75/#76/#77)
 
 The `attention` suite executes the maintained `qk_kernel`, `qk_kernel_full`,
 `transform_kernel`, `softmax_kernel`, `softmax_kernel_full`,
@@ -48,11 +48,12 @@ for the second KV group. Additional FP64 fixtures vary lengths within groups,
 between KV heads, between batches and between two layers; keys/values and
 queries differ across these axes. Shape, layer and every count are validated
 before any score/output/metadata write. Negative and over-capacity counts and
-a KV-sized count vector are rejected. Empty full-server counts are explicitly
-rejected until repair #73 is composed; empty QK remains supported separately.
+a KV-sized count vector are rejected. Repair #73 accepts zero counts, writes zero BF16 output and negative-infinity
+base2 maximum/LSE, and leaves the empty head's score row unchanged. Sparse
+empty heads bypass correction, so undefined empty norms are never read.
 
-There are 786 head compositions, 15,808 probability checks, 60,480 BF16 output
-coordinate checks, 432 ownership checks, 32 corrected-score checks, and 60 boundary cases including dimension/group rejection. Portable absolute
+There are 832 nonempty head compositions, 16,544 probability checks, 66,368 BF16 output
+coordinate checks, 432 ownership checks, 32 corrected-score checks, and 149 boundary cases (including 90 empty server heads) including dimension/group rejection. Portable absolute
 budgets are `3e-5` corrected score and probability, `0.004` output (including BF16 quantization), and
 `5e-5` base-2 metadata. Native budgets are `0.002`, `0.008`, and `0.03`; the
 metadata budget is the existing polynomial bootstrap budget. Local maxima were
@@ -82,11 +83,15 @@ this check also detects additive logit shifts that normalization would hide.
   General low-level full QK accepts positive groups and dimension multiples16.
 * `alloc` rejects invalid/nondivisible dimensions and repeated allocation before
   mutating server state. Sparse groups2 remain supported.
-* Empty candidates are not called in this suite. The separate Softmax suite
-  covers empty inputs and exact score-allocation tail diagnostics; QK exact logical
-  allocation and empty-buffer safety are tested; empty server awaits #73. Invalid layer/request IDs, counts,
-  capacities, head divisibility, repeated allocation, expired views and OpenMP
-  races remain unsupported.
+* Repair #73 checks empty and mixed-empty heads in static/dynamic sparse
+  server and full server across two layers and batches. Full groups1/4/8 and
+  sparse group2 execute actual selected server methods; empty score rows and
+  output/metadata canaries remain unchanged. Native BF16/scheduled source paths
+  apply the same empty policy, but those server dispatches are not executed by
+  this std-only fixture. Invalid request IDs, other shapes/ABI/dtypes,
+  reallocation lifetime beyond alloc rejection and OpenMP races remain outside
+  these support claims.
+
 
 Repairs #75/#76/#77 enforce logical candidate bounds, dimension/group policy
 and consistent query-head length routing. It is not whole-extension build

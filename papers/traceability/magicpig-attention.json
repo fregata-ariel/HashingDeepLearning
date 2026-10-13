@@ -17,9 +17,9 @@
       },
       "conditions": {
         "execution": "portable software FP32 lanes; optional capability-gated actual AVX512F/FMA selected arithmetic",
-        "compositions": 786,
-        "probability_checks": 15808,
-        "output_coordinate_checks": 60480,
+        "compositions": 832,
+        "probability_checks": 16544,
+        "output_coordinate_checks": 66368,
         "ownership_checks": 432,
         "seed": "fixed deterministic literal formulas, no RNG",
         "sparse": "two layers, two batches, two KV heads, two query groups; dimensions 16/32/128; nnz 1/15/16/17/31/32; valid capacity 32 and initialized padding; distinct unsorted or repeated candidate IDs",
@@ -32,7 +32,9 @@
         "native_capabilities": "AVX512F and FMA with confirmed GCC CPU/OS gate before execution",
         "gpu_execution": "postponed",
         "torch_extension": "not built",
-        "corrected_score_checks": 32
+        "corrected_score_checks": 32,
+        "empty_server_heads_checked": 90,
+        "empty_server_policy": "Repair #73: empty heads return zero BF16 output, -infinity base2 max/LSE and unchanged score rows; mixed-empty static/dynamic/full fixtures across two layers/batches; empty sparse norms not read."
       },
       "note": "Support characterization, not exact paper replication or end-to-end LSH/model validation. Actual same-data all-candidate corrected sparse and dense pipelines each match their own oracle and differ as expected because inclusion correction remains. fill copies storage; getter views alias live server; clear is observed through existing views; alloc called once per server and destructor sanitizer checked."
     },
@@ -51,18 +53,18 @@
         "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU"
       },
       "conditions": {
-        "cases": 60,
+        "cases": 149,
         "nnz": "0/1/15/16/17/31/32",
         "capacity": "Repair #75 exact logical candidate/score allocations plus guarded logical scores; server score stride remains capacity32.",
         "padding_observation": "QK touches only logical nnz; preexisting capacity padding remains unchanged. Full softmax padding remains characterized pending #74.",
         "dimension_observation": "Repair #76: FP32 QK/WV reject nonpositive/nonmultiple16 dimensions before reads/writes; dimensions near16/32/128 checked.",
         "full_group_observation": "Repair #76: full server and fixed WV reject dimensions other than128 or groups outside1/4/8 before writes; valid groups remain FP64 checked.",
-        "empty_candidates": "QK zero candidates access no buffers including null-buffer witness; empty server handled separately in #73.",
+        "empty_candidates": "QK nnz0 permits null buffers; server empty heads bypass correction and return zero output/-infinity metadata without score writes; nativeBF16/scheduled server source paths updated but not runtime exercised.",
         "invalid_parameters": "Full server dimension/group, layer, count-vector rank/length and all logical counts validated before writes; unsupported shapes/ABI/dtype beyond model remain untested.",
         "gpu_execution": "postponed",
         "varying_gqa_lengths_observation": "Repair #77 original [16,16,16,16,32,32,32,32] regression produces dense1.0; general varying GQA lengths checked against FP64 probability/output/base2 metadata in two layers/batches."
       },
-      "note": "Repairs #75/#76/#77 enforce logical QK bounds, supported dimensions/groups and query-head nnz routing. Full empty counts explicitly reject pending composition with #73; Softmax tails remain tracked by #74."
+      "note": "Repairs #73/#75/#76/#77 enforce empty server policy, logical QK bounds, supported dimensions/groups and query-head nnz routing. Softmax tails remain tracked by #74."
     }
   ]
 }

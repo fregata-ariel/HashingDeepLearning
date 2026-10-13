@@ -37,9 +37,15 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
     results = [record(item, "suite") for item in cast(list[object], raw_results)]
     require(all(item.get("status") == "pass" for item in results), "CPU suite did not pass")
     for item in results:
-        if item.get("mode") != "portable_python":
+        mode = item.get("mode")
+        require(isinstance(mode, str) and mode in {"portable", "portable_python", "avx512", "bf16"}, "unknown CPU suite execution mode")
+        if mode == "portable_python":
+            require(item.get("sanitizer") == "not_applicable_python_adapter", "Python adapter sanitizer scope is not explicit")
+        else:
             require(item.get("sanitize") is summary["sanitize"], "suite sanitizer mode differs from summary")
             require(item.get("leak_check_explicitly_disabled") is False, "CPU evidence disabled leak detection")
+    require(any(item.get("mode") == "portable" for item in results),
+            "combined CPU reporting requires actual portable C++ execution")
     capability_modes = record(record(summary.get("capabilities"), "capability").get("modes"), "capability modes")
     output: list[tuple[str, str]] = []
     for mode in ("avx512", "bf16"):
@@ -62,7 +68,11 @@ def notices(summary: dict[str, object], commit: str, require_native_exp: bool = 
             reason = decision.get("reason")
             require(isinstance(reason, str) and bool(reason), f"missing {mode} skip reason")
             output.append((f"MagicPIG {phase} {mode}", f"SKIP; {reason}; native repair not verified; commit={commit}"))
-    output.append((f"MagicPIG CPU {phase}", f"PASS; suites={len(results)}; leaks_disabled=False; commit={commit}"))
+    cpp_count = sum(item.get("mode") != "portable_python" for item in results)
+    python_count = len(results) - cpp_count
+    output.append((f"MagicPIG CPU {phase}",
+                   f"PASS; suites={len(results)}; cpp_suites={cpp_count}; cpp_leaks_disabled=False; "
+                   f"python_adapters={python_count} (not sanitizer instrumented); commit={commit}"))
     return phase, output
 
 

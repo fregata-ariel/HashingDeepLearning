@@ -110,7 +110,12 @@ Unsupported standard Hosted runners still skip explicitly. Phase logs are kept
 with the evidence; reporting runs even after a driver failure. Missing/failed
 final evidence produces an API-readable FAIL/INCOMPLETE error annotation with
 the actual diagnostic and keeps CI failing. It never becomes a capability skip
-or borrows the successful plain phase as sanitized evidence.
+or borrows the successful plain phase as sanitized evidence. Combined reporting
+requires an actual portable C++ result and rejects unknown execution modes.
+Python adapter records must explicitly say `not_applicable_python_adapter`;
+aggregate notices identify them as uninstrumented and apply leak/sanitizer
+claims only to executed C++ records. Python-only fixture evidence cannot
+establish an aggregate sanitized CPU pass.
 
 The OpenMP gate recompiles the sanitized portable attention translation unit
 with `-fopenmp` and runs it under `OMP_THREAD_LIMIT=4` and `OMP_NUM_THREADS=4`.

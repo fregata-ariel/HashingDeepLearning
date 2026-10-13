@@ -83,6 +83,66 @@ class ReportingContracts(unittest.TestCase):
             self.assertIn("AddressSanitizer: SEGV%0A_mm512_storeu_ps", text)
             self.assertNotIn("MagicPIG CPU sanitized::PASS", text)
 
+    def test_python_only_summary_cannot_claim_aggregate_sanitizer_pass(self) -> None:
+        for sanitize in (False, True):
+            data = self.evidence(sanitize)
+            data["results"] = [{"suite": "cache_merge", "mode": "portable_python",
+                                "status": "pass", "sanitizer": "not_applicable_python_adapter"}]
+            with self.subTest(sanitize=sanitize), self.assertRaisesRegex(ValueError, r"actual portable C\+\+ execution"):
+                reporter.notices(data, "commit")
+
+    def test_python_adapter_scope_is_explicit_in_mixed_summary(self) -> None:
+        data = self.evidence(True)
+        data["results"].append({"suite": "cache_merge", "mode": "portable_python",
+                                "status": "pass", "sanitizer": "not_applicable_python_adapter"})
+        _, entries = reporter.notices(data, "commit")
+        self.assertTrue(any("cpp_suites=1" in text and "python_adapters=1 (not sanitizer instrumented)" in text
+                            for _, text in entries))
+        for scope in (None, "ASan", True):
+            data["results"][1]["sanitizer"] = scope
+            with self.subTest(scope=scope), self.assertRaisesRegex(ValueError, "sanitizer scope"):
+                reporter.notices(data, "commit")
+
+    def test_unknown_execution_modes_reject_before_notices(self) -> None:
+        for mode in ("mystery", "native", None, 1, [], {}):
+            data = self.evidence(True)
+            data["results"][0]["mode"] = mode
+            with self.subTest(mode=mode), self.assertRaisesRegex(ValueError, "unknown CPU suite"):
+                reporter.notices(data, "commit")
+
+    def test_cli_requires_both_phases_without_duplicates_or_unknown_phase_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for name in ("plain", "sanitized", "unexpected"):
+                (root / name).mkdir()
+                (root / name / "evidence.json").write_text(json.dumps(self.evidence(name=="sanitized")))
+            for names, error in ((("plain",), "both plain and sanitized"),
+                                 (("plain", "plain"), "duplicate plain"),
+                                 (("plain", "unexpected"), "evidence parent")):
+                arguments = [argument for name in names for argument in ("--evidence", str(root / name / "evidence.json"))]
+                output = io.StringIO()
+                with self.subTest(names=names), patch.object(sys, "argv", ["reporter", *arguments]), patch.object(reporter.subprocess, "check_output", return_value="tested-commit\n"), patch.object(reporter, "native_exp_enrolled", return_value=True), redirect_stdout(output), self.assertRaisesRegex(ValueError, error):
+                    reporter.main()
+                self.assertNotIn("::notice", output.getvalue())
+
+    def test_cli_wrong_sanitizer_phase_content_remains_failed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = []
+            for name in ("plain", "sanitized"):
+                (root / name).mkdir()
+                path = root / name / "evidence.json"
+                # A copied plain record cannot validate the sanitizer phase.
+                path.write_text(json.dumps(self.evidence(False)))
+                paths.extend(["--evidence", str(path)])
+            output = io.StringIO()
+            with patch.object(sys, "argv", ["reporter", *paths]), patch.object(reporter.subprocess, "check_output", return_value="tested-commit\n"), patch.object(reporter, "native_exp_enrolled", return_value=True), redirect_stdout(output), self.assertRaises(SystemExit) as failure:
+                reporter.main()
+            self.assertEqual(failure.exception.code, 1)
+            self.assertIn("sanitizer mode disagrees with its phase path", output.getvalue())
+            self.assertIn("::error title=MagicPIG CPU sanitized failure", output.getvalue())
+            self.assertNotIn("::notice title=MagicPIG CPU sanitized::PASS", output.getvalue())
+
     def test_compilation_without_execution_is_not_a_native_result(self) -> None:
         data = self.evidence()
         data["capabilities"]["modes"]["avx512"]["eligible"] = True

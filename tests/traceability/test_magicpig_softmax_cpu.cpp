@@ -1,3 +1,4 @@
+// TRACE_TEST_ID: MAGICPIG-SOFTMAX-EMPTY-CPU
 // TRACE_TEST_ID: MAGICPIG-SOFTMAX-BOUNDARY-CPU
 // TRACE_TEST_ID: MAGICPIG-SOFTMAX-DEFECT-CPU
 // Actual selected bodies precede this fixture; independent FP64 expectations
@@ -52,11 +53,7 @@ void compare(const std::vector<float>& actual,const Oracle& expected,float max2,
 }
 void isolated_probe(const std::string& option) {
     float maximum=0, lse=0;
-    if (option=="--probe-sparse-empty" || option=="--probe-full-empty") {
-        std::cout<<"MAGICPIG-SOFTMAX-PROBE "<<option.substr(8)<<std::endl;
-        if (option=="--probe-sparse-empty") softmax_kernel(nullptr,0,&maximum,&lse);
-        else softmax_kernel_full(nullptr,0,2,&maximum,&lse);
-    } else if (option=="--probe-full-tail" || option=="--probe-optimized-tail") {
+    if (option=="--probe-full-tail" || option=="--probe-optimized-tail") {
         // Exactly one element: rounded-vector reads have no legal padding.
         std::unique_ptr<float[]> scores(new float[1]); scores[0]=0;
         std::cout<<"MAGICPIG-SOFTMAX-PROBE "<<option.substr(8)<<std::endl;
@@ -120,12 +117,22 @@ int run() {
     softmax_kernel(equal.data(),16,&maximum,&lse);
     for (float x:equal) require(x==0.0625f,"equal logits must have probability 1/16");
     require(maximum==0 && lse==4,"base-2 LSE of sixteen unit exponents is four");
-    // Empty optimized input does not dereference score, but returns -Inf
-    // metadata with no status. This is characterization, not a valid softmax.
-    std::vector<float> empty_guard(2,sentinel);
-    softmax_kernel_optimized(empty_guard.data(),0,2,&maximum,&lse);
-    require(std::isinf(maximum) && maximum<0 && std::isinf(lse) && lse<0,"optimized empty-domain outcome changed");
-    require(empty_guard[0]==sentinel && empty_guard[1]==sentinel,"optimized empty touched scores");
+    // Zero candidates define zero mass consistently, even with a null score.
+    std::size_t empty_cases=0;
+    for (int variant=0;variant<3;++variant) for (bool null_score:{false,true}) {
+        std::vector<float> guard(2,sentinel);
+        float* scores=null_score ? nullptr : guard.data();
+        maximum=sentinel; lse=sentinel;
+        if (variant==0) softmax_kernel(scores,0,&maximum,&lse);
+        else if (variant==1) softmax_kernel_full(scores,0,2,&maximum,&lse);
+        else softmax_kernel_optimized(scores,0,2,&maximum,&lse);
+        require(std::isinf(maximum) && maximum<0 && std::isinf(lse) && lse<0,
+                "empty support must report zero-mass -Inf metadata");
+        require(guard[0]==sentinel && guard[1]==sentinel,"empty support touched scores");
+        ++empty_cases;
+    }
+    require(empty_cases==6,"empty support matrix incomplete");
+    std::cout<<"MAGICPIG-SOFTMAX-EMPTY-CPU cases="<<empty_cases<<'\n';
     // The native polynomial is not an all-finite-domain exponential. Its
     // bit-constructed exponent must not be confused with host underflow.
     std::size_t extreme_cases=0;

@@ -320,6 +320,7 @@ const int *indices) {
  * @par Traceability relation
  * Support: selected arithmetic bootstrap; TRACE_TEST_ID: MAGICPIG-BASELINE-CPU.
  * TRACE_TEST_ID: MAGICPIG-SOFTMAX-BOUNDARY-CPU.
+ * TRACE_TEST_ID: MAGICPIG-SOFTMAX-EMPTY-CPU.
  */
 void softmax_kernel(
 float *score, 

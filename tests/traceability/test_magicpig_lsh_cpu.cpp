@@ -1,5 +1,5 @@
 // TRACE_TEST_ID: MAGICPIG-LSH-RETRIEVAL-CPU
-// TRACE_TEST_ID: MAGICPIG-FASTFILL-DEFECT-CPU
+// TRACE_TEST_ID: MAGICPIG-FASTFILL-REGRESSION-CPU
 // At-least-two distinct tables, not repeated membership in a single table.
 #include <array>
 #include <iostream>

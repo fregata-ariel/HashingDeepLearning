@@ -109,6 +109,7 @@ int max_length)
  * CPU selected-body tests do not establish real Torch ABI or GPU behavior.
  * @par Traceability relation
  * Variant; TRACE_TEST_ID: MAGICPIG-FASTFILL-REPAIR-CPU.
+ * Support regression; TRACE_TEST_ID: MAGICPIG-FASTFILL-REGRESSION-CPU.
  */
 void LSH::fastfill(
 int layer_id, 

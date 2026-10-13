@@ -163,15 +163,31 @@ class DriverContracts(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "enrolled source"):
                 driver.validate_python_evidence(suite, data)
 
-    def test_expected_leak_requires_exact_result_site_count_and_clean_diagnostic(self) -> None:
-        output = "MAGICPIG-FASTFILL-DEFECT: expected {0,1,2,3}; actual {0}"
+    def test_fastfill_repair_requires_exact_result_normal_exit_and_no_diagnostic(self) -> None:
+        output = "MAGICPIG-FASTFILL-REPAIRED: expected {0,1,2,3}; actual {0,1,2,3}; clean owned temporary teardown"
         diagnostic = "ERROR: LeakSanitizer: detected memory leaks\nLSH::fastfill\nSUMMARY: AddressSanitizer: 64 byte(s) leaked in 4 allocation(s)"
-        good = subprocess.CompletedProcess([], 1, output, diagnostic)
-        self.assertEqual(driver.validate_fastfill_probe(good, True, False), "expected_leak_reproduced")
-        for result in (subprocess.CompletedProcess([], 0, output, diagnostic), subprocess.CompletedProcess([], 1, "wrong result", diagnostic), subprocess.CompletedProcess([], 1, output, diagnostic.replace("LSH::fastfill", "unrelated")), subprocess.CompletedProcess([], 1, output, diagnostic.replace("64 byte", "32 byte")), subprocess.CompletedProcess([], 1, output, diagnostic+"\nruntime error: overflow"), subprocess.CompletedProcess([], 1, output, diagnostic+"\nERROR: AddressSanitizer: heap-buffer-overflow")):
-            with self.assertRaises(RuntimeError):
-                driver.validate_fastfill_probe(result, True, False)
-        self.assertEqual(driver.validate_fastfill_probe(subprocess.CompletedProcess([], 0, output, ""), True, True), "not_checked")
+        good = subprocess.CompletedProcess([], 0, output, "")
+        self.assertEqual(driver.validate_fastfill_probe(good, True, False), "clean")
+        self.assertEqual(driver.validate_fastfill_probe(good, True, True), "not_checked")
+        self.assertEqual(driver.validate_fastfill_probe(good, False, False), "not_checked")
+        failures = (
+            subprocess.CompletedProcess([], 1, output, ""),
+            subprocess.CompletedProcess([], -11, output, ""),
+            subprocess.CompletedProcess([], 0, "wrong result", ""),
+            subprocess.CompletedProcess([], 0, output.replace("actual {0,1,2,3}", "actual {0}"), ""),
+            subprocess.CompletedProcess([], 0, "MAGICPIG-FASTFILL-DEFECT: expected {0,1,2,3}; actual {0}", ""),
+            subprocess.CompletedProcess([], 0, "fake pass\n" + output, ""),
+            subprocess.CompletedProcess([], 0, output, diagnostic),
+            subprocess.CompletedProcess([], 1, output, diagnostic),
+            subprocess.CompletedProcess([], 0, output, "runtime error: overflow"),
+            subprocess.CompletedProcess([], 0, output, "ERROR: AddressSanitizer: heap-buffer-overflow"),
+        )
+        for result in failures:
+            # A leak or diagnostic is rejected even if the process falsely
+            # reports zero exit status or sanitizer execution is not requested.
+            for sanitize, disabled in ((True, False), (True, True), (False, False)):
+                with self.subTest(result=result, sanitize=sanitize, disabled=disabled), self.assertRaises(RuntimeError):
+                    driver.validate_fastfill_probe(result, sanitize, disabled)
 
     def test_composition_rejects_missing_or_replaced_bridge_before_python(self) -> None:
         fixture = self.root / "tests/traceability/composition.py"

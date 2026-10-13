@@ -23,7 +23,10 @@ The FP64 reference uses `acos`, the binomial mass and the source's explicit
 
 The maintained helper `magicpig_inclusion_log_probability` returns the natural
 logarithm of the at-least-two-table probability. It computes the bit collision
-probability as `acos(-cosine)/pi`, avoiding subtraction near cosine=-1.
+log probability with `log(acos(-cosine)/pi)` for nonpositive cosine and
+`log1p(-acos(cosine)/pi)` for positive cosine. These symmetric angular forms
+avoid cancellation near -1 and avoid rounding a near-one collision probability
+before a large K magnifies its logarithm near +1.
 For expected table hits `L*p <= 0.5`, it starts with the positive two-hit
 binomial mass in log space and sums subsequent positive masses by recurrence.
 Successive ratios are below 0.25, so work remains bounded even for INT_MAX
@@ -42,10 +45,15 @@ than the old cancellation allowance. The cos=0,K=16,L=2 regression deliberately
 replaces the old known-defect expectation: true inclusion `2^-32` must agree
 with the positive FP64 reference and differ from cancelled zero.
 
-312 stable-probability cases include 54 independently generated 160-digit
+330 stable-probability cases include 54 independently generated 160-digit
 Decimal references (positive exhaustive binomial masses, stored as rounded
 long-double literals), 252 extended-precision cosine/K/L cases, two algorithm
-transition cases and four large-count/underflow/endpoint cases. K reaches
+transition cases, four large-count/underflow/endpoint cases and 18 direct-double
+near-+1 corner references. The additional angular oracle derives acos using a
+Decimal positive asin series and Machin pi, without host libm. Exact binary
+cosines `1-2^-53`, `1-2^-52`, `1-2^-40` cross K=1/16/INT_MAX and L=2/512.
+The old near-one collision formula fails this new regression before repair.
+K reaches
 2048 in Decimal references and INT_MAX in the exact L=2 log identity; L reaches
 512 in full references and INT_MAX in a saturation check. The retained bit
 outcome enumeration still covers 15,108 states independently.
@@ -88,7 +96,7 @@ products, nonfinite and zero/negative inputs, invalid counts/parameters, null
 buffers, later invalid entries, and unrepresentable corrected scores. Invalid
 entries leave scores and input buffers unchanged. The independent moderate
 FP64 and estimator references above are preserved. The focused plain and
-ASan/UBSan/LeakSanitizer runs pass 3150 assertions with leak checking enabled.
+ASan/UBSan/LeakSanitizer runs pass 3203 assertions with leak checking enabled.
 
 Native server callers must validate outside OpenMP regions or transport
 exceptions to the joining thread; exceptions may not cross an OpenMP region.

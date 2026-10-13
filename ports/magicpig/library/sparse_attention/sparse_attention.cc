@@ -215,10 +215,14 @@ const double cosine, const int k, const int l, double *log_inclusion) {
     *log_inclusion = 0;
     return;
   }
-  // acos(-c)/pi equals 1-acos(c)/pi without cancelling near c=-1.
-  const long double collision = std::acos(-static_cast<long double>(cosine)) /
-                                std::acos(-1.0L);
-  const long double log_table = k * std::log(collision);
+  // Preserve angular precision at both endpoints. Forming a collision
+  // probability near one would round away angular bits before K amplifies
+  // the logarithm; log1p consumes the small angle directly instead.
+  const long double pi = std::acos(-1.0L);
+  const long double log_collision = cosine > 0
+      ? std::log1p(-std::acos(static_cast<long double>(cosine)) / pi)
+      : std::log(std::acos(-static_cast<long double>(cosine)) / pi);
+  const long double log_table = k * log_collision;
   const long double p = std::exp(log_table);
   long double result;
   if (static_cast<long double>(l) * p <= 0.5L) {

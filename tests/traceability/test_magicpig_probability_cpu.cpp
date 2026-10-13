@@ -12,6 +12,7 @@ int states = 0;
 int correction_cases = 0;
 int domain_cases = 0;
 int stable_probability_cases = 0;
+int direct_double_corner_cases = 0;
 double worst_log_error = 0;
 double worst_probability_relative_error = 0;
 double worst = 0;
@@ -173,6 +174,27 @@ const DecimalReference decimal_reference[] = {
     {2048, 128, -2830.12778140371772424343193595622587103392164040951790359067L},
     {2048, 512, -2827.34930453885272046344745092014408799210271169027001999228L},
 };
+struct DecimalCornerReference { double cosine; int k, l; long double log_inclusion; };
+const DecimalCornerReference decimal_corner_reference[] = {
+    {0x1.fffffffffffffp-1, 1, 2, -9.48637386973775392093588186852602384721976218232544571838918e-9L},
+    {0x1.fffffffffffffp-1, 1, 512, 0L},
+    {0x1.fffffffffffffp-1, 16, 2, -1.51781981915804062734974109896416381555516194917207131494227e-7L},
+    {0x1.fffffffffffffp-1, 16, 512, 0L},
+    {0x1.fffffffffffffp-1, 2147483647, 2, -20.3718327545899347237199372481834402058364657017729271122269L},
+    {0x1.fffffffffffffp-1, 2147483647, 512, -8.60309277955163413198260750815473756897626400991667210783690L},
+    {0x1.ffffffffffffep-1, 1, 2, -1.34157585975037914414654138044901479659940640763908100148847e-8L},
+    {0x1.ffffffffffffep-1, 1, 512, 0L},
+    {0x1.ffffffffffffep-1, 16, 2, -2.14652137560060663063446620871842367455905025222252960238155e-7L},
+    {0x1.ffffffffffffep-1, 16, 512, 0L},
+    {0x1.ffffffffffffep-1, 2147483647, 2, -28.8101222002390471410455338612306479295825647031194232880487L},
+    {0x1.ffffffffffffep-1, 2147483647, 512, -17.0287637193786218689297971490363517339086521689002762355469L},
+    {0x1.fffffffffe000p-1, 1, 2, -8.58608731662798605839266731618691471526947311937720325496238e-7L},
+    {0x1.fffffffffe000p-1, 1, 512, 0L},
+    {0x1.fffffffffe000p-1, 16, 2, -0.0000137377397066047776934282677058990635444311569910035252079398L},
+    {0x1.fffffffffe000p-1, 16, 512, 0L},
+    {0x1.fffffffffe000p-1, 2147483647, 2, -1843.84821041727112429422401662227777464248547221686228146269L},
+    {0x1.fffffffffe000p-1, 2147483647, 512, -1832.06666338258785738468869804973063979733963356752678057667L},
+};
 // END DECIMAL PROBABILITY REFERENCE
 
 long double positive_binomial(long double p, int l) {
@@ -212,6 +234,14 @@ void stable_probabilities() {
     close(execute(0, 1, 1, row.k, row.l), expected, 1e-6,
           "Decimal-reference regularized correction");
   }
+  // Decimal-only Machin-pi/asin angular references exercise a double cosine
+  // immediately below +1. K=INT_MAX exposes precision lost by first rounding
+  // a near-one collision probability before taking its logarithm.
+  for (const auto& row : decimal_corner_reference) {
+    log_check(row.cosine, row.k, row.l, row.log_inclusion);
+    ++direct_double_corner_cases;
+  }
+  require(direct_double_corner_cases == 18, "direct double corner matrix incomplete");
   // Independent direct positive masses in extended precision across both
   // production algorithm branches and geometrically asymmetric cosines.
   const long double pi = std::acos(-1.0L);
@@ -410,6 +440,7 @@ int main() {
             << "MAGICPIG_PROBABILITY_PASS correction_cases=" << correction_cases
             << " domain_cases=" << domain_cases << " enumerated_states=" << states
             << " stable_probability_cases=" << stable_probability_cases
+            << " direct_double_corner_cases=" << direct_double_corner_cases
             << " checks=" << checks << " max_absolute_error=" << worst
             << " max_log_probability_error=" << worst_log_error
             << " max_probability_relative_error=" << worst_probability_relative_error << '\n';

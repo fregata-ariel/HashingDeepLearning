@@ -163,10 +163,11 @@ lsh_retrieval; probability integrated separately in #57.
 
 `probability` now executes the maintained stable inclusion helper and transform
 with independent references: 15108 bit/table states,141 original corrections,
-42 domain cases,312 stable-probability cases and3150 assertions. The
+42 domain cases,330 stable-probability cases and3203 assertions. The
 [contract](PROBABILITY_VALIDATION.md) documents eight-epsilon cosine roundoff,
 validation before partial mutation, positive-tail/logarithmic arithmetic,
-54 reproducible160-digit Decimal references, and explicit error budgets.
+54 reproducible160-digit binomial Decimal references,18 direct-double angular
+corner references, and explicit error budgets.
 The old invalid-domain and tiny-inclusion defect expectations were deliberately
 replaced by maintained repairs #67/#68. +1e-4 remains the biased source variant;
 finite self-normalization still has no unbiased-output claim.

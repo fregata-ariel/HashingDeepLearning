@@ -5,7 +5,7 @@
       "id": "MAGICPIG-PROBABILITY-CPU",
       "paper": "magicpig-2024",
       "paper_location": "Section 4.3 Equations 9-11",
-      "mechanism": "At-least-two-table inclusion and regularized correction; finite estimator bias and input-domain characterization.",
+      "mechanism": "At-least-two-table inclusion and regularized correction; finite estimator bias and maintained input-domain validation (#67).",
       "relation": "support",
       "implementation": {
         "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
@@ -23,14 +23,14 @@
         "gpu_execution": "postponed",
         "correction_absolute_tolerance": "2e-5 + 6e-7 / (FP64 inclusion + 1e-4); ceiling 0.00602",
         "correction_cases": 141,
-        "domain_cases": 14,
+        "domain_cases": 42,
         "exhaustive_bit_states": 15108,
-        "assertions": 670,
+        "assertions": 745,
         "estimator_model": "64 exhaustive outcomes for two synthetic independent candidate table-hit processes; conditional on nonempty set, not shared geometric LSH hyperplanes",
-        "invalid_domains": "Existing NaN/Inf or acceptance characterized using valid bounded arrays; no out-of-range index accesses",
+        "invalid_domains": "Invalid scalar domains throw before any borrowed scores are mutated; accepted cosine overshoot limited to 8 FP32 epsilons; no index upper-bound inference.",
         "observed_local_maximum_absolute_error": 0.00416361416368
       },
-      "note": "Support: supplied logits only, not end-to-end unbiased self-normalized attention. Invalid domains characterize existing defects with valid buffers."
+      "note": "Support: supplied logits only, not end-to-end unbiased self-normalized attention. Issue #67 repairs scalar-domain validation; Issue #68 tiny inclusion cancellation remains characterized. Exceptions require safe transport at OpenMP caller boundaries."
     }
   ]
 }

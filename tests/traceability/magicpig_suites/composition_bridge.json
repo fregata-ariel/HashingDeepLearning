@@ -12,6 +12,7 @@
       "softmax_kernel_full",
       "wv_kernel",
       "wv_kernel_dim128_full",
+      "magicpig_prepare_attention_scores",
       "SparseAttentionServer::SparseAttentionServer",
       "SparseAttentionServer::~SparseAttentionServer",
       "SparseAttentionServer::alloc",

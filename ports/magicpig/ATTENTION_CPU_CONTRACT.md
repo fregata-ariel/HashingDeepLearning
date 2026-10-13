@@ -53,7 +53,7 @@ base2 maximum/LSE, and leaves the empty head's score row unchanged. Sparse
 empty heads bypass correction, so undefined empty norms are never read.
 
 There are 832 nonempty head compositions, 16,544 probability checks, 66,368 BF16 output
-coordinate checks, 432 ownership checks, 32 corrected-score checks, and 149 boundary cases (including 90 empty server heads) including dimension/group rejection. Portable absolute
+coordinate checks, 432 ownership checks, 32 corrected-score checks, and 175 boundary cases (including 90 empty server heads and26 invalid caller cases) including dimension/group rejection. Portable absolute
 budgets are `3e-5` corrected score and probability, `0.004` output (including BF16 quantization), and
 `5e-5` base-2 metadata. Native budgets are `0.002`, `0.008`, and `0.03`; the
 metadata budget is the existing polynomial bootstrap budget. Local maxima were
@@ -97,3 +97,34 @@ Repairs #75/#76/#77 enforce logical candidate bounds, dimension/group policy
 and consistent query-head length routing. It is not whole-extension build
 success, LSH-to-attention end-to-end validation, model generation, accuracy or
 performance reproduction. GPU tests remain postponed.
+
+## Repair #67 caller validation
+
+Sparse static/dynamic entrypoints validate tensor extents, logical counts,
+candidate IDs and K/L before OpenMP dispatch. A shared free helper stages the
+actual QK and correction results for all heads in temporary capacity-backed
+storage and invokes the maintained transform domain checks on that storage.
+Only after every head passes are logical score rows committed and Softmax/WV
+workers started. A bad norm, nonfinite dot or inconsistent cosine in a later
+head therefore leaves all exposed scores, output and metadata unchanged.
+Empty heads retain #73's no-norm-access policy. This helper avoids a second,
+potentially divergent cosine/probability formula.
+
+The staging pass is serial and uses `batch * query_heads * max_length` extra
+floats; this CPU correctness repair does not claim performance reproduction.
+Scheduled entrypoints delegate to the staged implementation after their
+fixed128/32-head policy check. Wrappers select that path only for dim128.
+BF16 entrypoints use the same staging helper with actual native BF16 QK when
+compiled; native server dispatch remains unexecuted on a CPU without that ISA.
+
+Twenty-six static/dynamic regressions put invalid norms, nonfinite queries,
+out-of-domain cosine, counts or IDs in later heads and invalid K/L in the
+caller. Every rejected call preserves all score rows, output and metadata.
+These require the transform #67/#68 fixes; ordinary caller shape validation
+is still a selected dependency-model check, not whole Torch ABI coverage.
+
+The combined caller/#67/#68 selected fixture also passes ASan/UBSan/LSan with
+actual OpenMP enabled and `OMP_THREAD_LIMIT=4` on the portable arithmetic
+backend. This verifies rejected domains are handled before workers and that
+the supported small composition runs through the real OpenMP runtime; it
+does not establish native SIMD or unrestricted production thread scheduling.

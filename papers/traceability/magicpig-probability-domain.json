@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-PROBABILITY-DOMAIN-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Section 4.3 Equations 9-11",
+      "mechanism": "Issue #67 maintained domain validation before probability correction; bounded cosine roundoff and atomic borrowed-score mutation.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "transform_kernel"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_probability_cpu.cpp",
+        "id": "MAGICPIG-PROBABILITY-DOMAIN-CPU"
+      },
+      "conditions": {
+        "execution": "selected maintained scalar C++ body; no Torch/CUDA/OpenMP execution",
+        "domain_cases": 42,
+        "cosine_tolerance": "8 * float epsilon in normalized cosine units",
+        "accepted": "finite scores, positive finite norms/scaling, K>=1,L>=2,nnz>=0, caller-valid buffers and bounded indices",
+        "rejection": "invalid_argument for scalar/parameter domain errors; overflow_error for unrepresentable corrected scores; no partial mutation",
+        "empty": "valid nnz=0 is no-op and allows null buffers",
+        "sanitizers": "ASan/UBSan/LSan with leak checking enabled",
+        "source_archive": "unchanged",
+        "stability": "Issue68 remains separate"
+      },
+      "note": "Raw kernel cannot establish index upper bounds. Server callers must validate outside OpenMP regions or capture and transport worker exceptions after joining; native wrapper runtime is not evidence from this suite."
+    }
+  ]
+}

@@ -16,21 +16,32 @@ permissions:
   contents: read
 
 jobs:
-  combined-cpu:
-    runs-on: ubuntu-22.04
+  combined-cpu-ubuntu24-single-sample:
+    # One OS/compiler image comparison; standard runners do not guarantee AVX512.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       PYTHONDONTWRITEBYTECODE: "1"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
       - name: CPU and exact commit
         run: |
           git rev-parse HEAD
+          diagnostic_tree=$(git rev-parse 'HEAD^{tree}')
+          echo "::notice title=Tested merge candidate::SHA=$GITHUB_SHA; tree=$diagnostic_tree; source candidate=f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb"
+          # Candidate code and annotations must match the reviewed combined CPU head.
+          git diff --exit-code f854678a2c1480e5dda9ebbae4b3afbc7a02e6eb HEAD -- ports/magicpig tests/traceability tools papers docs
+          cat /etc/os-release
           lscpu
           g++ --version
+          diagnostic_cpu=$(lscpu | sed -n 's/^Model name:[[:space:]]*//p')
+          diagnostic_compiler=$(g++ --version | head -n 1)
+          echo "::notice title=Single Ubuntu 24.04 diagnostic::SHA=$GITHUB_SHA; tree=$diagnostic_tree; Ubuntu24.04; kernel=$(uname -r); CPU=$diagnostic_cpu; compiler=$diagnostic_compiler; source and annotations unchanged; one image sample; no hardware ISA guarantee"
       - name: Source, ledger and contract gates
         run: |
           python tools/validate_traceability.py --emit-dir magicpig-validation/ledger
@@ -53,6 +64,7 @@ jobs:
           for mode in ('plain', 'sanitized'):
               summary = json.loads(Path(f'magicpig-validation/{mode}/magicpig_cpu_evidence.json').read_text())
               assert summary['status'] == 'pass'
+              print('CAPABILITY_EVIDENCE', mode, json.dumps(summary['capabilities'], sort_keys=True))
               for native_mode in ('avx512', 'bf16'):
                   results = [r for r in summary['results'] if r['mode'] == native_mode]
                   if results:
@@ -88,5 +100,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: magicpig-combined-cpu-validation
+          name: magicpig-ubuntu24-single-sample-validation
           path: magicpig-validation/

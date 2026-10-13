@@ -42,14 +42,14 @@
         "oracle": "Independent host FP64 exp/log; raw float32 inputs divided by sqrt dimension before oracle, sparse receives already-scaled scores",
         "known_literal": "Sixteen zero logits: every probability 1/16, base-2 max zero and base-2 LSE four",
         "portable_probability_absolute_tolerance": 2e-06,
-        "native_probability_absolute_tolerance": 0.005,
-        "native_probability_relative_tolerance": 0.02,
+        "native_probability_absolute_tolerance": 2e-06,
+        "native_probability_relative_tolerance": 2e-05,
         "normalization_tolerance": 2e-05,
-        "metadata_tolerance": "2e-6*(1+abs(FP64 base2 maximum)); native polynomial LSE adds 0.03",
+        "metadata_tolerance": "2e-6*(1+abs(FP64 base2 maximum)); native polynomial LSE adds 5e-5",
         "full_buffer": "Exactly nnz scores supported; guards after logical length remain unchanged",
         "portable_exponential": "host std::exp(float), not the native polynomial",
         "scalar_header_adapter": "expf32/log2f32 use host std::exp(float)/std::log2(float) in both modes",
-        "native_exponential": "actual selected avx512_exp_ps and constants; supported numerical matrix has finite moderate relative logits",
+        "native_exponential": "actual centered degree-six polynomial in [-87,88] with host expf fallback outside; finite shifted logits and direct special-value policy",
         "gpu_execution": "postponed",
         "torch_extension": "not built",
         "full_exact_capacity_cases": 72,
@@ -69,10 +69,10 @@
       "note": "Selected arithmetic support, including logical tails; exact allocation ASan/UBSan/LSan success is required in portable mode. Native checks are capability gated; no full Torch/FBGEMM dispatch inference."
     },
     {
-      "id": "MAGICPIG-SOFTMAX-DEFECT-CPU",
+      "id": "MAGICPIG-SOFTMAX-EXTREME-CPU",
       "paper": "magicpig-2024",
       "paper_location": "Section 4.4 attention support; implementation-specific softmax and base-2 metadata",
-      "mechanism": "Remaining native extreme polynomial failure; empty and logical-tail regressions repaired separately.",
+      "mechanism": "Extreme finite normalized logits match independent FP64 probabilities and base-2 LSE in all three kernels.",
       "relation": "support",
       "implementation": {
         "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
@@ -80,17 +80,31 @@
       },
       "test": {
         "file": "tests/traceability/test_magicpig_softmax_cpu.cpp",
-        "id": "MAGICPIG-SOFTMAX-DEFECT-CPU"
+        "id": "MAGICPIG-SOFTMAX-EXTREME-CPU"
       },
       "conditions": {
-        "execution": "Ordinary exact-sized valid calls; no expected-failure softmax probes remain",
-        "seed": "same fixed literal matrix, no RNG",
-        "extreme_logits": "Three 32-score rows: sixteen zero and sixteen -90, -100 or -1000; native polynomial must exhibit nonfinite/negative or >0.005 FP64 probability error in each row; portable host exp underflow succeeds",
+        "execution": "portable host exp, and capability-gated actual native exponential separately",
+        "extreme_shifts": [
+          -87,
+          -90,
+          -100,
+          -104,
+          -1000,
+          "-FLT_MAX"
+        ],
+        "large_offset": "Sixteen10000 and sixteen9000",
+        "variants": [
+          "sparse",
+          "full",
+          "optimized"
+        ],
+        "cases": 24,
+        "oracle": "Independent FP64 exp/log on finite float32 literals",
+        "sanitizers": "ASan/UBSan/LSan enabled",
         "gpu_execution": "postponed",
-        "repair": "none; immutable archived source unchanged",
-        "extreme_cases": 3
+        "overflowing_shift": "Sixteen1e38 and sixteen-FLT_MAX: FP32 shift can become -Inf while base-2 maximum is representable"
       },
-      "note": "Native exponential extreme-domain characterization pending #74 repair. Logical tails and zero candidates now have success regressions; immutable archive unchanged."
+      "note": "Portable execution does not validate actual native exp. Unsupported CPU remains native skip. Empty/logical tails have success regressions; immutable archive unchanged."
     },
     {
       "id": "MAGICPIG-SOFTMAX-EMPTY-CPU",
@@ -119,6 +133,35 @@
         "sanitizers": "ASan/UBSan/LSan enabled; ordinary fixture success required"
       },
       "note": "Selected kernel support only; sparse server output and BF16 dispatch need caller validation separately. Negative nnz and invalid output metadata pointers remain outside the caller contract."
+    },
+    {
+      "id": "MAGICPIG-EXP-NATIVE-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Implementation-specific CPU exponential support for Section 4.4",
+      "mechanism": "Actual AVX512 centered polynomial and special/extreme fallback compared with independent FP64 exp, with native capability gating.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "avx512_exp_ps"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_softmax_cpu.cpp",
+        "id": "MAGICPIG-EXP-NATIVE-CPU"
+      },
+      "conditions": {
+        "execution": "Native AVX512F/FMA only; portable mode emits explicit skip",
+        "finite_grid": "2801 float32 points from -87 through88 with step1/16",
+        "special_edges": 20,
+        "cases": 2821,
+        "polynomial": "degree-six Taylor in centered base-2 fraction [-0.5,0.5]",
+        "mathematical_relative_remainder_bound": 2.5e-07,
+        "fp32_relative_gate": 2e-05,
+        "absolute_underflow_gate": "plus2*float32 denorm_min; zero required when FP64 result rounds to zero",
+        "fallback": "Outside [-87,88], expf; NaN->NaN,+Inf->+Inf,-Inf->0; overflow->+Inf",
+        "runtime_assumptions": "IEEE nearest rounding, gradual underflow, no fast-math/FTZ",
+        "oracle": "Independent FP64 std::exp; overflow classification rounds reference to FP32"
+      },
+      "note": "Native unsupported CPU is pending/skip, never successful native evidence. Torch/FBGEMM extension dispatch and GPU execution remain out of scope."
     }
   ]
 }

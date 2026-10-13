@@ -53,7 +53,7 @@
         "id": "MAGICPIG-ATTENTION-BOUNDARIES-CPU"
       },
       "conditions": {
-        "cases": 149,
+        "cases": 175,
         "nnz": "0/1/15/16/17/31/32",
         "capacity": "Repair #75 exact logical candidate/score allocations plus guarded logical scores; server score stride remains capacity32.",
         "padding_observation": "QK touches only logical nnz; preexisting capacity padding remains unchanged. Full softmax padding remains characterized pending #74.",
@@ -62,7 +62,8 @@
         "empty_candidates": "QK nnz0 permits null buffers; server empty heads bypass correction and return zero output/-infinity metadata without score writes; nativeBF16/scheduled server source paths updated but not runtime exercised.",
         "invalid_parameters": "Full server dimension/group, layer, count-vector rank/length and all logical counts validated before writes; unsupported shapes/ABI/dtype beyond model remain untested.",
         "gpu_execution": "postponed",
-        "varying_gqa_lengths_observation": "Repair #77 original [16,16,16,16,32,32,32,32] regression produces dense1.0; general varying GQA lengths checked against FP64 probability/output/base2 metadata in two layers/batches."
+        "varying_gqa_lengths_observation": "Repair #77 original [16,16,16,16,32,32,32,32] regression produces dense1.0; general varying GQA lengths checked against FP64 probability/output/base2 metadata in two layers/batches.",
+        "caller_domain_validation": "Repair #67 shared scratch staging of actual QK+transform before exposed writes/OpenMP;26 later-head/domain regressions in static/dynamic calls preserve all score/output/metadata buffers. BF16/scheduled paths reuse but native server dispatch unexecuted."
       },
       "note": "Repairs #73/#75/#76/#77 enforce empty server policy, logical QK bounds, supported dimensions/groups and query-head nnz routing. Softmax tails remain tracked by #74."
     }

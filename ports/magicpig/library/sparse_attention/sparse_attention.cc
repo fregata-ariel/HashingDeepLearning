@@ -753,6 +753,43 @@ const int nnz) {
     }
 }
 
+// Stage QK and correction before exposed writes or OpenMP workers. Reuse the
+// actual transform domain checks rather than duplicating cosine/probability
+// formulas. Empty heads bypass query/key norm access by contract (#73).
+void magicpig_prepare_attention_scores(
+    const bfloat16* key, const float* query, const bfloat16* query_bf16,
+    const float* query_norm, float* key_norm, const int* indices,
+    const int* counts, int heads, int groups, int capacity, int dim,
+    int K, int L, float* staged)
+{
+    if (K < 1 || L < 2) throw std::invalid_argument("attention correction requires K>=1 and L>=2");
+    // Validate every logical index/count before any QK access, including later
+    // heads. Capacity-backed caller indices may contain unused padding.
+    for (int head = 0; head < heads; ++head) {
+        if (counts[head] < 0 || counts[head] > capacity) throw std::invalid_argument("attention nnz outside [0,max_length]");
+        for (int j = 0; j < counts[head]; ++j)
+            if (indices[head * capacity + j] < 0 || indices[head * capacity + j] >= capacity)
+                throw std::invalid_argument("attention candidate ID outside key cache capacity");
+    }
+    for (int head = 0; head < heads; ++head) {
+        if (counts[head] == 0) continue;
+        const int kv = head / groups;
+        if (query_bf16 != nullptr) {
+#ifdef __AVX512BF16__
+            qk_kernel_bf16_impl(key + kv * capacity * dim, indices + head * capacity,
+                               query_bf16 + head * dim, staged + head * capacity, dim, counts[head]);
+#else
+            throw std::invalid_argument("native BF16 QK is unavailable in this build");
+#endif
+        } else {
+            qk_kernel(key + kv * capacity * dim, indices + head * capacity,
+                      query + head * dim, staged + head * capacity, dim, counts[head]);
+        }
+        transform_kernel(staged + head * capacity, counts[head], query_norm[head],
+                         key_norm + kv * capacity, K, L, sqrtf(dim), indices + head * capacity);
+    }
+}
+
 SparseAttentionServer::SparseAttentionServer(){
     this->allocated = false;
     #ifdef __AVX512BF16__
@@ -889,7 +926,7 @@ this->attention_wrapper_bf16(
     ind_pt, 
     nnz_pt);
 #else
-if (this->batch_size * this->num_attention_heads == 32 && ATTENTION_THREADS == 64)
+if (this->batch_size * this->num_attention_heads == 32 && this->head_dim == 128 && ATTENTION_THREADS == 64)
 {
     this->scheduled_attention(
     layer_id, 
@@ -942,7 +979,7 @@ torch::Tensor ind_pt,
 torch::Tensor nnz_pt)
 {
 
-if (this->batch_size * this->num_attention_heads == 32 && ATTENTION_THREADS == 64)
+if (this->batch_size * this->num_attention_heads == 32 && this->head_dim == 128 && ATTENTION_THREADS == 64)
 {
     this->scheduled_attention_bf16(
     layer_id, 
@@ -995,6 +1032,16 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
+    const int heads = this->batch_size * this->num_attention_heads;
+    if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
+        ind_pt.dim() != 2 || ind_pt.size(0) != heads || ind_pt.size(1) != this->max_length ||
+        query_norm_pt.dim() != 1 || query_norm_pt.size(0) != heads ||
+        query_pt.dim() != 2 || query_pt.size(0) != heads || query_pt.size(1) != this->head_dim ||
+        output_pt.dim() != 2 || output_pt.size(0) != heads || output_pt.size(1) != this->head_dim ||
+        max_value_expsum_pt.dim() != 2 || max_value_expsum_pt.size(0) != 2 || max_value_expsum_pt.size(1) != heads)
+        throw std::invalid_argument("invalid attention tensor shape");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1006,6 +1053,14 @@ torch::Tensor nnz_pt)
     float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
     float * expsum = max_value + this->batch_size * this->num_attention_heads;
 
+    std::vector<float> staged(static_cast<std::size_t>(heads) * this->max_length);
+    magicpig_prepare_attention_scores(key, query, nullptr, query_norm, this->key_norm[layer_id],
+                                      ind, nnz, heads, this->num_attention_groups, this->max_length,
+                                      this->head_dim, K, L, staged.data());
+    // Commit only after all heads pass numerical/domain validation.
+    for (int i = 0; i < heads; ++i)
+        if (nnz[i] != 0) std::copy_n(staged.data() + i * this->max_length, nnz[i], this->attention_score + i * this->max_length);
+
     #pragma omp parallel for schedule(dynamic,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
         // Empty retrieval has zero output and -infinity base2 metadata.
@@ -1015,24 +1070,6 @@ torch::Tensor nnz_pt)
             max_value[i] = expsum[i] = -INFINITY;
             continue;
         }
-        qk_kernel(
-          key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
-          ind + i * this->max_length,
-          query + i * this->head_dim,
-          this->attention_score + i * this->max_length,
-          this->head_dim,
-          nnz[i]
-        );
-        transform_kernel(
-          this->attention_score + i * this->max_length,
-          nnz[i],
-          query_norm[i],
-          this->key_norm[layer_id] + (i/this->num_attention_groups) * this->max_length, 
-          K,
-          L,
-          sqrtf(this->head_dim),
-          ind + i * this->max_length
-        );
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1062,6 +1099,16 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
+    const int heads = this->batch_size * this->num_attention_heads;
+    if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
+        ind_pt.dim() != 2 || ind_pt.size(0) != heads || ind_pt.size(1) != this->max_length ||
+        query_norm_pt.dim() != 1 || query_norm_pt.size(0) != heads ||
+        query_pt.dim() != 2 || query_pt.size(0) != heads || query_pt.size(1) != this->head_dim ||
+        output_pt.dim() != 2 || output_pt.size(0) != heads || output_pt.size(1) != this->head_dim ||
+        max_value_expsum_pt.dim() != 2 || max_value_expsum_pt.size(0) != 2 || max_value_expsum_pt.size(1) != heads)
+        throw std::invalid_argument("invalid attention tensor shape");
+
     if (this->head_dim <= 0 || this->head_dim % 32 != 0) throw std::invalid_argument("BF16 attention head_dim must be a positive multiple of 32");
 
     bfloat16 * key = this->key_cache[layer_id];
@@ -1074,6 +1121,14 @@ torch::Tensor nnz_pt)
     float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
     float * expsum = max_value + this->batch_size * this->num_attention_heads;
 
+    std::vector<float> staged(static_cast<std::size_t>(heads) * this->max_length);
+    magicpig_prepare_attention_scores(key, nullptr, query, query_norm, this->key_norm[layer_id],
+                                      ind, nnz, heads, this->num_attention_groups, this->max_length,
+                                      this->head_dim, K, L, staged.data());
+    // Commit only after all heads pass numerical/domain validation.
+    for (int i = 0; i < heads; ++i)
+        if (nnz[i] != 0) std::copy_n(staged.data() + i * this->max_length, nnz[i], this->attention_score + i * this->max_length);
+
     #pragma omp parallel for schedule(dynamic,1) num_threads(64)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
         // Empty retrieval has zero output and -infinity base2 metadata.
@@ -1083,24 +1138,6 @@ torch::Tensor nnz_pt)
             max_value[i] = expsum[i] = -INFINITY;
             continue;
         }
-        qk_kernel_bf16_impl(
-          key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
-          ind + i * this->max_length,
-          query + i * this->head_dim,
-          this->attention_score + i * this->max_length,
-          this->head_dim,
-          nnz[i]
-        );
-        transform_kernel(
-          this->attention_score + i * this->max_length,
-          nnz[i],
-          query_norm[i],
-          this->key_norm[layer_id] + (i/this->num_attention_groups) * this->max_length, 
-          K,
-          L,
-          sqrtf(this->head_dim),
-          ind + i * this->max_length
-        );
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1145,6 +1182,16 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
+    const int heads = this->batch_size * this->num_attention_heads;
+    if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
+        ind_pt.dim() != 2 || ind_pt.size(0) != heads || ind_pt.size(1) != this->max_length ||
+        query_norm_pt.dim() != 1 || query_norm_pt.size(0) != heads ||
+        query_pt.dim() != 2 || query_pt.size(0) != heads || query_pt.size(1) != this->head_dim ||
+        output_pt.dim() != 2 || output_pt.size(0) != heads || output_pt.size(1) != this->head_dim ||
+        max_value_expsum_pt.dim() != 2 || max_value_expsum_pt.size(0) != 2 || max_value_expsum_pt.size(1) != heads)
+        throw std::invalid_argument("invalid attention tensor shape");
+
     bfloat16 * key = this->key_cache[layer_id];
     bfloat16 * value = this->value_cache[layer_id];
     auto q_f32 = query_pt.to(torch::kFloat32);
@@ -1156,6 +1203,14 @@ torch::Tensor nnz_pt)
     float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
     float * expsum = max_value + this->batch_size * this->num_attention_heads;
 
+    std::vector<float> staged(static_cast<std::size_t>(heads) * this->max_length);
+    magicpig_prepare_attention_scores(key, query, nullptr, query_norm, this->key_norm[layer_id],
+                                      ind, nnz, heads, this->num_attention_groups, this->max_length,
+                                      this->head_dim, K, L, staged.data());
+    // Commit only after all heads pass numerical/domain validation.
+    for (int i = 0; i < heads; ++i)
+        if (nnz[i] != 0) std::copy_n(staged.data() + i * this->max_length, nnz[i], this->attention_score + i * this->max_length);
+
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
         // Empty retrieval has zero output and -infinity base2 metadata.
@@ -1165,24 +1220,6 @@ torch::Tensor nnz_pt)
             max_value[i] = expsum[i] = -INFINITY;
             continue;
         }
-        qk_kernel(
-          key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
-          ind + i * this->max_length,
-          query + i * this->head_dim,
-          this->attention_score + i * this->max_length,
-          this->head_dim,
-          nnz[i]
-        );
-        transform_kernel(
-          this->attention_score + i * this->max_length,
-          nnz[i],
-          query_norm[i],
-          this->key_norm[layer_id] + (i/this->num_attention_groups) * this->max_length, 
-          K,
-          L,
-          sqrtf(this->head_dim),
-          ind + i * this->max_length
-        );
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1213,6 +1250,16 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+    if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
+    const int heads = this->batch_size * this->num_attention_heads;
+    if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
+        ind_pt.dim() != 2 || ind_pt.size(0) != heads || ind_pt.size(1) != this->max_length ||
+        query_norm_pt.dim() != 1 || query_norm_pt.size(0) != heads ||
+        query_pt.dim() != 2 || query_pt.size(0) != heads || query_pt.size(1) != this->head_dim ||
+        output_pt.dim() != 2 || output_pt.size(0) != heads || output_pt.size(1) != this->head_dim ||
+        max_value_expsum_pt.dim() != 2 || max_value_expsum_pt.size(0) != 2 || max_value_expsum_pt.size(1) != heads)
+        throw std::invalid_argument("invalid attention tensor shape");
+
     if (this->head_dim <= 0 || this->head_dim % 32 != 0) throw std::invalid_argument("BF16 attention head_dim must be a positive multiple of 32");
 
     bfloat16 * key = this->key_cache[layer_id];
@@ -1226,6 +1273,14 @@ torch::Tensor nnz_pt)
     float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
     float * expsum = max_value + this->batch_size * this->num_attention_heads;
 
+    std::vector<float> staged(static_cast<std::size_t>(heads) * this->max_length);
+    magicpig_prepare_attention_scores(key, nullptr, query, query_norm, this->key_norm[layer_id],
+                                      ind, nnz, heads, this->num_attention_groups, this->max_length,
+                                      this->head_dim, K, L, staged.data());
+    // Commit only after all heads pass numerical/domain validation.
+    for (int i = 0; i < heads; ++i)
+        if (nnz[i] != 0) std::copy_n(staged.data() + i * this->max_length, nnz[i], this->attention_score + i * this->max_length);
+
     #pragma omp parallel for schedule(static,1) num_threads(64)
     for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
         // Empty retrieval has zero output and -infinity base2 metadata.
@@ -1235,24 +1290,6 @@ torch::Tensor nnz_pt)
             max_value[i] = expsum[i] = -INFINITY;
             continue;
         }
-        qk_kernel_bf16_impl(
-          key + (i/this->num_attention_groups) * this->max_length * this->head_dim,
-          ind + i * this->max_length,
-          query + i * this->head_dim,
-          this->attention_score + i * this->max_length,
-          this->head_dim,
-          nnz[i]
-        );
-        transform_kernel(
-          this->attention_score + i * this->max_length,
-          nnz[i],
-          query_norm[i],
-          this->key_norm[layer_id] + (i/this->num_attention_groups) * this->max_length, 
-          K,
-          L,
-          sqrtf(this->head_dim),
-          ind + i * this->max_length
-        );
         softmax_kernel(
           this->attention_score + i * this->max_length,
           nnz[i],
@@ -1345,87 +1382,9 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
-    if (this->head_dim != 128) throw std::invalid_argument("scheduled_attention requires head_dim 128");
-
-    bfloat16 * key = this->key_cache[layer_id];
-    bfloat16 * value = this->value_cache[layer_id];
-    auto q_f32 = query_pt.to(torch::kFloat32);
-    float * query = static_cast<float *>(q_f32.data_ptr());
-    bfloat16 * output = static_cast<bfloat16 *>(output_pt.data_ptr());
-    int * ind = static_cast<int *>(ind_pt.data_ptr());
-    int * nnz = static_cast<int *>(nnz_pt.data_ptr());
-    float * query_norm = static_cast<float *>(query_norm_pt.data_ptr());
-    float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
-    float * expsum = max_value + this->batch_size * this->num_attention_heads;
-
-    #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
-    for (int i = 0; i < ATTENTION_THREADS; ++i){
-        int p = int (i / 2);
-        int offset = int(nnz[p] / 2);
-        int offset_16 = (offset % 16 == 0) ? (offset): (offset + 16 - offset % 16);
-        int ith_offset = (i % 2 == 0) ? (0) : (offset_16);
-        int workload = (i % 2 == 0) ? (offset_16) : (nnz[p] - offset_16);
-        if (workload > 0){
-          qk_kernel(
-            key + (p/this->num_attention_groups) * this->max_length * this->head_dim,
-            ind + p * this->max_length + ith_offset,
-            query + p * this->head_dim,
-            this->attention_score + p * this->max_length + ith_offset,
-            this->head_dim,
-            workload
-          );
-
-          transform_kernel(
-          this->attention_score + p * this->max_length + ith_offset,
-          workload,
-          query_norm[p],
-          this->key_norm[layer_id] + (p/this->num_attention_groups) * this->max_length, 
-          K,
-          L,
-          sqrtf(this->head_dim),
-          ind + p * this->max_length + ith_offset
-        );
-        }
-      }
-    
-
-    #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
-    for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
-        if (nnz[i] == 0) {
-            max_value[i] = expsum[i] = -INFINITY;
-            continue;
-        }
-        softmax_kernel(
-          this->attention_score + i * this->max_length,
-          nnz[i],
-          max_value + i,
-          expsum + i
-        );
-    }
-
-    #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
-    for (int i = 0; i < ATTENTION_THREADS; ++i){
-
-      int p = int (i / 2);
-      int ith_offset = (i % 2 == 0) ? (0) : int(this->head_dim / 2);
-
-
-
-      wv_kernel_dim128_dim_parallel(
-            value + (p/this->num_attention_groups) * this->max_length * this->head_dim,
-            ind + p * this->max_length,
-            this->attention_score + p * this->max_length,
-            output + p * this->head_dim,
-            ith_offset,
-            int(this->head_dim / 2),
-            this->head_dim,
-            nnz[p]
-        );
-      
-    }
-
-
-
+    if (!this->allocated || this->head_dim != 128 || this->batch_size * this->num_attention_heads != 32)
+        throw std::invalid_argument("scheduled_attention requires dim128 and32 flattened query heads");
+    this->attention(layer_id, K, L, output_pt, max_value_expsum_pt, query_pt, query_norm_pt, ind_pt, nnz_pt);
 }
 #ifdef __AVX512BF16__
 void SparseAttentionServer::scheduled_attention_bf16(
@@ -1439,87 +1398,9 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
-    if (this->head_dim != 128) throw std::invalid_argument("scheduled_attention requires head_dim 128");
-
-    if (this->head_dim <= 0 || this->head_dim % 32 != 0) throw std::invalid_argument("BF16 attention head_dim must be a positive multiple of 32");
-
-    bfloat16 * key = this->key_cache[layer_id];
-    bfloat16 * value = this->value_cache[layer_id];
-    bfloat16 * query = static_cast<bfloat16 *>(query_pt.data_ptr());
-    bfloat16 * output = static_cast<bfloat16 *>(output_pt.data_ptr());
-    int * ind = static_cast<int *>(ind_pt.data_ptr());
-    int * nnz = static_cast<int *>(nnz_pt.data_ptr());
-    float * query_norm = static_cast<float *>(query_norm_pt.data_ptr());
-    float * max_value =  static_cast<float *>(max_value_expsum_pt.data_ptr());
-    float * expsum = max_value + this->batch_size * this->num_attention_heads;
-
-    #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
-    for (int i = 0; i < ATTENTION_THREADS; ++i){
-        int p = int (i / 2);
-        int offset = int(nnz[p] / 2);
-        int offset_16 = (offset % 16 == 0) ? (offset): (offset + 16 - offset % 16);
-        int ith_offset = (i % 2 == 0) ? (0) : (offset_16);
-        int workload = (i % 2 == 0) ? (offset_16) : (nnz[p] - offset_16);
-
-        if (workload > 0){
-          qk_kernel_bf16_impl(
-            key + (p/this->num_attention_groups) * this->max_length * this->head_dim,
-            ind + p * this->max_length + ith_offset,
-            query + p * this->head_dim,
-            this->attention_score + p * this->max_length + ith_offset,
-            this->head_dim,
-            workload
-          );
-
-          transform_kernel(
-          this->attention_score + p * this->max_length + ith_offset,
-          workload,
-          query_norm[p],
-          this->key_norm[layer_id] + (p/this->num_attention_groups) * this->max_length, 
-          K,
-          L,
-          sqrtf(this->head_dim),
-          ind + p * this->max_length + ith_offset
-        );
-        }
-      }
-    
-
-    #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
-    for (int i = 0; i < this->batch_size * this->num_attention_heads; ++i){
-        if (nnz[i] == 0) {
-            max_value[i] = expsum[i] = -INFINITY;
-            continue;
-        }
-        softmax_kernel(
-          this->attention_score + i * this->max_length,
-          nnz[i],
-          max_value + i,
-          expsum + i
-        );
-    }
-
-    #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
-    for (int i = 0; i < ATTENTION_THREADS; ++i){
-
-      int p = int (i / 2);
-      int ith_offset = (i % 2 == 0) ? (0) : int(this->head_dim / 2);
-     
-      wv_kernel_dim128_dim_parallel(
-            value + (p/this->num_attention_groups) * this->max_length * this->head_dim,
-            ind + p * this->max_length,
-            this->attention_score + p * this->max_length,
-            output + p * this->head_dim,
-            ith_offset,
-            int(this->head_dim/2),
-            this->head_dim,
-            nnz[p]
-        );
-      
-    }
-
-
-
+    if (!this->allocated || this->head_dim != 128 || this->batch_size * this->num_attention_heads != 32)
+        throw std::invalid_argument("scheduled_attention requires dim128 and32 flattened query heads");
+    this->attention_bf16(layer_id, K, L, output_pt, max_value_expsum_pt, query_pt, query_norm_pt, ind_pt, nnz_pt);
 }
 #endif
 torch::Tensor SparseAttentionServer::get_key_cache(int layer_id)

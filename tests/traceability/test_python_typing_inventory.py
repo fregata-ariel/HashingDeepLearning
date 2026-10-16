@@ -171,6 +171,7 @@ class WorkflowContracts(unittest.TestCase):
         text = (ROOT / ".github/workflows/python-typing.yml").read_text()
         self.assertIn('python-version: "3.12"', text)
         self.assertIn("mypy==2.4.0 numpy==2.3.5 tensorboard==2.21.0", text)
+        self.assertIn("einops==0.8.1", text)
         self.assertIn("torch==2.14.1+cpu", text)
         self.assertIn("--index-url https://download.pytorch.org/whl/cpu", text)
         for filename in ("python-typing.yml", "traceability.yml"):

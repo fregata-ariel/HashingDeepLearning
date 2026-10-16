@@ -17,10 +17,10 @@ a distinct, uncompared version. Acquisition details and the blocked direct
 publisher download are recorded in
 [paper provenance](../papers/scatterbrain-paper-provenance.json).
 
-This intake establishes source identity and a reviewed main-text/source map.
-It does not establish runtime correctness, complete theoretical hypotheses,
-GPU execution, or the paper's trained-model accuracy/performance. No numerical
-Scatterbrain experiment is registered in the executable ledger at this stage.
+Initial intake PR #103 at `916d988` established source identity and a reviewed
+main-text/source map, without registering numerical experiments. The subsequent
+CPU baseline below adds three bounded executable entries. Full theoretical
+hypotheses, GPU execution and paper model accuracy/performance remain separate.
 
 ## Source history and archive scope
 
@@ -178,3 +178,66 @@ archived module is not a typing pass. Record source/fixture/dependency hashes
 and actual native versus substitute execution. Python/Torch CPU tests do not
 become ASan-instrumented merely by sharing a job with native sanitizer tests.
 GPU and large experiment scope remains #101.
+
+## Maintained CPU baseline
+
+`ports/scatterbrain/` retains the initial five-module core and original namespace.
+Independent erasure of annotations, private type declarations, identity casts
+and docstrings leaves all five numerical ASTs unchanged. Eight Python files and
+five narrow native/optional-import stubs are enrolled in strict mypy, including
+`--disallow-any-explicit`. Archived source is not included in this typing claim.
+
+The real native dependency has a separate three-blob MIT archive at
+`third_party/scatterbrain-fast-transformers/`: LICENSE, CPU C++ source and the
+original autograd wrapper. `papers/scatterbrain-native-dependency-pin.json`
+records exact identities and the supported profile. An explicitly adapted
+GNU14/C++20 setuptools recipe builds a fresh CPU extension, verifies the actual
+binary import location and staged source bytes, and records source/fixture/
+binary/compiler/runtime/ABI hashes. No native arithmetic patch or Torch
+substitute is used. Missing required build/link/import capabilities fail;
+stale evidence is removed before execution.
+
+| Ledger ID | Bounded execution and independent checks |
+| --- | --- |
+| `SCATTERBRAIN-FEATURES-CPU` | 72 feature, 12 restored-kernel, 24 input-gradient, 24 projection-gradient and 16 projection cases; scalar FP64 expressions/analytic derivatives, structural projection checks, three actual-function mutants |
+| `SCATTERBRAIN-LOCAL-PRODUCT-CPU` | Five actual native product contexts and original custom backwards; independent dense/indexed expectations, lengths and an additive-mask primitive case |
+| `SCATTERBRAIN-LOCAL-HYBRID-CPU` | Ten maintained forward/backward fixtures, two full-local dense equalities; independent detached FP64 oracle and two AST mutants rejected in all ten cases |
+
+Local-hybrid scope is FP32 CPU/noncausal/dropout0/eps0, finite moderate inputs
+and positive finite row mass. Raw H1/HV are reconstructed from the returned raw
+hybrid matrix; the internal log-normalization variable is not directly traced.
+Feature gradients cover eps0/nonlog restored features; log/nonzero-eps modes
+have forward checks. Four separately reported lifecycle observations remain
+#106, including cold eval/warm-load failures, ignored redraw and odd-count
+truncation. They are characterizations, not repaired lifecycle guarantees.
+See the [port contract](../ports/scatterbrain/CPU_CONTRACT.md) and
+[feature report](../tests/traceability/scatterbrain_feature_cpu_report.md).
+
+Later SBSmyrf remains a **pinned reference characterization**, not this maintained
+port. The driver fetches exact `74cc6b1` into an ephemeral directory, checks all
+eleven dependency fingerprints, and executes ten whole-module cases plus ten
+source mutants. Independent permutation-derived support and raw H/HV/H1 gates
+catch duplicate/subtraction errors and common scaling invisible in the ratio;
+nonfinite outputs/weights are rejected. Source-failure controls constrain exact
+exception categories/diagnostics. Downloaded/mutant source is excluded from
+artifacts. Numeric XBOX+/E2LSH correctness itself is not independently validated.
+FP64 multi-round raw precision has a separate budget because of
+`log(dup_counts.float())`; benign ratio cancellation is not a strict raw-FP64
+pass. #104–#106 remain open. No maintained-later-port, theoretical hash-selection
+probability or general archive-maintenance pass is claimed.
+
+Python3.12, CPU Torch2.14.1 and the narrow dependencies in
+`tools/scatterbrain-cpu-requirements.txt` reproduce these suites:
+
+```sh
+python tests/traceability/test_scatterbrain_feature_cpu.py --emit-dir /tmp/sb-features
+python tools/check_scatterbrain_initial_cpu.py --test-dependency-contracts
+python tools/check_scatterbrain_initial_cpu.py --cxx g++-14 --build-dir /tmp/sb-initial
+python tools/check_scatterbrain_later_cpu.py --emit-dir /tmp/sb-later
+```
+
+The existing traceability workflow owns CPU execution/artifacts; existing strict
+typing owns the maintained files. No new workflow or GPU job is added. Native
+memory sanitizers, causal paths, arbitrary masks, initial all-zero-key rows,
+extreme/clamped masses, full training and model accuracy/performance remain
+unverified by these fixtures.

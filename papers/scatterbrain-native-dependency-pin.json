@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/idiap/fast-transformers",
+  "commit": "f22c13716fc748bb21a7b226ada7f7b5f87f867f",
+  "archive_root": "third_party/scatterbrain-fast-transformers",
+  "scope": "selected-local-product-cpu-dependency",
+  "license": "MIT",
+  "selected_blobs": {
+    "LICENSE": {
+      "sha": "2c828d5ff01b3971442ba1a5ea47b1119b52c186",
+      "sha256": "db2b1cdf9bda73650d860da722095b8f3a817be008e94e3522bad2c40979915d",
+      "size": 1199,
+      "mode": "100644"
+    },
+    "fast_transformers/local_product/local_product_cpu.cpp": {
+      "sha": "35776250726b940ff161e7f8d17d9403067219fa",
+      "sha256": "70dedc4ab7b367eaea622eb80a53d5caeb3399604d144dcf036cd5bed223c313",
+      "size": 7356,
+      "mode": "100644"
+    },
+    "fast_transformers/local_product/__init__.py": {
+      "sha": "56f69fa0696492730464e19a9ebe0f7c86db2131",
+      "sha256": "6ed2d8f4b7ae84c4f9852d9096db0ab6c3bba4644cc2bd4985a0b31e4ab6a504",
+      "size": 3053,
+      "mode": "100644"
+    }
+  },
+  "runtime_profile": {
+    "python": "3.12",
+    "torch": "2.14.1+cpu",
+    "einops": "0.8.1",
+    "setuptools": "84.0.0",
+    "compiler": "GNU14",
+    "cxx_standard": "C++20"
+  },
+  "scope_notes": [
+    "Exact upstream LICENSE, local_product CPU C++ source and original Python autograd wrapper; other native/GPU extensions are excluded.",
+    "Modern CPU-only setuptools build is an explicit recipe adaptation; no source/API patch or pure-Torch local-product replacement.",
+    "Torch wheel headers/libraries and Python runtime are external ABI prerequisites; selected blobs do not imply a complete upstream repository/environment archive."
+  ]
+}

@@ -86,6 +86,32 @@
         "ports/g-slide",
         "typings"
       ]
+    },
+    {
+      "name": "scatterbrain",
+      "root": "ports/scatterbrain",
+      "python_files": [
+        "src/__init__.py",
+        "src/models/__init__.py",
+        "src/models/modules/__init__.py",
+        "src/models/modules/attention/feature_maps_sb.py",
+        "src/models/modules/attention/projection_utils.py",
+        "src/models/modules/attention/sblocal_attention.py",
+        "src/models/modules/attention/scatterbrain_utils.py",
+        "src/models/modules/masking.py"
+      ],
+      "stub_files": [
+        "typings/apex/__init__.pyi",
+        "typings/apex/amp.pyi",
+        "typings/fast_transformers/__init__.pyi",
+        "typings/fast_transformers/causal_product.pyi",
+        "typings/fast_transformers/local_product.pyi"
+      ],
+      "mypy_path": [
+        "ports/scatterbrain",
+        "ports/scatterbrain/typings",
+        "typings"
+      ]
     }
   ]
 }

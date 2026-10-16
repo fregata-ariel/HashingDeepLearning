@@ -100,6 +100,15 @@ SHA-256 entry in the existing artifact. These checks do not execute attention
 or discharge CPU/GPU/statistical validation; subsequent executable suites are
 tracked in [the integration record](SCATTERBRAIN_INTEGRATION.md).
 
+Its subsequent `scatterbrain-cpu` job stays in that workflow: pinned CPU Torch
+dependencies, GNU14/C++20, real local-product extension and maintained SBLocal
+forward/backward, feature/projection oracles, plus separate later frozen-reference
+characterization. Evidence distinguishes actual native execution, Python/Torch
+arithmetic, retained source failures and statistical/GPU/native-sanitizer gaps.
+Temporary later source and mutants are excluded from artifacts. Strict typing
+enrolls all eight maintained Python files and five narrow stubs, with explicit
+`Any` forbidden for this group; source archives are not counted as typed code.
+
 Examples:
 
 - typing: `ports/**/*.py`, stubs, typing/audit tools, traceability metadata;

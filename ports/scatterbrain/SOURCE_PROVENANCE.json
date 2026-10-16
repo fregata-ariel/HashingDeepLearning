@@ -1,0 +1,28 @@
+{
+  "upstream_repository": "HazyResearch/scatterbrain (renamed HazyResearch/fly)",
+  "initial_commit": "eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab",
+  "immutable_archive": "third_party/scatterbrain",
+  "scope": "five runtime modules, original namespace and arithmetic; type annotations/identity casts/documentation only",
+  "original_runtime_files": {
+    "src/models/modules/attention/sblocal_attention.py": "752610a4dd607d599decdb4df602fd801cbc57db17a2502c763ecf421332b634",
+    "src/models/modules/attention/feature_maps_sb.py": "2df1b1a938c6e38d185bdd62ae76e9eed7f171b47eda394d5614d357f0fe01f1",
+    "src/models/modules/attention/projection_utils.py": "ec2ebfae61ea226e78bf9da9c54d0bfd9d005c57320d6671ae6fafcbf77ee10b",
+    "src/models/modules/attention/scatterbrain_utils.py": "0dbca5f571b63c91cd1f7920717cf68d5cb3226884306f00beb31c1db030b33a",
+    "src/models/modules/masking.py": "f20f3c7004015752260050281f9dc09d214566a54d5b45c43af86c66a8d21755"
+  },
+  "original_package_markers": {
+    "src/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/models/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src/models/modules/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "notices": {
+    "Idiap_fast_transformers": {
+      "commit": "f22c13716fc748bb21a7b226ada7f7b5f87f867f",
+      "sha256": "db2b1cdf9bda73650d860da722095b8f3a817be008e94e3522bad2c40979915d"
+    },
+    "lucidrains_performer_pytorch": {
+      "commit": "0a4a520e9195972f0a3fa1a577c78cfdfccf7338",
+      "sha256": "02cf6ed7df17f94fafa61e67a089ee51faac006db35ffa173c70e6763c253cf6"
+    }
+  }
+}

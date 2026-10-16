@@ -1,0 +1,5 @@
+# Routine CPython 3.12 CPU fixtures. Install the Torch CPU wheel separately.
+einops==0.8.1
+numpy==2.3.5
+setuptools==84.0.0
+tqdm==4.67.1

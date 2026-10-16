@@ -13,6 +13,7 @@ on:
       - "tools/maintained_python_inventory.json"
       - "tests/traceability/test_python_typing_inventory.py"
       - "docs/MAGICPIG*.md"
+      - "docs/SCATTERBRAIN*.md"
       - "tools/check_reformer_attention_types.py"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
@@ -30,6 +31,7 @@ on:
       - "tools/maintained_python_inventory.json"
       - "tests/traceability/test_python_typing_inventory.py"
       - "docs/MAGICPIG*.md"
+      - "docs/SCATTERBRAIN*.md"
       - "tools/check_reformer_attention_types.py"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
@@ -53,7 +55,7 @@ jobs:
 
       - name: Install type-check dependencies
         run: |
-          python -m pip install mypy==2.4.0 numpy==2.3.5 tensorboard==2.21.0
+          python -m pip install mypy==2.4.0 numpy==2.3.5 tensorboard==2.21.0 einops==0.8.1
           python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
           python -m pip check
 

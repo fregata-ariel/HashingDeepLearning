@@ -229,7 +229,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/scatterbrain-bytecode
+      PYTHONPYCACHEPREFIX: /tmp/scatterbrain-bytecode
       OMP_THREAD_LIMIT: "2"
       OMP_NUM_THREADS: "2"
     steps:

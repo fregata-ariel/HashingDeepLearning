@@ -110,9 +110,11 @@ explicit implementation variants to characterize.
 Theorem 2 states a per-entry variance reduction factor `1 − p` for nearby
 unit-sphere q/k, with p expressed using dimension and the distance bound. Its
 proof is referred to missing Appendix D. The displayed main-text statement
-does not spell out independence of feature and support randomness. Independent
-algebra requires unbiased features and that independence for the simple
-variance identity; fixed-feature output agreement cannot establish either.
+does not spell out independence of feature and support randomness. Unbiased
+features and independence of feature/support randomness are sufficient
+assumptions for the simple variance identity used in our independent algebra;
+suitable conditional moment assumptions can also suffice. Fixed-feature output
+agreement cannot establish those statistical assumptions.
 Even an unbiased unnormalized estimator generally yields a biased normalized
 ratio. No theoretical LSH collision probability is assigned to the later
 rank-sorted XBOX+/SMYRF support without a matching derivation.

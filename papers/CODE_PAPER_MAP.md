@@ -173,7 +173,7 @@ supplied 14-page file does not contain the Appendices C/D it references.
 | p.6 §4.2 Eq.(1) | initial `sblocal_attention.py::SBLocalAttention.forward` | Local exact-minus-low-rank residual; local support is explicitly allowed in the paper, but dropout/floors and native local-product boundary require characterization |
 | p.6 §4.2 Eq.(2) | initial `scatterbrain_utils.py::{linear_attention,linear_attention_normalization}` and `SBLocalAttention.forward` | Low-rank factor association plus sparse residual; Eq.(2) is **unnormalized** output, and final shared normalization needs source-level validation |
 | p.6 §4.2 sparse alternatives | later `SBSmyrfAttention`, first added 2022-04-15 | An author-repository LSH composition added after the initial release; rank-sorted SMYRF clusters are not automatically identical to the displayed hash-bucket support |
-| p.7 §4.3 Theorem 2, Eq.(3) | future feature/support statistical tests | Per-entry kernel statement for nearby unit-sphere inputs; does not establish unbiased normalized output. Appendix D proof is absent; independent RF/support randomness remains an explicit mathematical prerequisite |
+| p.7 §4.3 Theorem 2, Eq.(3) | future feature/support statistical tests | Per-entry kernel statement for nearby unit-sphere inputs; does not establish unbiased normalized output. Appendix D proof is absent; independence of RF/support randomness is a sufficient assumption for our separate algebra, not a verified proof hypothesis |
 
 Initial paths are relative to
 `third_party/scatterbrain/src/models/modules/attention/`; later source is

@@ -1,0 +1,182 @@
+{
+  "repository": "https://github.com/HazyResearch/scatterbrain",
+  "commit": "eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab",
+  "tree": "b6a41881fc7d68f86961fab67f25b07c97aad7c6",
+  "commit_object": "papers/source-objects/scatterbrain/initial.commit",
+  "upstream_inventory": "papers/scatterbrain-initial-upstream-manifest.tsv",
+  "inventory_sha256": "d053ebd2a9b9d687832d45993f62a8331c816eefffe80cbae4acd59b157b535e",
+  "upstream_entries": 207,
+  "upstream_blobs": 170,
+  "schema_version": 1,
+  "scope": "selected-source-subset",
+  "archive_root": "third_party/scatterbrain",
+  "selected_blobs": {
+    "Dockerfile": {
+      "sha": "4bd0a044de8d6c1475f22690226ef69a508fb3d9",
+      "mode": "100644",
+      "size": 5660,
+      "sha256": "46e6bb345bdee62ff092176928b6434db75993f3fd81f813f2b7f5376c5bf1be"
+    },
+    "LICENSE": {
+      "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "mode": "100644",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    "README.md": {
+      "sha": "c82b3b2cbd8800a70964be678c8ceb468ce12faf",
+      "mode": "100644",
+      "size": 2524,
+      "sha256": "0953268bda14b26c6f9ca60ef4215c2d0ea422a02baf0453b6fb7039277a6639"
+    },
+    "configs/model/attn_cfg/sblocal.yaml": {
+      "sha": "39ac2da7ede65029ba15dc4140a5738910090a09",
+      "mode": "100644",
+      "size": 148,
+      "sha256": "d5ff00643ecd0d99f6b22c797db95ce737063ea17cdc3ae40697667643e7adf1"
+    },
+    "setup.cfg": {
+      "sha": "113a32f3ee282968fc678dcfba0aab93498f94f1",
+      "mode": "100644",
+      "size": 836,
+      "sha256": "79d269ef619e3fca4a197957dff8a3ffac78bd13082666e22fba4c62885ff545"
+    },
+    "src/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/models/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/models/modules/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/models/modules/attention/feature_maps_sb.py": {
+      "sha": "82ba5f6e0302ce9845a9e8bc03a4bb8ccd253dda",
+      "mode": "100644",
+      "size": 7512,
+      "sha256": "2df1b1a938c6e38d185bdd62ae76e9eed7f171b47eda394d5614d357f0fe01f1"
+    },
+    "src/models/modules/attention/full_attention.py": {
+      "sha": "74b9c964e1937adbe8ff6f38219316ddf45bde86",
+      "mode": "100644",
+      "size": 2516,
+      "sha256": "fca5c554a7c3ba7ac741b9882e371278c773bc277858216821180258de54fee4"
+    },
+    "src/models/modules/attention/projection_utils.py": {
+      "sha": "5f103649a7a664a8303108611b6261965a550a0a",
+      "mode": "100644",
+      "size": 1255,
+      "sha256": "ec2ebfae61ea226e78bf9da9c54d0bfd9d005c57320d6671ae6fafcbf77ee10b"
+    },
+    "src/models/modules/attention/sblocal_attention.py": {
+      "sha": "524db295909f1d069e1083db1692a69924aed520",
+      "mode": "100644",
+      "size": 6995,
+      "sha256": "752610a4dd607d599decdb4df602fd801cbc57db17a2502c763ecf421332b634"
+    },
+    "src/models/modules/attention/scatterbrain_utils.py": {
+      "sha": "61f022b9d5a482669fe4eeacec4521ebf6490ac4",
+      "mode": "100644",
+      "size": 1923,
+      "sha256": "0dbca5f571b63c91cd1f7920717cf68d5cb3226884306f00beb31c1db030b33a"
+    },
+    "src/models/modules/masking.py": {
+      "sha": "784e4b10670849a227cedcec8f65881e405fe24c",
+      "mode": "100644",
+      "size": 7524,
+      "sha256": "f20f3c7004015752260050281f9dc09d214566a54d5b45c43af86c66a8d21755"
+    },
+    "tests/models/modules/attention/test_sblocal_attention.py": {
+      "sha": "c2885d231076f8ccda5743b84f6471eb24e6407e",
+      "mode": "100644",
+      "size": 5123,
+      "sha256": "d7b8cb74580261d2e9b26f10f2cb7eb7b0482cb506924b4d124b9b8a0047bbe5"
+    }
+  },
+  "licenses": [
+    "LICENSE"
+  ],
+  "dependency_source_files": [
+    "src/__init__.py",
+    "src/models/__init__.py",
+    "src/models/modules/__init__.py",
+    "src/models/modules/attention/feature_maps_sb.py",
+    "src/models/modules/attention/full_attention.py",
+    "src/models/modules/attention/projection_utils.py",
+    "src/models/modules/attention/sblocal_attention.py",
+    "src/models/modules/attention/scatterbrain_utils.py",
+    "src/models/modules/masking.py"
+  ],
+  "references": [
+    {
+      "repository": "https://github.com/HazyResearch/scatterbrain",
+      "commit": "74cc6b14347b4edcf5c49098e80a9ef47c0b21bf",
+      "tree": "1821d435ef810ce88038ef81965c65cd0ac8c6bc",
+      "commit_object": "papers/source-objects/scatterbrain/sbsmyrf-introduction.commit",
+      "upstream_inventory": "papers/scatterbrain-sbsmyrf-introduction-upstream-manifest.tsv",
+      "inventory_sha256": "1785bf4bc8678d0422f1c4db1cca0a3b5c8ad0bbab3391d4443f2194cf9fdd15",
+      "upstream_entries": 589,
+      "upstream_blobs": 517,
+      "name": "sbsmyrf-introduction",
+      "role": "reference-metadata-only",
+      "reference_files": {
+        "src/models/attention/sbsmyrf_attention.py": {
+          "sha": "882c3e5e8410279ec858a2f0b8a057fa4da7dbe0",
+          "mode": "100644",
+          "size": 14896
+        }
+      }
+    },
+    {
+      "repository": "https://github.com/HazyResearch/scatterbrain",
+      "commit": "6b73449a6b3e228af9e4afe4f153a384e9b537b9",
+      "tree": "8e9f6490e8c7c2acea1e9740b29556dcca440ee7",
+      "commit_object": "papers/source-objects/scatterbrain/later-head-observed.commit",
+      "upstream_inventory": "papers/scatterbrain-later-head-observed-upstream-manifest.tsv",
+      "inventory_sha256": "4b08d9dce41f87aa9bd1e5e307d5b85ad246f09e25e6e71fb756937a2f6b41f3",
+      "upstream_entries": 598,
+      "upstream_blobs": 526,
+      "name": "later-head-observed",
+      "role": "reference-metadata-only",
+      "reference_files": {
+        "src/models/attention/sbsmyrf_attention.py": {
+          "sha": "882c3e5e8410279ec858a2f0b8a057fa4da7dbe0",
+          "mode": "100644",
+          "size": 14896
+        }
+      }
+    }
+  ],
+  "preserved_notices": {
+    "papers/notices/scatterbrain/idiap-fast-transformers-LICENSE": {
+      "repository": "https://github.com/idiap/fast-transformers",
+      "commit": "f22c13716fc748bb21a7b226ada7f7b5f87f867f",
+      "source_path": "LICENSE",
+      "sha": "2c828d5ff01b3971442ba1a5ea47b1119b52c186",
+      "sha256": "db2b1cdf9bda73650d860da722095b8f3a817be008e94e3522bad2c40979915d",
+      "size": 1199,
+      "license": "MIT",
+      "applies_to": [
+        "src/models/modules/attention/feature_maps_sb.py",
+        "src/models/modules/attention/full_attention.py",
+        "src/models/modules/masking.py"
+      ]
+    }
+  },
+  "scope_notes": [
+    "Initial SBLocal entry and retained test project import closure only; SMYRF/hash/reformer/performer class sources are excluded but visible in full Git inventories.",
+    "The retained upstream test includes CUDA and large-feature configurations; archival inclusion does not establish a CPU test pass.",
+    "fast_transformers.local_product is an external native dependency; Dockerfile/setup are historical context, not a frozen installation recipe.",
+    "First SBSmyrf introduction74cc6b1 is the coherent reference; all11 core dependency blobs match later observed6b73449. Neither later lineage redistributes source here.",
+    "Root Apache-2.0 LICENSE and historical Idiap MIT notice are preserved for selected sources; no assertion that the entire upstream repository is Apache-only. SMYRF-adapted GPL-3.0 historical files remain excluded."
+  ]
+}

@@ -176,7 +176,9 @@ Beidi Chen, Tri Dao, Eric Winsor, Zhao Song, Atri Rudra, Christopher Ré.
   `sblocal.py` README link. No experiment-to-commit identity is established.
 - Archive: `third_party/scatterbrain/`, a **15-file subset**, with source pin and
   complete Git inventories under `papers/`. Root Apache-2.0 and applicable
-  historical Idiap MIT attribution are preserved. Dockerfile/setup.cfg are
+  historical Idiap and Phil Wang MIT notices are preserved. The latter also
+  applies to the copied causal helper in selected `scatterbrain_utils.py`,
+  even though this intake does not execute that branch. Dockerfile/setup.cfg are
   historical context, not a supported CPU installation recipe.
 - The initial SBLocal project runtime closure is five files; the selected
   FullAttention helper, package markers, config and upstream test add context.

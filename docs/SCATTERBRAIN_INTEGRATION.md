@@ -70,7 +70,11 @@ Later source metadata is not an archive or an execution result.
 The author's root license is Apache-2.0. The selected initial helpers credit
 Idiap/fast-transformers; its historical MIT notice is preserved separately
 without changing upstream archive bytes. The matching historical Idiap pin is
-`f22c13716fc748bb21a7b226ada7f7b5f87f867f`.
+`f22c13716fc748bb21a7b226ada7f7b5f87f867f`. The selected
+`scatterbrain_utils.py` also retains the causal helper scaffold from
+lucidrains/performer-pytorch. Its historical Phil Wang MIT notice is preserved
+even though execution of that causal branch is deferred. Import closure alone
+does not identify all copied-source attribution obligations.
 
 Other upstream files explicitly cite `giannisdaras/smyrf`. Its pre-Scatterbrain
 snapshot `bbbc82e0126233da07841275daa238d447c37f66` carries GPL-3.0, and a
@@ -80,7 +84,7 @@ file. Initial hash/SMYRF and later SBSmyrf-derived files are not redistributed
 in this selected archive or silently described as Apache-only. Pinned ephemeral
 source retrieval can support CPU research while a maintained redistribution
 strategy is investigated in #99. Any later imported dependencies need their
-own applicable notices, including lucidrains helpers where used.
+own applicable notices, including additional lucidrains helpers where used.
 
 ## Reviewed main-text correspondence
 

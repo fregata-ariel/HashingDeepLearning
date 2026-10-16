@@ -45,11 +45,28 @@ class SourceContracts(unittest.TestCase):
     def test_original_archive_and_distinct_metadata_only_lineages(self) -> None:
         self.assertEqual(validate(self.root), {"selected_blobs": 15, "upstream_blobs": 170,
                                              "upstream_tree_objects": 38, "reference_lineages": 2,
-                                             "preserved_notices": 1})
+                                             "preserved_notices": 2})
         self.assertEqual([r["upstream_blobs"] for r in self.pin["references"]], [517, 526])
         fingerprints = [r["reference_files"]["src/models/attention/sbsmyrf_attention.py"]["sha"] for r in self.pin["references"]]
         self.assertEqual(fingerprints[0], fingerprints[1])
         self.assertFalse((self.root / "third_party/scatterbrain/src/models/attention").exists())
+
+    def test_adapted_causal_helper_preserves_performer_copyright_notice(self) -> None:
+        name = "papers/notices/scatterbrain/lucidrains-performer-LICENSE"
+        notice = self.pin["preserved_notices"][name]
+        self.assertEqual(notice["applies_to"], ["src/models/modules/attention/scatterbrain_utils.py"])
+        self.assertIn(b"Copyright (c) 2020 Phil Wang", (self.root / name).read_bytes())
+        helper = self.root / self.pin["archive_root"] / notice["applies_to"][0]
+        self.assertIn(b"# efficient causal linear attention, created by EPFL", helper.read_bytes())
+        for mutation in ("missing", "changed"):
+            original = (self.root / name).read_bytes()
+            if mutation == "missing":
+                (self.root / name).unlink()
+            else:
+                (self.root / name).write_bytes(original.replace(b"Phil Wang", b"Anonymous"))
+            with self.subTest(mutation=mutation), self.assertRaises(OSError if mutation == "missing" else ValueError):
+                validate(self.root)
+            (self.root / name).write_bytes(original)
 
     def test_changed_source_rejects(self) -> None:
         path = self.root / self.pin["archive_root"] / "src/models/modules/attention/sblocal_attention.py"

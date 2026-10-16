@@ -170,6 +170,18 @@
         "src/models/modules/attention/full_attention.py",
         "src/models/modules/masking.py"
       ]
+    },
+    "papers/notices/scatterbrain/lucidrains-performer-LICENSE": {
+      "repository": "https://github.com/lucidrains/performer-pytorch",
+      "commit": "18ba57445376a5f899b287723e6e3ad6c29cfdae",
+      "source_path": "LICENSE",
+      "sha": "cad43213602892aadc2290cca7afa74cc9f6af64",
+      "sha256": "02cf6ed7df17f94fafa61e67a089ee51faac006db35ffa173c70e6763c253cf6",
+      "size": 1066,
+      "license": "MIT",
+      "applies_to": [
+        "src/models/modules/attention/scatterbrain_utils.py"
+      ]
     }
   },
   "scope_notes": [
@@ -177,6 +189,7 @@
     "The retained upstream test includes CUDA and large-feature configurations; archival inclusion does not establish a CPU test pass.",
     "fast_transformers.local_product is an external native dependency; Dockerfile/setup are historical context, not a frozen installation recipe.",
     "First SBSmyrf introduction74cc6b1 is the coherent reference; all11 core dependency blobs match later observed6b73449. Neither later lineage redistributes source here.",
-    "Root Apache-2.0 LICENSE and historical Idiap MIT notice are preserved for selected sources; no assertion that the entire upstream repository is Apache-only. SMYRF-adapted GPL-3.0 historical files remain excluded."
+    "Root Apache-2.0 LICENSE, historical Idiap MIT notice and historical lucidrains Performer MIT notice are preserved for selected sources; no assertion that the entire upstream repository is Apache-only. SMYRF-adapted GPL-3.0 historical files remain excluded.",
+    "Selected scatterbrain_utils.py adapts the Apex/null_context and causal_linear_attention scaffold from lucidrains/performer-pytorch@18ba57445376a5f899b287723e6e3ad6c29cfdae (2021-10-21), performer_pytorch/performer_pytorch.py Git blob 436575d7a08b677b5e1c9473c24c9136250a15be, SHA256 cff39e2e275f0670f49ad0787ec3166d557ec99a7afb101f4708ce46a1c9bdcd. Both sources retain the attribution \"# efficient causal linear attention, created by EPFL\"; the helper changes the causal-product callable and omits Performer normalization. The Phil Wang 2020 MIT notice applies even though the PerformerAttention class source is excluded. This identifies an earlier matching source, not proof of the exact upstream copy commit."
   ]
 }

@@ -93,7 +93,7 @@ def load_inventory(inventory: Path, root: Path) -> list[TypingGroup]:
 
 
 def strict_typecheck(groups: list[TypingGroup], repository: Path) -> None:
-    """Use identical strict mypy flags for every enrolled group, even new ones."""
+    """Strict-check every group and forbid explicit Any in the new native APIs."""
     for group in groups:
         sources = [*group.files, *group.stubs]
         if not sources:
@@ -102,7 +102,7 @@ def strict_typecheck(groups: list[TypingGroup], repository: Path) -> None:
         env = dict(os.environ)
         env["MYPYPATH"] = os.pathsep.join(str(p) for p in group.mypy_path)
         command = [sys.executable, "-m", "mypy", "--strict"]
-        if group.name == "magicpig":
+        if group.name in {"magicpig", "scatterbrain"}:
             # Preserve existing projects' NumPy typing (NDArray uses an Any
             # shape internally), while forbidding Any in the new native APIs.
             command.append("--disallow-any-explicit")

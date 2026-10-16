@@ -161,10 +161,10 @@ independence or unbiased-attention claim. Endpoint/invalid-domain and tiny
 inclusion behavior is characterized; repairs #67/#68 remain open.
 [Contract](../ports/magicpig/PROBABILITY_VALIDATION.md) records ranges/tolerances.
 
-## Scatterbrain — inspected conference main text; CPU mechanisms pending
+## Scatterbrain — inspected conference main text and bounded CPU baseline
 
 Baseline: the exact supplied [NeurIPS manuscript](pdf/scatterbrain-2021-neurips.pdf).
-The following is a source map, **not an executable-ledger completion**. The
+The following table maps sources; executable scope is listed below. The
 supplied 14-page file does not contain the Appendices C/D it references.
 
 | Paper locator | Selected initial source / distinct later reference | Correspondence and limits |
@@ -178,6 +178,13 @@ supplied 14-page file does not contain the Appendices C/D it references.
 Initial paths are relative to
 `third_party/scatterbrain/src/models/modules/attention/`; later source is
 metadata-only at its separate pin and is not part of that directory.
-No Scatterbrain numerical ledger IDs are registered by the source intake.
+Initial intake PR #103 registered no numerical IDs. The maintained CPU baseline
+adds `SCATTERBRAIN-FEATURES-CPU`, `SCATTERBRAIN-LOCAL-PRODUCT-CPU` and
+`SCATTERBRAIN-LOCAL-HYBRID-CPU` for independent features/gradients/projections and
+actual native-backed initial local composition. Local runtime scope is finite
+FP32/noncausal/dropout0/eps0; feature FP32/FP64 checks have separate budgets.
+Lifecycle failures remain #106. Later pinned SBSmyrf is reference characterization
+without a maintained-production ledger claim; actual hash-transform correctness
+and theoretical selection probability are not independently verified.
 See [integration scope](../docs/SCATTERBRAIN_INTEGRATION.md) for the conceptual
 CPU task graph and unresolved boundaries.

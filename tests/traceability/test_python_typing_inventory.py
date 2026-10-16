@@ -114,6 +114,19 @@ class InventoryContracts(unittest.TestCase):
         self.assertIn("PYTHON_TYPING_EMPTY group=magicpig maintained_sources=0", output.getvalue())
         self.assertNotIn("PYTHON_TYPING_PASS", output.getvalue())
 
+    def test_scatterbrain_source_and_native_stubs_share_explicit_any_gate(self) -> None:
+        groups = audit.load_inventory(ROOT / "tools/maintained_python_inventory.json", ROOT / "ports")
+        group = next(g for g in groups if g.name == "scatterbrain")
+        self.assertTrue(group.files)
+        self.assertTrue(group.stubs)
+        with patch.object(audit.subprocess, "run") as run, redirect_stdout(io.StringIO()):
+            audit.strict_typecheck([group], ROOT)
+        command = run.call_args.args[0]
+        self.assertIn("--strict", command)
+        self.assertIn("--disallow-any-explicit", command)
+        for path in [*group.files, *group.stubs]:
+            self.assertIn(str(path), command)
+
     def test_unannotated_or_explicit_any_function_rejects(self) -> None:
         for source in ("def apply(value): pass", 'def apply(value: "Any") -> "Any": pass', "def apply(value: typing.Any) -> int: pass"):
             node = ast.parse(source).body[0]
@@ -180,7 +193,8 @@ class WorkflowContracts(unittest.TestCase):
         self.assertIn('OMP_NUM_THREADS: "4"', text)
         self.assertIn("-fopenmp -fsanitize=address,undefined", text)
         self.assertIn("runs-on: ubuntu-24.04", text)
-        self.assertEqual(text.count("sudo apt-get install -y g++-14"), 1)
+        # Separate MagicPIG and Scatterbrain jobs each record their native compiler.
+        self.assertEqual(text.count("sudo apt-get install -y g++-14"), 2)
         self.assertIn("ASAN_OPTIONS: detect_leaks=1", text)
         self.assertIn("g++-14 -std=c++17 -O1", text)
         openmp = text.split("      - name: Bounded OpenMP attention ownership regression\n", 1)[1].split("      - name:", 1)[0]

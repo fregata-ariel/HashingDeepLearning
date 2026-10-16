@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "SCATTERBRAIN-LOCAL-PRODUCT-CPU",
+      "paper": "scatterbrain-2021",
+      "paper_location": "Conference manuscript p6, Section 4.2, local sparse alternative after Equation (2); native implementation support",
+      "mechanism": "Execute the pinned Idiap local dot-product and weighted-average CPU kernels and their original autograd backwards at the maintained SBLocalAttention native boundary, comparing independent dense/gather expectations.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/scatterbrain/src/models/modules/attention/sblocal_attention.py",
+        "symbol": "SBLocalAttention"
+      },
+      "test": {
+        "file": "tests/traceability/test_scatterbrain_initial_cpu.py",
+        "id": "SCATTERBRAIN-LOCAL-PRODUCT-CPU"
+      },
+      "conditions": {
+        "execution": "Actual separately compiled MIT fast-transformers C++ CPU extension and unchanged upstream autograd wrapper; no pure-Torch local-product substitute",
+        "native_source_pin": "idiap/fast-transformers@f22c13716fc748bb21a7b226ada7f7b5f87f867f; exact three-blob selected dependency archive",
+        "profile": "Python3.12, Torch2.14.1+cpu, einops0.8.1, setuptools84.0.0, GNU14/C++20; one build worker and bounded OpenMP",
+        "primitive_contexts": [1, 2, 3, 4, 9],
+        "inputs": "FP32 CPU, two batches/two heads, Q5/K4, prefix key lengths4/3, physical boundaries and one additive mask",
+        "oracle": "Independent dense/indexed Torch multiplication and reductions; actual custom native backwards compared with reference gradients",
+        "identity": "Required fresh build and real extension import path; exact C++/wrapper/license source identities, port/fixture/binary/compiler/runtime/ABI hashes recorded",
+        "sanitizers": "Not instrumented by ASan/UBSan/LSan; unrelated native sanitizer jobs do not validate this extension"
+      },
+      "note": "Native local-product support only, not a theorem, causal/GPU kernel, general dtype/shape contract or model-performance result. The modern CPU-only build recipe and namespace staging are declared adaptations; native arithmetic and original wrapper bytes are unchanged."
+    },
+    {
+      "id": "SCATTERBRAIN-LOCAL-HYBRID-CPU",
+      "paper": "scatterbrain-2021",
+      "paper_location": "Conference manuscript p6, Section 4.2, Equations (1) and (2), and explicitly permitted local sparse alternative; normalization checked against source",
+      "mechanism": "Execute the strictly typed initial maintained local-plus-low-rank path with actual native local products, and independently reconstruct positive features, exact local replacement, shared row normalization, output and conditional Q/K/V gradients.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/scatterbrain/src/models/modules/attention/sblocal_attention.py",
+        "symbol": "SBLocalAttention"
+      },
+      "test": {
+        "file": "tests/traceability/test_scatterbrain_initial_cpu.py",
+        "id": "SCATTERBRAIN-LOCAL-HYBRID-CPU"
+      },
+      "conditions": {
+        "source": "Initial eeb689c five-module core; annotations, narrow type declarations, identity casts and documentation preserve numerical ASTs",
+        "inputs": "FP32 CPU, noncausal, dropout0, feature eps0, six cosh features, finite moderate Q/K/V, positive finite row mass; B2/H2/Q5/K4/E3/V2 and prefix key lengths4/3",
+        "contexts": [1, 2, 3, 4, 16],
+        "temperatures": ["1/sqrt(3)", "0.25"],
+        "composed_cases": 10,
+        "full_local_dense_cases": 2,
+        "oracle": "Independent raw FP64 cosh features from sampled projection, full low-rank matrix and literal local support replacement; detached FP64 leaves for reference gradients",
+        "normalizer_scope": "Raw H1 and HV reconstructed from returned raw hybrid matrix, compared independently; actual normalized output times H1 must agree with HV. Internal log-normalization variable is not directly traced",
+        "sensitivity": "Executed one-statement AST mutants omitting low-rank subtraction or mismatching normalization are rejected by all ten composed fixtures; production files are never modified",
+        "limits": "Conditional sampled projection only; cold deterministic eval/redraw/state repairs remain #106. No arbitrary masks/all-zero key rows/extreme clamp/causal/GPU/statistical-unbiasedness/native-sanitizer claim"
+      },
+      "note": "The local support, orthogonal/cosh feature and finite implementation choices are explicit variants. Equation (2) is unnormalized; the supplied manuscript omits Appendices C/D, so this does not claim their full algorithm/proof is inspected. Kernel equality on selected entries is not equality of normalized probabilities or unbiased normalized output."
+    }
+  ]
+}

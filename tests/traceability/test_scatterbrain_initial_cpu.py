@@ -5,6 +5,8 @@ The original pinned native wrapper/kernel are loaded from the driver's isolated
 build. The maintained port is mandatory; the frozen archive is never a fallback.
 
 Evidence: SCATTERBRAIN-LOCAL-PRODUCT-CPU, SCATTERBRAIN-LOCAL-HYBRID-CPU.
+TRACE_TEST_ID: SCATTERBRAIN-LOCAL-PRODUCT-CPU
+TRACE_TEST_ID: SCATTERBRAIN-LOCAL-HYBRID-CPU
 """
 
 from __future__ import annotations

@@ -4,6 +4,7 @@
 The dense oracle uses scalar FP64 exp/dot products and analytic derivatives,
 independent of the maintained normalization/amax/einsum helpers. Known initial
 lifecycle defects are characterized separately and are not repaired here.
+TRACE_TEST_ID: SCATTERBRAIN-FEATURES-CPU
 """
 from __future__ import annotations
 

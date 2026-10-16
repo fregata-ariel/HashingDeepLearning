@@ -12,6 +12,9 @@ on:
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
       - "tools/check_scatterbrain_sources.py"
+      - "tools/check_scatterbrain_initial_cpu.py"
+      - "tools/check_scatterbrain_later_cpu.py"
+      - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
@@ -19,6 +22,8 @@ on:
       - "tools/maintained_python_inventory.json"
       - "third_party/magicpig/**"
       - "third_party/scatterbrain/**"
+      - "third_party/scatterbrain-fast-transformers/**"
+      - "ports/scatterbrain/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
@@ -46,6 +51,9 @@ on:
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
       - "tools/check_scatterbrain_sources.py"
+      - "tools/check_scatterbrain_initial_cpu.py"
+      - "tools/check_scatterbrain_later_cpu.py"
+      - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
@@ -53,6 +61,8 @@ on:
       - "tools/maintained_python_inventory.json"
       - "third_party/magicpig/**"
       - "third_party/scatterbrain/**"
+      - "third_party/scatterbrain-fast-transformers/**"
+      - "ports/scatterbrain/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
@@ -214,3 +224,56 @@ jobs:
         with:
           name: paper-code-traceability
           path: traceability-artifact/
+
+  scatterbrain-cpu:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PYTHONPYCACHEPREFIX: ${{ runner.temp }}/scatterbrain-bytecode
+      OMP_THREAD_LIMIT: "2"
+      OMP_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Record the exact tested checkout
+        run: |
+          echo "::notice title=Tested merge candidate::commit=$(git rev-parse HEAD);tree=$(git rev-parse 'HEAD^{tree}')"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the supported Scatterbrain CPU compiler and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-14
+          g++-14 --version
+          python -m pip install -r tools/scatterbrain-cpu-requirements.txt
+          python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          python -m pip check
+
+      - name: Verify initial and native dependency source identities
+        run: |
+          python tools/check_scatterbrain_sources.py
+          python tools/check_scatterbrain_initial_cpu.py --verify-dependency-only
+          python tools/check_scatterbrain_initial_cpu.py --test-dependency-contracts
+
+      - name: Maintained positive features, projections and state characterization
+        run: |
+          python tests/traceability/test_scatterbrain_feature_cpu.py \
+            --emit-dir scatterbrain-cpu-artifact/features
+
+      - name: Actual maintained SBLocal with original native CPU kernels
+        run: |
+          python tools/check_scatterbrain_initial_cpu.py \
+            --cxx g++-14 --build-dir scatterbrain-cpu-artifact/initial
+
+      - name: Separately pinned later SBSmyrf reference characterization
+        run: |
+          python tools/check_scatterbrain_later_cpu.py \
+            --emit-dir scatterbrain-cpu-artifact/later
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scatterbrain-cpu-evidence
+          path: scatterbrain-cpu-artifact/

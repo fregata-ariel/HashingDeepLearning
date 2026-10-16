@@ -46,8 +46,10 @@ Input and projection derivatives use detached raw FP64 feature values and the
 analytic derivatives of this scalar expression. The reference does not call the
 maintained helper, use its amax/einsum graph, or obtain gradients from a duplicate
 implementation via autograd. Actual gradients do run through the maintained
-helper and its stabilization. Both query/key modes, cosh/noncosh, default and two
-explicit temperatures, FP32/FP64 inputs, and log/nonlog output are exercised.
+helper and its stabilization. Gradients cover eps0 and nonlog restored feature
+output only, across query/key modes, cosh/noncosh, default and two explicit
+temperatures, and FP32/FP64 inputs. Log output and nonzero eps are forward-only
+checks.
 Nonzero eps with log output must raise its exact `NotImplementedError` message.
 
 FP32 uses absolute and relative tolerances 3e-6; FP64 features/derivatives use

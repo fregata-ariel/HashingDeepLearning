@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "paper": "Scatterbrain: Unifying Sparse and Low-rank Attention Approximation",
+  "version": "NeurIPS 2021 conference manuscript supplied by the user; not identified as arXiv v1",
+  "local_file": "papers/pdf/scatterbrain-2021-neurips.pdf",
+  "sha256": "1503ff9a48b07855bbcb8e0cb3a09ff312dcdd3c8c6e1356ca1b0c67f9e97846",
+  "size_bytes": 2727882,
+  "pages": 14,
+  "acquisition": {
+    "method": "user-supplied chat attachment, preserved byte-for-byte",
+    "received_date": "2026-10-17 Asia/Tokyo",
+    "original_filename": "NeurIPS-2021-scatterbrain-unifying-sparse-and-low-rank-attention-Paper.pdf",
+    "publisher_url": "https://proceedings.neurips.cc/paper/2021/file/9185f3ec501c674c7c788464a36e7fb3-Paper.pdf",
+    "publisher_download_observation": "Direct download blocked by Envoy CONNECT403 before attachment was supplied",
+    "publisher_bytes_compared": false,
+    "arxiv_v1_bytes_compared": false
+  },
+  "pdf_metadata": {
+    "creator": "LaTeX with hyperref",
+    "producer": "macOS Version 11.6 (Build 20G165) Quartz PDFContext",
+    "creation_date_utc": "2022-01-27T05:08:52Z",
+    "modification_date_utc": "2022-01-27T05:08:52Z"
+  },
+  "scope": "Primary-text review uses this exact supplied conference manuscript. Its title and NeurIPS footer are inspected; no byte identity with the inaccessible publisher endpoint or arXiv v1 is asserted. PDF metadata timestamps do not identify the code revision used for experiments."
+}

@@ -148,3 +148,53 @@ For each relevant function/class:
 
 Source choice, paper/code intake relations, dependency obligations and recovery
 tasks: [MagicPIG integration record](../docs/MAGICPIG_INTEGRATION.md).
+
+## 6. Scatterbrain — NeurIPS 2021 (initial local reference)
+
+**Paper:** *Scatterbrain: Unifying Sparse and Low-rank Attention Approximation*,
+Beidi Chen, Tri Dao, Eric Winsor, Zhao Song, Atri Rudra, Christopher Ré.
+
+- Conference manuscript: `papers/pdf/scatterbrain-2021-neurips.pdf`, supplied by
+  the user in chat and preserved byte-for-byte; 2,727,882 bytes, 14 pages;
+  SHA-256 `1503ff9a48b07855bbcb8e0cb3a09ff312dcdd3c8c6e1356ca1b0c67f9e97846`.
+- Publisher locator: https://proceedings.neurips.cc/paper/2021/file/9185f3ec501c674c7c788464a36e7fb3-Paper.pdf .
+  Direct download was blocked by Envoy CONNECT403; the local file's identity
+  with remote bytes is not claimed. Acquisition and PDF metadata are recorded
+  in `papers/scatterbrain-paper-provenance.json`.
+- The supplied manuscript contains the main text and references, **not the
+  Appendices C/D** cited for the full algorithm and proof. Its title/footer and
+  main-text equations can be reviewed; the absent appendices cannot.
+- arXiv locator: https://arxiv.org/abs/2110.15343v1 . Its bytes/version have not
+  been compared with this conference manuscript; it is not silently substituted.
+- Historical repository: https://github.com/HazyResearch/scatterbrain . Both
+  historical and canonical https://github.com/HazyResearch/fly resolve to
+  GitHub repository ID `421284664`.
+- Initial root commit: `eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab`, 2021-10-29,
+  tree `b6a41881fc7d68f86961fab67f25b07c97aad7c6`. Its README explicitly
+  describes local attention plus Performer; the actual file is
+  `src/models/modules/attention/sblocal_attention.py`, despite its stale
+  `sblocal.py` README link. No experiment-to-commit identity is established.
+- Archive: `third_party/scatterbrain/`, a **15-file subset**, with source pin and
+  complete Git inventories under `papers/`. Root Apache-2.0 and applicable
+  historical Idiap MIT attribution are preserved. Dockerfile/setup.cfg are
+  historical context, not a supported CPU installation recipe.
+- The initial SBLocal project runtime closure is five files; the selected
+  FullAttention helper, package markers, config and upstream test add context.
+  The archived test still requires external fast-transformers native bindings;
+  it is not a routine CPU execution claim.
+- Later `SBSmyrfAttention` first appears at
+  `74cc6b14347b4edcf5c49098e80a9ef47c0b21bf`, 2022-04-15,
+  tree `1821d435ef810ce88038ef81965c65cd0ac8c6bc`. Its eleven-file project CPU
+  closure is unchanged at the separately identified 2023-02-21 HEAD
+  `6b73449a6b3e228af9e4afe4f153a384e9b537b9`, tree
+  `8e9f6490e8c7c2acea1e9740b29556dcca440ee7`.
+- SMYRF-derived paths explicitly cite `giannisdaras/smyrf`, whose historical
+  source carried GPL-3.0 before Scatterbrain's initial release. This is an
+  attribution/provenance boundary, not a legal conclusion about every Fly file.
+  Those paths are excluded from this archive; later reference metadata does
+  not imply permission to relabel them Apache-only.
+
+Paper/source distinctions, CPU acceptance and Issue dependencies are recorded
+in [the integration record](../docs/SCATTERBRAIN_INTEGRATION.md). Source identity
+checks do not execute attention, verify statistical claims or reproduce GPU
+accuracy/performance.

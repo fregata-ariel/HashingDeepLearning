@@ -92,6 +92,14 @@ workflow or recurring GPU job is introduced.
 Permanent workflows should trigger only when their protected contract could
 have changed.
 
+Scatterbrain source intake uses the same `traceability.yml`: its selected
+15-file initial SBLocal archive, complete pinned tree, distinct later-reference
+metadata and applicable historical MIT notice have a source-identity gate and
+mutation contracts. The registered user-supplied conference PDF receives a
+SHA-256 entry in the existing artifact. These checks do not execute attention
+or discharge CPU/GPU/statistical validation; subsequent executable suites are
+tracked in [the integration record](SCATTERBRAIN_INTEGRATION.md).
+
 Examples:
 
 - typing: `ports/**/*.py`, stubs, typing/audit tools, traceability metadata;

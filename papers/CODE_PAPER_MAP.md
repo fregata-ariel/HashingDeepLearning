@@ -160,3 +160,24 @@ bias is explicitly synthetic/conditional-on-nonempty, not a geometric candidate
 independence or unbiased-attention claim. Endpoint/invalid-domain and tiny
 inclusion behavior is characterized; repairs #67/#68 remain open.
 [Contract](../ports/magicpig/PROBABILITY_VALIDATION.md) records ranges/tolerances.
+
+## Scatterbrain — inspected conference main text; CPU mechanisms pending
+
+Baseline: the exact supplied [NeurIPS manuscript](pdf/scatterbrain-2021-neurips.pdf).
+The following is a source map, **not an executable-ledger completion**. The
+supplied 14-page file does not contain the Appendices C/D it references.
+
+| Paper locator | Selected initial source / distinct later reference | Correspondence and limits |
+| --- | --- | --- |
+| p.5 footnote 3; p.6 §4.2 | `feature_maps_sb.py::softmax_kernel`, `projection_utils.py::gaussian_orthogonal_random_matrix` | Positive features approximate the unnormalized exponential kernel; actual orthogonal/cosh features, scaling and stabilization require separate CPU/statistical checks |
+| p.6 §4.2 Eq.(1) | initial `sblocal_attention.py::SBLocalAttention.forward` | Local exact-minus-low-rank residual; local support is explicitly allowed in the paper, but dropout/floors and native local-product boundary require characterization |
+| p.6 §4.2 Eq.(2) | initial `scatterbrain_utils.py::{linear_attention,linear_attention_normalization}` and `SBLocalAttention.forward` | Low-rank factor association plus sparse residual; Eq.(2) is **unnormalized** output, and final shared normalization needs source-level validation |
+| p.6 §4.2 sparse alternatives | later `SBSmyrfAttention`, first added 2022-04-15 | An author-repository LSH composition added after the initial release; rank-sorted SMYRF clusters are not automatically identical to the displayed hash-bucket support |
+| p.7 §4.3 Theorem 2, Eq.(3) | future feature/support statistical tests | Per-entry kernel statement for nearby unit-sphere inputs; does not establish unbiased normalized output. Appendix D proof is absent; independent RF/support randomness remains an explicit mathematical prerequisite |
+
+Initial paths are relative to
+`third_party/scatterbrain/src/models/modules/attention/`; later source is
+metadata-only at its separate pin and is not part of that directory.
+No Scatterbrain numerical ledger IDs are registered by the source intake.
+See [integration scope](../docs/SCATTERBRAIN_INTEGRATION.md) for the conceptual
+CPU task graph and unresolved boundaries.

@@ -1,8 +1,9 @@
 # LSH / SLIDE lineage research workspace
 
-This branch vendors four related LSH-for-neural-training codebases as ordinary
-source files. They are **not Git submodules**, and their upstream Git metadata is
-not embedded.
+This branch preserves reference code for LSH-based neural training and attention
+as ordinary source files. They are **not Git submodules**. Selected source
+archives have explicit commit/tree inventories rather than embedded upstream
+repositories.
 
 ## Layout
 
@@ -10,6 +11,10 @@ not embedded.
 - `third_party/slide-optimized-avx512/` — modern-CPU optimized SLIDE (MLSys 2021)
 - `third_party/mongoose/` — MONGOOSE learnable-LSH framework (ICLR 2021)
 - `third_party/g-slide/` — G-SLIDE GPU reference (TPDS 2022), exact upstream archive
+- `third_party/magicpig/` — selected MagicPIG reference; CPU coverage is recorded in `docs/MAGICPIG_INTEGRATION.md`
+- `third_party/scatterbrain/` — selected initial SBLocal reference; later SBSmyrf remains a separately pinned reference
+- `papers/pdf/scatterbrain-2021-neurips.pdf` — user-supplied conference manuscript, preserved unchanged
+- `docs/SCATTERBRAIN_INTEGRATION.md` — paper/code correspondence, source scope and staged CPU work
 - `ports/g-slide/CPU_VALIDATION.md` — CPU-first G-SLIDE coverage and pending GPU milestones
 - `docs/GSLIDE_MILESTONES.md` — G1/G2/G3 acceptance criteria and resume points
 - `papers/SOURCES.md` — paper/repository provenance and pinned commits

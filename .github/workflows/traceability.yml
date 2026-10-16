@@ -6,16 +6,19 @@ on:
     paths:
       - "papers/**"
       - "docs/MAGICPIG*.md"
+      - "docs/SCATTERBRAIN*.md"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
+      - "tools/check_scatterbrain_sources.py"
       - "tools/check_magicpig_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
       - "tools/audit_python_annotations.py"
       - "tools/maintained_python_inventory.json"
       - "third_party/magicpig/**"
+      - "third_party/scatterbrain/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
@@ -37,16 +40,19 @@ on:
     paths:
       - "papers/**"
       - "docs/MAGICPIG*.md"
+      - "docs/SCATTERBRAIN*.md"
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
       - "tools/check_magicpig_sources.py"
+      - "tools/check_scatterbrain_sources.py"
       - "tools/check_magicpig_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
       - "tools/audit_python_annotations.py"
       - "tools/maintained_python_inventory.json"
       - "third_party/magicpig/**"
+      - "third_party/scatterbrain/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
@@ -108,6 +114,11 @@ jobs:
         run: |
           python3 tests/traceability/test_magicpig_source_contracts.py
           python3 tools/check_magicpig_sources.py --emit-dir traceability-artifact/magicpig-source
+
+      - name: Scatterbrain selected initial source and separate reference identities
+        run: |
+          python3 tests/traceability/test_scatterbrain_source_contracts.py
+          python3 tools/check_scatterbrain_sources.py --emit-dir traceability-artifact/scatterbrain-source
 
       - name: MagicPIG portable CPU oracles and capability-gated native bodies
         run: |

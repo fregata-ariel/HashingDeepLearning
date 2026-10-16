@@ -1,0 +1,208 @@
+path	mode	type	sha	size	import_status
+.gitignore	100644	blob	b74464ea3657ec63140635c4cb41c912ec27f5dd	1805	excluded
+Dockerfile	100644	blob	4bd0a044de8d6c1475f22690226ef69a508fb3d9	5660	selected
+LICENSE	100644	blob	261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64	11357	selected
+README.md	100644	blob	c82b3b2cbd8800a70964be678c8ceb468ce12faf	2524	selected
+analysis	040000	tree	2e68065de54ab3077b941db6d311a7b42c14d71a		context
+analysis/mse_plot.py	100644	blob	28a0fb39fa197028ef6f24e496f42130aba25bb7	2046	excluded
+analysis/theory_mse.pdf	100644	blob	e5e6e4e0cbfc57e5b814168346cf0852ba739541	15533	excluded
+analysis/theory_mse_new.pdf	100644	blob	a6537a1bdd205b5525983c49111cff3dcbf37af4	17351	excluded
+configs	040000	tree	7e5e04f7529caee7cdbaa3d643654674b3ed8296		context
+configs/callbacks	040000	tree	6187d994305cf435ec3b52bc4aa3be25a025c766		context
+configs/callbacks/default.yaml	100644	blob	5e882ea31d73b951223bc196158e61411678616c	1240	excluded
+configs/callbacks/ema.yaml	100644	blob	cea25c187fa3061ab5f581cb622344bba82bfc0f	47	excluded
+configs/callbacks/gpu-monitor.yaml	100644	blob	6780f6d1c1bce7a4792fe15cc45eb57b5488d4bb	374	excluded
+configs/callbacks/model-summary.yaml	100644	blob	ff465ae444240059181a54f5742c17033e7d39df	68	excluded
+configs/callbacks/none.yaml	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+configs/callbacks/params-log.yaml	100644	blob	b2a49dd8d7ade6be883b52f9e335fb574180da30	146	excluded
+configs/callbacks/wandb.yaml	100644	blob	c6ae21d3aec18aa281a6d1ef5ea41199a4c04295	672	excluded
+configs/config.yaml	100644	blob	d5e1c8dcea743927363cbeae0671090879197eb9	1394	excluded
+configs/datamodule	040000	tree	5ff32eb95ea48f125cd7ce29484fcd7451fb240e		context
+configs/datamodule/aan.yaml	100644	blob	74c6cf0e82d404ff3ec8d71f701ef84f2deb3cc7	246	excluded
+configs/datamodule/cifar10.yaml	100644	blob	03761138b47eeb2a622d6e88484436421272c499	313	excluded
+configs/datamodule/cifar100.yaml	100644	blob	fd9a4f1405ee41ef80a5fd206016b7d174a79ca9	314	excluded
+configs/datamodule/imagenet.yaml	100644	blob	219ed8c34d3cb97ddec661b764af459e9f9caf1c	219	excluded
+configs/datamodule/imdb.yaml	100644	blob	d8c5733e59bb65b6d3c12eb570f15b856610acd2	487	excluded
+configs/datamodule/listops.yaml	100644	blob	5ea1b306aaf5ec5ec2bd771868513482a5633e40	265	excluded
+configs/datamodule/lra-imagec.yaml	100644	blob	190551d21827f5583e53922ceb42c1ea7465293e	490	excluded
+configs/datamodule/lra-textc.yaml	100644	blob	7946be8fffdc47225a8ec34615847cb6a95917f6	351	excluded
+configs/datamodule/mnist_datamodule.yaml	100644	blob	e1aaa68451e0c06176fc1334e87fb07289b4ee9d	240	excluded
+configs/datamodule/pathfinder.yaml	100644	blob	7e9b094421928ceebf784e8af3e77aded6ab3282	1308	excluded
+configs/datamodule/wt103.yaml	100644	blob	83fece6d8b439bf6b3a34fc6ccdc41e9c4995dbe	328	excluded
+configs/datamodule/wt2.yaml	100644	blob	c611c11619a94002263ac3ae5fd0e539dda7bc79	322	excluded
+configs/experiment	040000	tree	a8f4b23170bce124411936cb15ad5f827d4188d0		context
+configs/experiment/example_full.yaml	100644	blob	dc5adbecf18586f3d04601deebf016b7a7032a31	1661	excluded
+configs/experiment/example_simple.yaml	100644	blob	ac6b245cd5ffb07fda092a75286c9ae5a3e128c6	679	excluded
+configs/experiment/imagenet-cnn.yaml	100644	blob	43e4d11cf1db99be22c1efb9b6f3f005a3d08e6c	1453	excluded
+configs/experiment/imagenet-t2tvit-eval.yaml	100644	blob	d9e63ed53bd25db78dfdbab65db77288f93c8b60	1373	excluded
+configs/hparams_search	040000	tree	b198195dbe960b3c90ccae46cb393d119a1b4d8e		context
+configs/hparams_search/mnist_optuna.yaml	100644	blob	20e43d34da4ec566ef9e0aa92b3e1868b084d607	1797	excluded
+configs/logger	040000	tree	b78e9cc77ceed6aab30a472d581c2ae070dd58b2		context
+configs/logger/comet.yaml	100644	blob	6ac99f46ca6d2d81e1bd70c230648ec5547c0df0	230	excluded
+configs/logger/csv.yaml	100644	blob	0f917e89ca1902e8ef89b524a9f2affb8bc402e3	158	excluded
+configs/logger/many_loggers.yaml	100644	blob	7bc3d6762674a8220d771e36ca10791ae6447e06	150	excluded
+configs/logger/mlflow.yaml	100644	blob	bfb3781b1591fc1d3190101da06dbce160396130	209	excluded
+configs/logger/neptune.yaml	100644	blob	117af9379319ff9b000311b863ddf42fe08b1b67	325	excluded
+configs/logger/tensorboard.yaml	100644	blob	acd1fa411d0407535066cd809dbb2a11915a4154	246	excluded
+configs/logger/wandb.yaml	100644	blob	0c6bb9ba6ef83a8780836b5608d8e0f54ab2c6dc	388	excluded
+configs/mode	040000	tree	e737ffcdbb1ad7c8f69a3a4c1b9a3bfdc1c22d96		context
+configs/mode/debug.yaml	100644	blob	b2335c981ab1217d3e8a9f489c0d3c1af168ec47	781	excluded
+configs/mode/default.yaml	100644	blob	ac0cae1ceebc0f43c38e98b522d44063b3f0d6f2	326	excluded
+configs/mode/exp.yaml	100644	blob	032aaa9432899c83d41d292a07c0eb3c3edb7c7e	432	excluded
+configs/model	040000	tree	73d733d7e30f248dbf51b97434f8c6f4769dad5d		context
+configs/model/attn_cfg	040000	tree	3b3bcc71876c477baee611f14fa549030e776879		context
+configs/model/attn_cfg/full.yaml	100644	blob	b30655baa064f215b468e2ee0ae3b6c9b98c01a6	68	excluded
+configs/model/attn_cfg/linear-attention.yaml	100644	blob	220fcc416d8b5084b8fcfcc897066d6c9ea5f6ed	239	excluded
+configs/model/attn_cfg/local.yaml	100644	blob	5561764080a9a840913e363ac6321085ff23151f	89	excluded
+configs/model/attn_cfg/performer.yaml	100644	blob	9768bb84da8e30a6d52b96ec2c70e6c2e08c6a45	244	excluded
+configs/model/attn_cfg/reformer.yaml	100644	blob	2d1e1553b0affd56011a5ca188b61e9ec8141ca7	76	excluded
+configs/model/attn_cfg/sblocal.yaml	100644	blob	39ac2da7ede65029ba15dc4140a5738910090a09	148	selected
+configs/model/attn_cfg/smyrf.yaml	100644	blob	bd3ef2c8b5b8d669b3aedfb6595da206ee47a285	84	excluded
+configs/model/mnist_model.yaml	100644	blob	907ae6eb542dbb841661875f1a181661f3ffc017	156	excluded
+configs/model/t2tattn_cfg	040000	tree	b8a78669e0a37f4342fdc2bf56a48defcf0ac23b		context
+configs/model/t2tattn_cfg/bs-bigbird.yaml	100644	blob	73a43efee42503e901f22ebaf31f934a14f13fd8	710	excluded
+configs/model/t2tattn_cfg/bs-longformer.yaml	100644	blob	dde7db3ec5be70e2cd4db21f45059a7b67264afb	715	excluded
+configs/model/t2tattn_cfg/bs-openai.yaml	100644	blob	d531db4e8fc49c397648a7850e8d3996dbc172de	690	excluded
+configs/model/t2tattn_cfg/full.yaml	100644	blob	a3a7ad511d54457713afe9ad13260a27e39b195b	154	excluded
+configs/model/t2tattn_cfg/linear-attention-performer.yaml	100644	blob	93d573de30c2fbb71303778c0a10cc8c58ebed42	880	excluded
+configs/model/t2tattn_cfg/local.yaml	100644	blob	69c277e05900934b9b8bb75e5fb196c16b1da021	307	excluded
+configs/model/t2tattn_cfg/performer.yaml	100644	blob	2e6515fe3cf3ad259dac7ed2f681f0c16e3954bc	605	excluded
+configs/model/t2tattn_cfg/sbbs-bigbird.yaml	100644	blob	c36db453dd9cacf0b78db30c58fa822a04a77e64	807	excluded
+configs/model/t2tattn_cfg/sbbs-longformer.yaml	100644	blob	2e590a31972e5c44e41ea81b1855ee810a753950	812	excluded
+configs/model/t2tattn_cfg/sbbs-openai.yaml	100644	blob	7651d56a1c9b17a4c8bc7e7fcaa9bdd9576008d3	787	excluded
+configs/model/t2tattn_cfg/sblocal.yaml	100644	blob	50a315ecf3010e0ed795d4b401381337f2057a4f	403	excluded
+configs/model/t2tattn_cfg/smyrf.yaml	100644	blob	2274d24b52c10831abbc51ee2613297153424366	413	excluded
+configs/model/t2tmodel	040000	tree	aaf9b263262ba74f05b0093cc1481c40145e4146		context
+configs/model/t2tmodel/t2t_vit_12_wide.yaml	100644	blob	045f7a244a4170f3b8ceda2c03bf5b899f5b5157	202	excluded
+configs/model/t2tmodel/t2t_vit_14.yaml	100644	blob	4e5d8db83097c1b86a23e048778e8719b9d33856	73	excluded
+configs/model/t2tmodel/t2t_vit_14_t.yaml	100644	blob	1f2f0fa8bac9d3faa7b67a8d4c5e73cd5aebc77f	75	excluded
+configs/model/t2tmodel/t2t_vit_7.yaml	100644	blob	6a3afc9c8bdd09f19c7d1280440587f8b37fbe80	72	excluded
+configs/model/t2tmodel/t2t_vit_7_t.yaml	100644	blob	dbb9823228e91c98bf0137f6eed5d66a4053beb6	200	excluded
+configs/model/t2tmodel/t2t_vit_8_wide.yaml	100644	blob	9e637c29bd16b0457d1a3c9027e81d3b5ba61c30	200	excluded
+configs/model/t2tmodel/vit_b_16.yaml	100644	blob	512d974184a6ead5a696ca8604b348db950d9e59	79	excluded
+configs/model/t2tmodel/vit_l_16.yaml	100644	blob	a9d0f995ac79c431df5d7b8ff12e2415eadc47b2	80	excluded
+configs/model/t2tmodel/vit_s_16.yaml	100644	blob	35992fcaf7bc5a1fd03b94500134412e28bc8e09	80	excluded
+configs/model/t2tvit.yaml	100644	blob	30fb123c17d11eda4562ee3f48a47d40a8f12663	127	excluded
+configs/model/transformer-classifier.yaml	100644	blob	6daf1c6b74ab0dee4966970af8e134c1c35929f2	429	excluded
+configs/optimizer	040000	tree	13936754e30d66d6831764a102aeb133640000ee		context
+configs/optimizer/adamw.yaml	100644	blob	02252ec1cec06b2b06ef99fdeb9e324c1035738d	55	excluded
+configs/optimizer/sgd.yaml	100644	blob	43b834653e8735acf54ca3b21f89cc480a65ac3e	53	excluded
+configs/scheduler	040000	tree	8dea23e3242a6522eb259ef8d4d19128a6048278		context
+configs/scheduler/cosine-warmup.yaml	100644	blob	afaf0f618ecc41c9182c7df34717c973aa4af974	82	excluded
+configs/scheduler/invsqrt.yaml	100644	blob	bb16f3c15bfd4f3a337a3b082a12e37f14bafd1b	90	excluded
+configs/scheduler/multi-step.yaml	100644	blob	42cd60716a4654f469aa7d6384098bc1068f381c	74	excluded
+configs/task	040000	tree	6778f082366968981ab2d8b73b80cfb127cd0bce		context
+configs/task/sequence-model.yaml	100644	blob	435cf0501a3c4b24efd35d72fbcabcaf19748589	38	excluded
+configs/trainer	040000	tree	f0cf54c68ba32e09296a5d5a0ea082a85ee7ea0a		context
+configs/trainer/all_params.yaml	100644	blob	067c2953b51399c71c869ea7744fcd99f6be9d6d	1105	excluded
+configs/trainer/ddp.yaml	100644	blob	cd67f233e73a58cf6288084c50243163f5e30e48	53	excluded
+configs/trainer/debug.yaml	100644	blob	18b73ed889bcd2c540f5d50584f12170f8016191	333	excluded
+configs/trainer/default.yaml	100644	blob	498ec91f692f30b128425068837e6e938c30d9c3	207	excluded
+notebooks	040000	tree	d564d0bc3dd917926892c55e3706cc116d5b165e		context
+notebooks/.gitkeep	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+run.py	100644	blob	50d4825bb040af94630cbdc04577d1738324f532	1958	excluded
+scripts	040000	tree	c7e2008fd20ad65f4b82143256a6846512819857		context
+scripts/convert_checkpoint_t2t_vit.py	100644	blob	9ac8dd3392d70ca59fba1cb43f4f1d91868fdbe0	1122	excluded
+setup.cfg	100644	blob	113a32f3ee282968fc678dcfba0aab93498f94f1	836	selected
+src	040000	tree	c8c639e65d429c17e25b17f4565619e1345e4dba		context
+src/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/callbacks	040000	tree	5a833e7fd33fe4fc0f2414921f595764aa3deb29		context
+src/callbacks/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/callbacks/ema.py	100644	blob	2e72d5129e6b4e4ac60ed397ec2f808b15a9e4d2	2871	excluded
+src/callbacks/params_log.py	100644	blob	7552835220ae8b92c6f0a8ca2f8162f8c012de79	1452	excluded
+src/callbacks/speed_monitor.py	100644	blob	84ed93dd55969dffe7141f580108c85c348ed71a	3147	excluded
+src/callbacks/wandb_callbacks.py	100644	blob	4e0a46523d98168e83e2e0e0054542e8473e5451	10003	excluded
+src/datamodules	040000	tree	00ddd4e9ce60d0c9092dee49bacddb9db6affe72		context
+src/datamodules/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/datamodules/aan.py	100644	blob	3aae07bef5984c3e9e0ae287a32d41b4528a79a4	7746	excluded
+src/datamodules/cifar.py	100644	blob	b5b762c0b0cf870b523fab36d23ed8f17b8a7df9	4448	excluded
+src/datamodules/datasets	040000	tree	cdb66be1cceb9c895b1c0e5548cf34534cc99fb2		context
+src/datamodules/datasets/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/datamodules/datasets/archive_imagefolder.py	100644	blob	f8386c282a8fa4899204d1edf4aba03a476f6cca	10949	excluded
+src/datamodules/datasets/getdata.sh	100755	blob	9a2f93d99ebb78b02fbe7e473dfb8a980bba5e26	5369	excluded
+src/datamodules/datasets/tardataset.py	100644	blob	af2ca3e0339c3fd52a25ef9eeb68daf112e03b58	6461	excluded
+src/datamodules/datasets/tarimagefolder.py	100644	blob	7f7b4aa9a005f432ac045e68198d96c2c25e282a	4861	excluded
+src/datamodules/datasets/vocabulary.py	100644	blob	69dd2e750945cecd3925d7f0658c8b772a8aff25	8521	excluded
+src/datamodules/imagenet.py	100644	blob	8c8155505f843e3ba0d88bc56d376e1b1d0b20ab	10643	excluded
+src/datamodules/imagenet_dali_loader.py	100644	blob	71e7e0312f9412d552e6a72d24ca62302b93d742	6584	excluded
+src/datamodules/imdb.py	100644	blob	416921cad9bdfeb105e38bb6f7d0e4571fd0c354	7160	excluded
+src/datamodules/language_modeling.py	100644	blob	1df7094372e643a094b998c025197d11fc817033	9387	excluded
+src/datamodules/listops.py	100644	blob	21007b77bb95ba8712df0290a0da5c41bc4f18d7	7024	excluded
+src/datamodules/mnist_datamodule.py	100644	blob	4fa63126a4a8cfefa8a355a6598cf4a77519c835	3807	excluded
+src/datamodules/pathfinder.py	100644	blob	fbc29e67e5f2d9dffb56f8d462f568ad11f38f37	15690	excluded
+src/datamodules/timm_mixup.py	100644	blob	2d468576d38d7941bbbd9ee696a2333db824ba32	796	excluded
+src/eval.py	100644	blob	09ea2f20378f90e003e36d10e9d406220b43baf7	3992	excluded
+src/models	040000	tree	badfd7e2ff09bb5a124180e88cef67596dbef389		context
+src/models/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/models/mnist_model.py	100644	blob	4732f2301c7dee7f53fbae7702dc612013becace	4028	excluded
+src/models/modules	040000	tree	35bc733d83538c2d1424c617b6484659dbfcce85		context
+src/models/modules/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/models/modules/attention	040000	tree	c8a6a5cbef96aed7f69bf78c841673b453ebd426		context
+src/models/modules/attention/feature_maps_sb.py	100644	blob	82ba5f6e0302ce9845a9e8bc03a4bb8ccd253dda	7512	selected
+src/models/modules/attention/full_attention.py	100644	blob	74b9c964e1937adbe8ff6f38219316ddf45bde86	2516	selected
+src/models/modules/attention/hash_utils.py	100644	blob	8b3cba46f8c47af0d706fdba2d6da67bfdc7c988	10734	excluded
+src/models/modules/attention/linear_attention.py	100644	blob	994aaba704bfcb75042f2d5e8f4b5558d5db4bc4	3232	excluded
+src/models/modules/attention/local_attention.py	100644	blob	a9fb5bb0f5404fb32f21f9ca29040adee4159ae1	4969	excluded
+src/models/modules/attention/mask_utils.py	100644	blob	011443cfcac494484ba5f1b67b9ef2a05f97d52b	755	excluded
+src/models/modules/attention/performer_attention.py	100644	blob	80697c6f1771423dbf473fed334b40028269c931	5524	excluded
+src/models/modules/attention/performer_feature_map.py	100644	blob	db4b489130b9252ceb4e4863fd7f89c3a4628a09	3539	excluded
+src/models/modules/attention/performer_utils.py	100644	blob	dfd122cc79eaf415339da0ac71f6509494fdf221	5141	excluded
+src/models/modules/attention/projection_utils.py	100644	blob	5f103649a7a664a8303108611b6261965a550a0a	1255	selected
+src/models/modules/attention/reformer_attention.py	100644	blob	5fb637985735eba51b308bab21fe04f451f3d6a8	15615	excluded
+src/models/modules/attention/sblocal_attention.py	100644	blob	524db295909f1d069e1083db1692a69924aed520	6995	selected
+src/models/modules/attention/scatterbrain_utils.py	100644	blob	61f022b9d5a482669fe4eeacec4521ebf6490ac4	1923	selected
+src/models/modules/attention/smyrf_attention.py	100644	blob	a4a8d6664975c7afbb53ffa855e20f4031e85185	5867	excluded
+src/models/modules/layers	040000	tree	dad8e4aad0f769cfc022e7dd0753b09a5be07647		context
+src/models/modules/layers/__init__.py	100644	blob	8b137891791fe96927ad78e64b0aad7bded08bdc	1	excluded
+src/models/modules/layers/patch_embed.py	100644	blob	4f0dc30c797e8d6e3393ca0183ee4d53c9b68b24	1826	excluded
+src/models/modules/layers/weight_init_helper.py	100644	blob	e40816b5759b2fd7e21cc8b889832fd2c12156f4	3433	excluded
+src/models/modules/masking.py	100644	blob	784e4b10670849a227cedcec8f65881e405fe24c	7524	selected
+src/models/modules/multihead_attention.py	100644	blob	d091000a8f70d61ced95fade3e4e418748d0f7d8	24895	excluded
+src/models/modules/seq_common.py	100644	blob	6b4e231fda120c44432cde5c17d4ee862722dda2	8742	excluded
+src/models/modules/simple_dense_net.py	100644	blob	ef5fe5304bfd008df6e00fbb36c56db940bc74e1	870	excluded
+src/models/modules/t2t.py	100644	blob	be3f84ac5c011b84c473241d24badf029bd1b09f	3930	excluded
+src/models/modules/token_performer.py	100644	blob	e2e0f90a35856fcdf3c85ec4d3df685a230d3c2a	2370	excluded
+src/models/modules/token_transformer.py	100644	blob	93bb35ecf7715011ea3d490a7a4ad27cc4b47a86	3200	excluded
+src/models/modules/vision_common.py	100644	blob	8de4dc442178de7587238e78a6a41bc49d1ec3c0	4043	excluded
+src/models/simple_dense_net.py	100644	blob	ef5fe5304bfd008df6e00fbb36c56db940bc74e1	870	excluded
+src/models/transformer.py	100644	blob	66525225e6394c4a8092151fa0af0aa9e8717f5d	18072	excluded
+src/models/vit	040000	tree	bfd78f9290b27ac84a850b439dd42da18bec03fe		context
+src/models/vit/t2t_vit.py	100644	blob	1bc1798f345563a2ea9099a3394c76e0705394ec	10607	excluded
+src/models/vit/vit.py	100644	blob	e83197e762a2ea911b859870b3b5e12e3e6225fe	29693	excluded
+src/optim	040000	tree	3e652a54f8e848bced67da77f246be8e369c1679		context
+src/optim/lr_scheduler.py	100644	blob	92dadcf9dab0f6fc451e473071b464e6a6e30220	1311	excluded
+src/optim/timm_lr_scheduler.py	100644	blob	bad1b74026a77b35904e7fe01419843c6c766d28	619	excluded
+src/tasks	040000	tree	f68cddc32b54b98e8331692657c623ccd30a1370		context
+src/tasks/seq.py	100644	blob	628da1f493d07cf527c715065ec567ea1e279732	5939	excluded
+src/train.py	100644	blob	08a79f9b11b21221828547b4ea635c257b5cce62	3486	excluded
+src/utils	040000	tree	6ed9690bb3894cf5f6ef2010e76c04b102de4a9e		context
+src/utils/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/utils/autoaug.py	100644	blob	8c9ab02f32b1e3eddc196c73abd6341e6c9a2390	7173	excluded
+src/utils/distributed.py	100644	blob	073b6135def83045e18cc1ce5169c98dfcb9c74b	3504	excluded
+src/utils/ema.py	100644	blob	13c7c7c68235a0acdfcfaa8426e4251c49541cc8	11305	excluded
+src/utils/optim.py	100644	blob	f1eb7a57bbcd23dc64b5dbba274dcb6944ca5c01	4315	excluded
+src/utils/transforms.py	100644	blob	e76d0f9e6eda4d37314707e70f96b2553e7e5621	2879	excluded
+src/utils/utils.py	100644	blob	691510c0f64fce84ebcd06a5163db62ba034fa1f	4795	excluded
+tests	040000	tree	711129f611d29d750ed137a52d68cff2149949c9		context
+tests/datamodules	040000	tree	c6538934ca691a80357b53579d68bb5614ca62b9		context
+tests/datamodules/test_aan.py	100644	blob	b4af59b6f6ecb5eb3c1dba49c51341d6c1ed84ae	3454	excluded
+tests/datamodules/test_cifar.py	100644	blob	c47a7ec6cefeaab9169a47c7d97bd06ff07b618a	2762	excluded
+tests/datamodules/test_imdb.py	100644	blob	2e258790ded02317972830adf998261a1bddba04	2985	excluded
+tests/datamodules/test_language_modeling.py	100644	blob	8734b48c87f3bfb363a9542c5fb2e89c4882db5a	4041	excluded
+tests/datamodules/test_listops.py	100644	blob	1856a929f8d1acded2dfb2b9c31c11b896c23d3e	2620	excluded
+tests/datamodules/test_pathfinder.py	100644	blob	41aa75412637f36b0008707dffbba23ae41d17fa	3033	excluded
+tests/models	040000	tree	22e5e47b8f60e1b4cd4e4e8f4f177f86a9742cbe		context
+tests/models/modules	040000	tree	527efe68e32e22fe606edca110cb33820ee763c2		context
+tests/models/modules/attention	040000	tree	ed4785bc7336d2c822d69872d7c46f9391648a5c		context
+tests/models/modules/attention/test_local_attention.py	100644	blob	f55aba68f8ac1cdd5c5ef8a78c4b202ef8a4d3ee	4999	excluded
+tests/models/modules/attention/test_sblocal_attention.py	100644	blob	c2885d231076f8ccda5743b84f6471eb24e6407e	5123	selected
+tests/models/modules/test_multihead_attention.py	100644	blob	132842072a10060ee2d55f9f390b648d825bf7d2	7214	excluded
+tests/optim	040000	tree	caba0a95e9a8063cbe9c958ee33aa0e35b5cd56c		context
+tests/optim/test_timm_lr_schedulers.py	100644	blob	d1cc4dd5d92b9d07e86e57adb105f2d621f3f08e	1100	excluded
+utils	040000	tree	b917939004207d7088c8be673be366a471fe4a78		context
+utils/__init__.py	100644	blob	343de9e44eb679e80255771609f4b2502cff6999	694	excluded
+utils/adaptive_softmax.py	100644	blob	b6682642cfc18db1fe0cc411ad39fbce77956ab3	3261	excluded
+utils/distributed.py	100644	blob	77d7ecf24de54b099c8749fae9241d3aa896f27b	4481	excluded
+utils/exp_utils.py	100644	blob	05a6aa2f3f1ee9cd67740895e9d97ccb6038e220	6104	excluded
+utils/gpu_affinity.py	100644	blob	5a4fad9d12c1f1bea05878e7ec3bc7777a6a80f2	1328	excluded
+utils/simulation_utils.py	100644	blob	b3ef94a4f11f0318095f82dde16184f841313fec	4971	excluded

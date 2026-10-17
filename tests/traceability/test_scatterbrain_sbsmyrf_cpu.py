@@ -150,13 +150,16 @@ def weights_value_gradients(state: State, oracle: ModuleType) -> dict[str,object
     via_weights=torch.einsum('bhts,bshd->bthd',weights,v)
     maximum=cast(Callable[[list[float],list[float]],float],oracle.maximum)
     output_error=maximum(out.detach().flatten().tolist(),via_weights.detach().flatten().tolist())
-    require(output_error<2e-11,'output equals returned weights times values')
+    output_budget=2e-11 if q.dtype==torch.float64 else 2e-6
+    gradient_budget=2e-10 if q.dtype==torch.float64 else 2e-6
+    require(output_error<output_budget,'output equals returned weights times values')
     loss_weights=((torch.arange(out.numel())*3+1)%11-5).reshape(out.shape).to(torch.float64)/8
     out_gradients=torch.autograd.grad((out*loss_weights).sum(),(q,k,v),retain_graph=True)
     weight_gradients=torch.autograd.grad((via_weights*loss_weights).sum(),(q,k,v))
     errors=[maximum(a.flatten().tolist(),b.flatten().tolist()) for a,b in zip(out_gradients,weight_gradients)]
-    require(all(error<2e-10 for error in errors),'returned weights QKV gradient equivalence')
-    return {'output_equals_weightsV_error':output_error,'returned_weights_QKV_gradient_max_errors':errors}
+    require(all(error<gradient_budget for error in errors),'returned weights QKV gradient equivalence')
+    return {'output_equals_weightsV_error':output_error,'returned_weights_QKV_gradient_max_errors':errors,
+            'weightsV_output_budget':output_budget,'weightsV_QKV_gradient_budget':gradient_budget}
 
 
 def training_and_dtype_move(runner: Cases, mask_class: type[LengthMask], oracle: ModuleType) -> dict[str,object]:
@@ -217,11 +220,17 @@ def run(source: Path | None, port: Path, shared: Path) -> dict[str, object]:
                     if dtype==torch.float64:
                         strict_fp64(result)
                     cases.append(result)
-                    if dtype==torch.float64 and lengths==[5,2] and not need_weights:
+                    if lengths==[5,2] and not need_weights:
                         state[0].feature_map.deterministic_eval=True; state[0].eval()
+                        # The reused scalar oracle perturbs Python float raw
+                        # lists by1e-6 and evaluates in FP64 math; it never
+                        # differences rounded FP32 forward evaluations.
                         gradient = cast(Callable[[State],dict[str,object]],oracle.gradients)(state)
-                        require(finite_metric(gradient,'max_error')<2e-8,'strict conditional QKV gradient')
-                        gradients.append({'rounds':rounds,**gradient,**weights_value_gradients(state,oracle)})
+                        gradient_budget=2e-8 if dtype==torch.float64 else 2e-6
+                        require(finite_metric(gradient,'max_error')<gradient_budget,'conditional QKV gradient')
+                        gradients.append({'dtype':str(dtype),'rounds':rounds,'independent_gradient_budget':gradient_budget,
+                            'reference_difference_precision':'FP64 scalar raw lists, central step1e-6',
+                            **gradient,**weights_value_gradients(state,oracle)})
     zero,_ = runner(torch.float64,[5,2],need_weights=True,rounds=1,features=4,zero_queries_keys=True)
     require(zero['selected_pairs_absent_from_returned_residual_mask']==24,'zero residual support distinction')
     cases.append(zero)

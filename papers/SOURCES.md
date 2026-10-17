@@ -149,7 +149,7 @@ For each relevant function/class:
 Source choice, paper/code intake relations, dependency obligations and recovery
 tasks: [MagicPIG integration record](../docs/MAGICPIG_INTEGRATION.md).
 
-## 6. Scatterbrain — NeurIPS 2021 (initial local reference)
+## 6. Scatterbrain — NeurIPS 2021 (initial and later components)
 
 **Paper:** *Scatterbrain: Unifying Sparse and Low-rank Attention Approximation*,
 Beidi Chen, Tri Dao, Eric Winsor, Zhao Song, Atri Rudra, Christopher Ré.
@@ -202,24 +202,45 @@ Beidi Chen, Tri Dao, Eric Winsor, Zhao Song, Atri Rudra, Christopher Ré.
 - SMYRF-derived paths explicitly cite `giannisdaras/smyrf`, whose historical
   source carried GPL-3.0 before Scatterbrain's initial release. This is an
   attribution/provenance boundary, not a legal conclusion about every Fly file.
-  Those paths are excluded from this archive; later reference metadata does
-  not imply permission to relabel them Apache-only.
+  Those paths are excluded from the initial 15-file archive. A separate
+  17-file `third_party/scatterbrain-sbsmyrf/` archive now preserves the coherent
+  first-SBSmyrf closure, four package markers and original LICENSE/README.
+  `papers/scatterbrain-sbsmyrf-source-pin.json` records exact identities and
+  component-level GPL-3.0 terms with preserved Fly Apache, Idiap, Performer and
+  Reformer notices. Original source bytes and root LICENSE remain unchanged;
+  no blanket relicensing of Fly is asserted.
 
 Paper/source distinctions, CPU acceptance and Issue dependencies are recorded
 in [the integration record](../docs/SCATTERBRAIN_INTEGRATION.md). Source identity
 checks do not execute attention, verify statistical claims or reproduce GPU
 accuracy/performance.
 
-The subsequent maintained CPU baseline copies the initial five-module core to
-`ports/scatterbrain/` initially with type-only changes; #106 subsequently repairs
+The initial maintained component copies the five-module core to
+`ports/scatterbrain/`, initially with type-only changes; #106 subsequently repairs
 feature lifecycle/checkpoint behavior while preserving sampling arithmetic.
-Eight Python files and five narrow
-stubs receive strict checks. A separate exact three-blob MIT archive at
-`third_party/scatterbrain-fast-transformers/` supplies the actual native
-local-product CPU dependency at the same historical Idiap commit. Its modern
-CPU-only GNU14/C++20 build recipe is an explicit adaptation. Three executable
-baseline ledger records cover bounded feature/gradient/projection and native-backed
-local-hybrid tests. Later SBSmyrf is fetched at its own exact pin only for
-ephemeral reference characterization. A fourth ledger record checks the repaired
-feature lifecycle independently. The integration record keeps remaining dtype
-failures, numerical budgets and unverified domains explicit.
+Eight Python files and five narrow stubs receive strict checks. A separate exact
+three-blob MIT archive at `third_party/scatterbrain-fast-transformers/` supplies
+the actual native local-product CPU dependency at the historical Idiap commit.
+Its modern CPU-only GNU14/C++20 build recipe is an explicit adaptation. Four
+ledger records distinguish feature arithmetic, repaired lifecycle and actual
+native local composition.
+
+The changed later subset is separate: eight Python files under
+`ports/scatterbrain-later/scatterbrain_later/`, with definition-level provenance,
+GPL-3.0 terms and retained Apache/Reformer MIT notices. It shares the typed
+initial feature/projection/linear/masking core and #106 state repair. Its actual
+SBSmyrf forward repairs #104 hash-allocation/count-log precision and #105 weight
+accumulation dtype; it does not replace rank clustering with integer buckets.
+CPU fixtures cover 26 cases and 14 rejected mutations, raw H/HV/H1 and output/
+weights/conditional gradients, real FP64 execution under global FP32 default,
+and exact FP32 parity of 12 captured original-reference fields. No native
+extension is needed on this later noncausal path. The separate frozen-reference
+characterization retains original failures and mixed-precision budgets.
+
+#102's bounded primary review is complete; it records the printed causal and
+proof-assumption qualifications rather than claiming independent theorem
+reproduction. Source gates and fixed-input CPU agreement do not establish
+sampling laws, normalized-output unbiasedness, rank-cluster collision
+probabilities, native memory sanitizers, GPU/causal runtime or paper model
+quality/performance. Final hosted CI acceptance must be recorded against the
+exact reviewed integration candidate, separately from these local execution scopes.

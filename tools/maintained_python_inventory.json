@@ -112,6 +112,27 @@
         "ports/scatterbrain/typings",
         "typings"
       ]
+    },
+    {
+      "name": "scatterbrain-later",
+      "root": "ports/scatterbrain-later",
+      "python_files": [
+        "scatterbrain_later/__init__.py",
+        "scatterbrain_later/attention.py",
+        "scatterbrain_later/batching.py",
+        "scatterbrain_later/hash_utils.py",
+        "scatterbrain_later/masks.py",
+        "scatterbrain_later/padding.py",
+        "scatterbrain_later/permutation.py",
+        "scatterbrain_later/reformer_utils.py"
+      ],
+      "stub_files": [],
+      "mypy_path": [
+        "ports/scatterbrain-later",
+        "ports/scatterbrain",
+        "ports/scatterbrain/typings",
+        "typings"
+      ]
     }
   ]
 }

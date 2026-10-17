@@ -14,6 +14,8 @@ on:
       - "tools/check_scatterbrain_sources.py"
       - "tools/check_scatterbrain_initial_cpu.py"
       - "tools/check_scatterbrain_later_cpu.py"
+      - "tools/check_scatterbrain_sbsmyrf_cpu.py"
+      - "tools/check_scatterbrain_sbsmyrf_sources.py"
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
       - "tools/report_magicpig_cpu.py"
@@ -23,7 +25,9 @@ on:
       - "third_party/magicpig/**"
       - "third_party/scatterbrain/**"
       - "third_party/scatterbrain-fast-transformers/**"
+      - "third_party/scatterbrain-sbsmyrf/**"
       - "ports/scatterbrain/**"
+      - "ports/scatterbrain-later/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
@@ -53,6 +57,8 @@ on:
       - "tools/check_scatterbrain_sources.py"
       - "tools/check_scatterbrain_initial_cpu.py"
       - "tools/check_scatterbrain_later_cpu.py"
+      - "tools/check_scatterbrain_sbsmyrf_cpu.py"
+      - "tools/check_scatterbrain_sbsmyrf_sources.py"
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
       - "tools/report_magicpig_cpu.py"
@@ -62,7 +68,9 @@ on:
       - "third_party/magicpig/**"
       - "third_party/scatterbrain/**"
       - "third_party/scatterbrain-fast-transformers/**"
+      - "third_party/scatterbrain-sbsmyrf/**"
       - "ports/scatterbrain/**"
+      - "ports/scatterbrain-later/**"
       - "ports/magicpig/**"
       - "third_party/g-slide/**"
       - "ports/g-slide/**"
@@ -129,6 +137,8 @@ jobs:
         run: |
           python3 tests/traceability/test_scatterbrain_source_contracts.py
           python3 tools/check_scatterbrain_sources.py --emit-dir traceability-artifact/scatterbrain-source
+          python3 tests/traceability/test_scatterbrain_sbsmyrf_source_contracts.py
+          python3 tools/check_scatterbrain_sbsmyrf_sources.py --emit-dir traceability-artifact/scatterbrain-sbsmyrf-source
 
       - name: MagicPIG portable CPU oracles and capability-gated native bodies
         run: |
@@ -274,6 +284,12 @@ jobs:
         run: |
           python tools/check_scatterbrain_later_cpu.py \
             --emit-dir scatterbrain-cpu-artifact/later
+
+      - name: Maintained later SBSmyrf dtypes, raw composition and returned weights
+        run: |
+          python tools/check_scatterbrain_sbsmyrf_sources.py
+          python tools/check_scatterbrain_sbsmyrf_cpu.py \
+            --emit-dir scatterbrain-cpu-artifact/maintained-later
 
       - uses: actions/upload-artifact@v4
         if: always()

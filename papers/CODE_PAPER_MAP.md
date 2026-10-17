@@ -161,33 +161,52 @@ independence or unbiased-attention claim. Endpoint/invalid-domain and tiny
 inclusion behavior is characterized; repairs #67/#68 remain open.
 [Contract](../ports/magicpig/PROBABILITY_VALIDATION.md) records ranges/tolerances.
 
-## Scatterbrain — inspected conference main text and bounded CPU baseline
+## Scatterbrain — primary review and maintained CPU components
 
 Baseline: the exact supplied [NeurIPS manuscript](pdf/scatterbrain-2021-neurips.pdf).
 The following table maps sources; executable scope is listed below. The
 supplied 14-page file has no appendices; the separately acquired supplement and
 arXiv v1 now provide inspected C Algorithm1 and D.3 (see the appendix review).
 
-| Paper locator | Selected initial source / distinct later reference | Correspondence and limits |
+| Paper locator | Initial / distinct later source | Correspondence and limits |
 | --- | --- | --- |
 | p.5 footnote 3; p.6 §4.2 | `feature_maps_sb.py::softmax_kernel`, `projection_utils.py::gaussian_orthogonal_random_matrix` | Positive features approximate the unnormalized exponential kernel; actual orthogonal/cosh features, scaling and stabilization require separate CPU/statistical checks |
 | p.6 §4.2 Eq.(1) | initial `sblocal_attention.py::SBLocalAttention.forward` | Local exact-minus-low-rank residual; local support is explicitly allowed in the paper, but dropout/floors and native local-product boundary require characterization |
-| p.6 §4.2 Eq.(2) | initial `scatterbrain_utils.py::{linear_attention,linear_attention_normalization}` and `SBLocalAttention.forward` | Low-rank factor association plus sparse residual; Eq.(2) is **unnormalized** output, and final shared normalization needs source-level validation |
+| p.6 §4.2 Eq.(2) | initial `scatterbrain_utils.py::{linear_attention,linear_attention_normalization}` and `SBLocalAttention.forward` | Low-rank factor association plus sparse residual; Eq.(2) is **unnormalized** output; Appendix C Algorithm1 and independent CPU oracles check common normalization |
 | p.6 §4.2 sparse alternatives | later `SBSmyrfAttention`, first added 2022-04-15 | An author-repository LSH composition added after the initial release; rank-sorted SMYRF clusters are not automatically identical to the displayed hash-bucket support |
 | p.7 §4.3 Theorem 2, Eq.(3); supplement D.3 PDF15/printed29 | future feature/support statistical tests | Per-entry unnormalized kernel statement; proof's conditional-moment substitutions need explicit justification. Independence is sufficient, not explicitly stated; no normalized-output unbiasedness claim |
 | supplement C Algorithm1 PDF7/printed21, lines21–23 | initial and later hybrid normalization | Primary algorithm explicitly combines numerator and denominator contributions; source floors/cosh/orthogonal/dropout and rank-sorted support remain declared variants |
 
 Initial paths are relative to
-`third_party/scatterbrain/src/models/modules/attention/`; later source is
-metadata-only at its separate pin and is not part of that directory.
-Initial intake PR #103 registered no numerical IDs. The maintained CPU baseline
-adds `SCATTERBRAIN-FEATURES-CPU`, `SCATTERBRAIN-LOCAL-PRODUCT-CPU` and
-`SCATTERBRAIN-LOCAL-HYBRID-CPU` for independent features/gradients/projections and
-actual native-backed initial local composition. Local runtime scope is finite
-FP32/noncausal/dropout0/eps0; feature FP32/FP64 checks have separate budgets.
-The maintained #106 lifecycle repair adds `SCATTERBRAIN-FEATURE-STATE-CPU`
-for cold initialization, redraw/eval and checkpoint behavior. Later pinned SBSmyrf is reference characterization
-without a maintained-production ledger claim; actual hash-transform correctness
-and theoretical selection probability are not independently verified.
-See [integration scope](../docs/SCATTERBRAIN_INTEGRATION.md) for the conceptual
-CPU task graph and unresolved boundaries.
+`third_party/scatterbrain/src/models/modules/attention/`; its 15-file archive
+contains no SMYRF implementation. The separate 17-file
+`third_party/scatterbrain-sbsmyrf/` archive preserves the coherent later
+`74cc6b1` closure. The selected GPL-3.0-derived component retains applicable
+Apache/MIT notices; neither archive is the changed maintained implementation.
+
+Initial intake PR #103 registered no numerical IDs. The initial maintained
+`ports/scatterbrain/` component has `SCATTERBRAIN-FEATURES-CPU`,
+`SCATTERBRAIN-LOCAL-PRODUCT-CPU` and `SCATTERBRAIN-LOCAL-HYBRID-CPU` for
+feature/gradient/projection and actual native-backed local composition.
+`SCATTERBRAIN-FEATURE-STATE-CPU` covers the separate #106 lifecycle/checkpoint
+repair. Local execution is finite FP32/noncausal/dropout0/eps0; its FP64 oracle
+is distinct from actual native FP64 execution, which is not claimed.
+
+The eight-file unique `ports/scatterbrain-later/scatterbrain_later/` component
+executes selected actual SBSmyrf code and shares the repaired initial core.
+`SCATTERBRAIN-SBSMYRF-HYBRID-CPU` and `SCATTERBRAIN-SBSMYRF-DTYPE-CPU` map its
+#104/#105 hash-allocation, count-log and weight-dtype repairs to 26 CPU cases
+and 14 rejected mutations. Independent permutation-derived support and scalar
+H/HV/H1/output/weight oracles include conditional gradients. Actual FP64 runs
+under global FP32 default, while a separate original-source process checks exact
+FP32 parity of 12 captured fields. The frozen later reference retains its
+original failures and precision observations as historical evidence.
+
+#102's primary acquisition and hypothesis audit is complete with documented
+causal inconsistencies, implicit moment requirements and actual-distance versus
+threshold/amplification distinctions. None of these fixtures proves normalized-
+output unbiasedness, reproduces the external theorem, or derives the collision
+probability of rank-sorted SMYRF/XBOX+ support. GPU/causal/native-sanitizer and
+model accuracy/performance claims remain outside this CPU scope. See the
+[integration record](../docs/SCATTERBRAIN_INTEGRATION.md) and component contracts
+for supported domains and final candidate CI acceptance.

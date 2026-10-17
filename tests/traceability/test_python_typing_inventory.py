@@ -106,6 +106,23 @@ class InventoryContracts(unittest.TestCase):
         with patch.object(audit.subprocess, "run", side_effect=subprocess.CalledProcessError(1, command)), self.assertRaises(subprocess.CalledProcessError):
             audit.strict_typecheck(self.load(), self.root)
 
+    def test_both_scatterbrain_groups_enforce_strict_no_any_and_shared_imports(self) -> None:
+        groups = audit.load_inventory(ROOT / "tools/maintained_python_inventory.json", ROOT / "ports")
+        for name in ("scatterbrain", "scatterbrain-later"):
+            group = next(g for g in groups if g.name == name)
+            self.assertTrue(group.files)
+            with self.subTest(group=name), patch.object(audit.subprocess, "run") as run, redirect_stdout(io.StringIO()):
+                audit.strict_typecheck([group], ROOT)
+            command = run.call_args.args[0]
+            self.assertIn("--strict", command)
+            self.assertIn("--disallow-any-explicit", command)
+            self.assertTrue(all(str(p) in command for p in (*group.files, *group.stubs)))
+            paths = run.call_args.kwargs["env"]["MYPYPATH"].split(audit.os.pathsep)
+            self.assertIn(str(ROOT / "ports/scatterbrain"), paths)
+            self.assertIn(str(ROOT / "ports/scatterbrain/typings"), paths)
+            if name == "scatterbrain-later":
+                self.assertIn(str(ROOT / "ports/scatterbrain-later"), paths)
+
     def test_empty_group_explicitly_reported_without_fake_mypy_pass(self) -> None:
         output = io.StringIO()
         with patch.object(audit.subprocess, "run") as run, redirect_stdout(output):
@@ -177,6 +194,17 @@ class WorkflowContracts(unittest.TestCase):
         for filename in ("python-typing.yml", "traceability.yml"):
             content = (ROOT / ".github/workflows" / filename).read_text()
             self.assertIn("::notice title=Tested merge candidate::commit=$(git rev-parse HEAD);tree=$(git rev-parse 'HEAD^{tree}')", content)
+
+    def test_maintained_later_source_and_driver_changes_trigger_cpu_execution(self) -> None:
+        text = (ROOT / ".github/workflows/traceability.yml").read_text()
+        for event in ("push", "pull_request"):
+            paths = self.trigger_paths(text, event)
+            for changed in ("ports/scatterbrain-later/scatterbrain_later/attention.py", "third_party/scatterbrain-sbsmyrf/LICENSE", "tools/check_scatterbrain_sbsmyrf_cpu.py", "tools/check_scatterbrain_sbsmyrf_sources.py"):
+                with self.subTest(event=event, changed=changed):
+                    self.assertTrue(any(fnmatch.fnmatchcase(changed, p) for p in paths))
+        self.assertIn("python3 tests/traceability/test_scatterbrain_sbsmyrf_source_contracts.py", text)
+        self.assertIn("python tools/check_scatterbrain_sbsmyrf_cpu.py", text)
+        self.assertIn("--emit-dir scatterbrain-cpu-artifact/maintained-later", text)
 
     def test_oracle_tool_only_changes_trigger_bounded_cpu_gates(self) -> None:
         text = (ROOT / ".github/workflows/traceability.yml").read_text()

@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "role": "maintained selected later noncausal CPU component; modified source, not an immutable archive",
+  "original_repository": "https://github.com/HazyResearch/fly",
+  "commit": "74cc6b14347b4edcf5c49098e80a9ef47c0b21bf",
+  "tree": "1821d435ef810ce88038ef81965c65cd0ac8c6bc",
+  "original_eleven_file_closure": {
+    "src/models/attention/batching_utils.py": {
+      "sha": "5c73f9e114233c1b630862ccdcc9c1d9102848a1",
+      "sha256": "44498a101debbeeccd43d2d9985203db1c79c99b41aded1bf0c982507d664fa4",
+      "size": 557
+    },
+    "src/models/attention/feature_maps_sb.py": {
+      "sha": "7c6fe0c52dd806ef34424a027415121850a357f2",
+      "sha256": "9de3386dd31fdc9818e0d1e1202a027099595528c04bb7212244a1bcefdfb164",
+      "size": 7504
+    },
+    "src/models/attention/hash_utils.py": {
+      "sha": "47224c645c07457042bd4ef4cca3844d6242dd17",
+      "sha256": "91012c5b7c92665517da4e98bdec386fa8211c2cd294dd6b96c326d08c061b70",
+      "size": 10317
+    },
+    "src/models/attention/mask_utils.py": {
+      "sha": "011443cfcac494484ba5f1b67b9ef2a05f97d52b",
+      "sha256": "07bdff72a0793ad51142ee13abb380f9358e15cf592777c7839d210cfc609bcc",
+      "size": 755
+    },
+    "src/models/attention/projection_utils.py": {
+      "sha": "5f103649a7a664a8303108611b6261965a550a0a",
+      "sha256": "ec2ebfae61ea226e78bf9da9c54d0bfd9d005c57320d6671ae6fafcbf77ee10b",
+      "size": 1255
+    },
+    "src/models/attention/reformer_attention.py": {
+      "sha": "c15b54dd5d993ffb314fc6e0288a9118a465e601",
+      "sha256": "c6a9dad003279b00ec1f062287e2cade903882e86dc834cebc6c7fa10e0d7b93",
+      "size": 15307
+    },
+    "src/models/attention/sbsmyrf_attention.py": {
+      "sha": "882c3e5e8410279ec858a2f0b8a057fa4da7dbe0",
+      "sha256": "709614aa5b2f0363591d23f068ceefc9a1a42b227c879ff636450f631e78681f",
+      "size": 14896
+    },
+    "src/models/attention/scatterbrain_utils.py": {
+      "sha": "61f022b9d5a482669fe4eeacec4521ebf6490ac4",
+      "sha256": "0dbca5f571b63c91cd1f7920717cf68d5cb3226884306f00beb31c1db030b33a",
+      "size": 1923
+    },
+    "src/models/modules/masking.py": {
+      "sha": "784e4b10670849a227cedcec8f65881e405fe24c",
+      "sha256": "f20f3c7004015752260050281f9dc09d214566a54d5b45c43af86c66a8d21755",
+      "size": 7524
+    },
+    "src/ops/permutation.py": {
+      "sha": "c09e9cbb1c955cbb50c23767444225617699e0e1",
+      "sha256": "d97893e27f11767d319cde52516ebb0c4f4486974222a2e686dce17cdf7ea21a",
+      "size": 1057
+    },
+    "src/utils/padding.py": {
+      "sha": "4889c845b0c5335b2c68573ef9d83ae4a55b57b4",
+      "sha256": "142fd3351f4bafb010afec02be17739154278527d270cb75604da67572826030",
+      "size": 905
+    }
+  },
+  "maintained_selections": {
+    "scatterbrain_later/attention.py": {
+      "original": "src/models/attention/sbsmyrf_attention.py",
+      "selected_definitions": {
+        "SBSmyrfAttention": {
+          "first_line": 20,
+          "last_line": 269
+        }
+      },
+      "sha": "882c3e5e8410279ec858a2f0b8a057fa4da7dbe0",
+      "sha256": "709614aa5b2f0363591d23f068ceefc9a1a42b227c879ff636450f631e78681f",
+      "size": 14896
+    },
+    "scatterbrain_later/hash_utils.py": {
+      "original": "src/models/attention/hash_utils.py",
+      "selected_definitions": {
+        "uniform": {
+          "first_line": 79,
+          "last_line": 84
+        },
+        "XBOXPLUS": {
+          "first_line": 132,
+          "last_line": 147
+        },
+        "lsh_clustering": {
+          "first_line": 242,
+          "last_line": 256
+        },
+        "E2LSH": {
+          "first_line": 259,
+          "last_line": 279
+        }
+      },
+      "sha": "47224c645c07457042bd4ef4cca3844d6242dd17",
+      "sha256": "91012c5b7c92665517da4e98bdec386fa8211c2cd294dd6b96c326d08c061b70",
+      "size": 10317
+    },
+    "scatterbrain_later/batching.py": {
+      "original": "src/models/attention/batching_utils.py",
+      "selected_definitions": {
+        "batched_index_select": {
+          "first_line": 5,
+          "last_line": 16
+        }
+      },
+      "sha": "5c73f9e114233c1b630862ccdcc9c1d9102848a1",
+      "sha256": "44498a101debbeeccd43d2d9985203db1c79c99b41aded1bf0c982507d664fa4",
+      "size": 557
+    },
+    "scatterbrain_later/masks.py": {
+      "original": "src/models/attention/mask_utils.py",
+      "selected_definitions": {
+        "pad_mask": {
+          "first_line": 6,
+          "last_line": 18
+        }
+      },
+      "sha": "011443cfcac494484ba5f1b67b9ef2a05f97d52b",
+      "sha256": "07bdff72a0793ad51142ee13abb380f9358e15cf592777c7839d210cfc609bcc",
+      "size": 755
+    },
+    "scatterbrain_later/permutation.py": {
+      "original": "src/ops/permutation.py",
+      "selected_definitions": {
+        "invert_permutation": {
+          "first_line": 22,
+          "last_line": 33
+        }
+      },
+      "sha": "c09e9cbb1c955cbb50c23767444225617699e0e1",
+      "sha256": "d97893e27f11767d319cde52516ebb0c4f4486974222a2e686dce17cdf7ea21a",
+      "size": 1057
+    },
+    "scatterbrain_later/padding.py": {
+      "original": "src/utils/padding.py",
+      "selected_definitions": {
+        "pad_to_multiple": {
+          "first_line": 6,
+          "last_line": 25
+        }
+      },
+      "sha": "4889c845b0c5335b2c68573ef9d83ae4a55b57b4",
+      "sha256": "142fd3351f4bafb010afec02be17739154278527d270cb75604da67572826030",
+      "size": 905
+    },
+    "scatterbrain_later/reformer_utils.py": {
+      "original": "src/models/attention/reformer_attention.py",
+      "selected_definitions": {
+        "chunked_sum": {
+          "first_line": 23,
+          "last_line": 27
+        },
+        "max_neg_value": {
+          "first_line": 32,
+          "last_line": 33
+        }
+      },
+      "sha": "c15b54dd5d993ffb314fc6e0288a9118a465e601",
+      "sha256": "c6a9dad003279b00ec1f062287e2cade903882e86dc834cebc6c7fa10e0d7b93",
+      "size": 15307
+    }
+  },
+  "shared_imports": {
+    "ports/scatterbrain/src/models/modules/attention/feature_maps_sb.py": "original initial/later feature blobs differ only by projection import namespace; maintained shared import has declared type/doc adaptations and lifecycle repair #106",
+    "ports/scatterbrain/src/models/modules/attention/projection_utils.py": "original initial/later source blobs are identical; maintained shared import has declared type/doc adaptations",
+    "ports/scatterbrain/src/models/modules/attention/scatterbrain_utils.py": "original initial/later source blobs are identical; maintained shared import has declared type/doc adaptations",
+    "ports/scatterbrain/src/models/modules/masking.py": "original initial/later source blobs are identical; maintained shared import has declared type/doc adaptations"
+  },
+  "notices": {
+    "LICENSE": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149
+    },
+    "notices/Fly-Apache-2.0-LICENSE": {
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "size": 11357
+    },
+    "notices/Reformer-MIT-LICENSE": {
+      "sha256": "6f1f954f55eaf40060448b6a0f32312e148f3b1d05526797b96c7e2bd37a8959",
+      "size": 1069
+    }
+  },
+  "maintenance_deltas": [
+    "unique namespace and strict types",
+    "selected definitions only; unused classes/decorators/NumPy/tqdm removed",
+    "explicit noncausal CPU contracts; unsupported causal fallback removed",
+    "query dtype threaded into E2LSH alpha/beta",
+    "duplicate-count log uses inner.dtype",
+    "returned-weight accumulator uses dots.new_zeros",
+    "finite output/weights rejection",
+    "unused projection_rescale/deletion-only memory cleanup and abstract bases omitted",
+    "mask padding uses public shared mask accessors"
+  ],
+  "license_boundary": "GPL-3.0 SMYRF-derived selected component with retained Fly Apache-2.0 and Reformer MIT notices; no blanket upstream/repository relicensing claim",
+  "notice_applicability": {
+    "LICENSE": [
+      "scatterbrain_later/attention.py",
+      "scatterbrain_later/hash_utils.py"
+    ],
+    "notices/Fly-Apache-2.0-LICENSE": [
+      "scatterbrain_later/attention.py",
+      "scatterbrain_later/hash_utils.py",
+      "scatterbrain_later/batching.py",
+      "scatterbrain_later/masks.py",
+      "scatterbrain_later/permutation.py",
+      "scatterbrain_later/padding.py",
+      "scatterbrain_later/reformer_utils.py"
+    ],
+    "notices/Reformer-MIT-LICENSE": [
+      "scatterbrain_later/reformer_utils.py",
+      "scatterbrain_later/padding.py"
+    ]
+  }
+}

@@ -1,0 +1,590 @@
+path	mode	type	sha	size	import_status
+.gitignore	100644	blob	b74464ea3657ec63140635c4cb41c912ec27f5dd	1805	excluded
+Dockerfile	100644	blob	d55f521ec6bd816b69a78639a9fb012613d62abd	5888	excluded
+LICENSE	100644	blob	261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64	11357	selected
+README.md	100644	blob	f1d3503c5bbd4fc6b5387bcdb835abfc36439c88	3262	selected
+analysis	040000	tree	2e68065de54ab3077b941db6d311a7b42c14d71a		context
+analysis/mse_plot.py	100644	blob	28a0fb39fa197028ef6f24e496f42130aba25bb7	2046	excluded
+analysis/theory_mse.pdf	100644	blob	e5e6e4e0cbfc57e5b814168346cf0852ba739541	15533	excluded
+analysis/theory_mse_new.pdf	100644	blob	a6537a1bdd205b5525983c49111cff3dcbf37af4	17351	excluded
+configs	040000	tree	e74d6f74d3ec11b3f417ae35760a33c44468d393		context
+configs/callbacks	040000	tree	418a5cf2eabed01e210cccd40ca2c246f25d1e81		context
+configs/callbacks/default.yaml	100644	blob	700b2b8d750818ec42148bfe7fbaec63250f2aa8	1464	excluded
+configs/callbacks/ema.yaml	100644	blob	d5586db26b4ff8e8484dafc89fd47716f75ca4c4	85	excluded
+configs/callbacks/flop-count.yaml	100644	blob	ee45b91585fffee5424f12b311641f42491e235f	126	excluded
+configs/callbacks/gpu-monitor.yaml	100644	blob	6780f6d1c1bce7a4792fe15cc45eb57b5488d4bb	374	excluded
+configs/callbacks/model-summary.yaml	100644	blob	3dba049adc7820fe47b84d7eaeb660e5d0254cdb	72	excluded
+configs/callbacks/none.yaml	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+configs/callbacks/params-log.yaml	100644	blob	b2a49dd8d7ade6be883b52f9e335fb574180da30	146	excluded
+configs/callbacks/wandb.yaml	100644	blob	c6ae21d3aec18aa281a6d1ef5ea41199a4c04295	672	excluded
+configs/config.yaml	100644	blob	3829c45ae782e9e01ddcc0dcbb275f46a2385ee7	1427	excluded
+configs/datamodule	040000	tree	3e5c6e529bc9684f1bf84f53df05546a275929f6		context
+configs/datamodule/aan.yaml	100644	blob	74c6cf0e82d404ff3ec8d71f701ef84f2deb3cc7	246	excluded
+configs/datamodule/bert.yaml	100644	blob	c6620b10b874f3da8e8d5e00b473a78702b276ab	624	excluded
+configs/datamodule/burgers.yaml	100644	blob	ae095baffeb0d05e0f12c67c79d663680e1cf680	175	excluded
+configs/datamodule/cifar10.yaml	100644	blob	119f7d1fe549b8ab13224981374382de9f631543	328	excluded
+configs/datamodule/cifar100.yaml	100644	blob	fd9a4f1405ee41ef80a5fd206016b7d174a79ca9	314	excluded
+configs/datamodule/darcy.yaml	100644	blob	2d2814c6b2a358c6f786ce4b9b8f1e01a75af2f8	173	excluded
+configs/datamodule/glue-cola.yaml	100644	blob	fc466d6d95da8371f502cc2bf025d7e58696221c	118	excluded
+configs/datamodule/glue-mnli.yaml	100644	blob	a83ecb8da3b331fedaa70703860595700627e873	120	excluded
+configs/datamodule/glue-mrpc.yaml	100644	blob	4c16b1eb387b1614b8e9709e6ce841c6c6a8e29e	118	excluded
+configs/datamodule/glue-qnli.yaml	100644	blob	e0f7d291cf90b45635953a6fdafd7134bc8f19c6	120	excluded
+configs/datamodule/glue-qqp.yaml	100644	blob	67ad379f0fe1aff0ba19e6d4bd49a27253b3b0ac	119	excluded
+configs/datamodule/glue-rte.yaml	100644	blob	2bfcfe76852c198f70a2588bdaf466c6ace785e2	117	excluded
+configs/datamodule/glue-sst2.yaml	100644	blob	e2a36ee8a3c78bc40cded1944657d0c56cd3da94	119	excluded
+configs/datamodule/glue-stsb.yaml	100644	blob	522657e487f21a4b47a95ee6402220aa5fae2592	118	excluded
+configs/datamodule/glue-wnli.yaml	100644	blob	5cb788700d9db061286af6bcc1b0955b4be65d4e	117	excluded
+configs/datamodule/imagenet.yaml	100644	blob	bdf0dc32584652e5647536073df3fedbcc0663b0	263	excluded
+configs/datamodule/imagenet21k.yaml	100644	blob	7ac60662d8828dbf145da41fe83fa36022375ec4	289	excluded
+configs/datamodule/imdb.yaml	100644	blob	d8c5733e59bb65b6d3c12eb570f15b856610acd2	487	excluded
+configs/datamodule/listops.yaml	100644	blob	5ea1b306aaf5ec5ec2bd771868513482a5633e40	265	excluded
+configs/datamodule/lra-imagec.yaml	100644	blob	8ed9fa4d1917cd11ee78ac762053849c1df2427c	505	excluded
+configs/datamodule/lra-textc.yaml	100644	blob	7946be8fffdc47225a8ec34615847cb6a95917f6	351	excluded
+configs/datamodule/mnist_datamodule.yaml	100644	blob	e1aaa68451e0c06176fc1334e87fb07289b4ee9d	240	excluded
+configs/datamodule/openwebtext.yaml	100644	blob	327decbd86fff635e83ce45bfc7f2f088ab3c257	455	excluded
+configs/datamodule/pathfinder.yaml	100644	blob	1b8d77bbad98d86b6d4ec800e16772526709fdbc	1310	excluded
+configs/datamodule/wt103-gpt2.yaml	100644	blob	e050ebe9be907a5f9dd7ac0606885434545e1f32	428	excluded
+configs/datamodule/wt103.yaml	100644	blob	e97efac575386000b7544d4ea25f8faaf32a3b67	303	excluded
+configs/datamodule/wt2-gpt2.yaml	100644	blob	acfc3c1dea2681aaaf501af95eb459f0aa42a10a	405	excluded
+configs/datamodule/wt2.yaml	100644	blob	ae9bfd670873b982f1d5a600778445e2adea0e4e	296	excluded
+configs/experiment	040000	tree	6c70e4e16bdf993499b06d843f9bb2b1e8b91ccf		context
+configs/experiment/bert	040000	tree	de033ab3f86c7f73e892a59144f89dc7c69abe7b		context
+configs/experiment/bert/bertbase-blockdiag.yaml	100644	blob	dbb35f11815b9706804c36e8b74005cb3bdd0a50	173	excluded
+configs/experiment/bert/bertbase.yaml	100644	blob	d50ac764d0769fa89e3ead194da4ca1992a7b731	2413	excluded
+configs/experiment/bert/bertlarge-benchmark.yaml	100644	blob	f8470c5dbf9402f6e6ca1b3421191907e2a88f2a	195	excluded
+configs/experiment/bert/bertlarge-blockdiag-benchmark.yaml	100644	blob	6879ce760bdd7f271cff8981de3b44a7d59e1da7	285	excluded
+configs/experiment/bert/bertlarge-blockdiag-densified.yaml	100644	blob	b05697199e793c7e58a2d99232a178e759a51ed7	262	excluded
+configs/experiment/bert/bertlarge-blockdiag.yaml	100644	blob	47b2f1474c1a865901792e9560e07f906f673c32	174	excluded
+configs/experiment/bert/bertlarge-mlperf.yaml	100644	blob	193b459708219e083d52263887c196de69ec1563	259	excluded
+configs/experiment/bert/bertlarge.yaml	100644	blob	5a611fe9ce8b5706ab9fe380598d27cda3d02684	188	excluded
+configs/experiment/example_full.yaml	100644	blob	dc5adbecf18586f3d04601deebf016b7a7032a31	1661	excluded
+configs/experiment/example_simple.yaml	100644	blob	ac6b245cd5ffb07fda092a75286c9ae5a3e128c6	679	excluded
+configs/experiment/fno	040000	tree	07b698e4e8c8fa5d7728a9fdc0e5b04c8891a4f0		context
+configs/experiment/fno/fno1d.yaml	100644	blob	25b7b0b0466a4c97bf02c2a0de7da099bce014fd	736	excluded
+configs/experiment/fno/fno2d.yaml	100644	blob	869bbd201e5a0eb9dfab49c1846a3e8af4020aaf	947	excluded
+configs/experiment/imagenet	040000	tree	0afed11d057e618e520000ffc129946dc21bfa3f		context
+configs/experiment/imagenet-cnn.yaml	100644	blob	43e4d11cf1db99be22c1efb9b6f3f005a3d08e6c	1453	excluded
+configs/experiment/imagenet-t2tvit-eval.yaml	100644	blob	d9e63ed53bd25db78dfdbab65db77288f93c8b60	1373	excluded
+configs/experiment/imagenet/convnext	040000	tree	956efda96b5b7664ec7868ffcc93073ee30cbade		context
+configs/experiment/imagenet/convnext/convnext-b.yaml	100644	blob	74a66cac2d3d832c183986ea83e3aaa0c0cffe3e	179	excluded
+configs/experiment/imagenet/convnext/convnext-s.yaml	100644	blob	1c0cde553a31fa9638be31f9c5bb181c73e5f434	180	excluded
+configs/experiment/imagenet/convnext/convnext-t.yaml	100644	blob	bee72e5422c2661f38d0b6edca66ed6df353e0c9	2489	excluded
+configs/experiment/imagenet/deit	040000	tree	4035f4b28a06254392fbee04043eea51fc9c21ed		context
+configs/experiment/imagenet/deit/deit-b.yaml	100644	blob	48cf656ea4b6fa522e321a123bc8148a85b13b5b	242	excluded
+configs/experiment/imagenet/deit/deit-s.yaml	100644	blob	f7adcc21bbdec1de0d01e41e20dca75f5191cf1d	2305	excluded
+configs/experiment/imagenet/mixer	040000	tree	2a84fd562ae7c7f3508d5ba809dc19646c2debad		context
+configs/experiment/imagenet/mixer/mixerb-cutmix-bflyblockdiag.yaml	100644	blob	be8d5dbbf37823c4643412235717167a3acc822c	244	excluded
+configs/experiment/imagenet/mixer/mixerb-cutmix-blockdiag.yaml	100644	blob	59d29aab2300e6c656ecc0eec983f353269170e5	240	excluded
+configs/experiment/imagenet/mixer/mixerb-cutmix-blockdiagglobal.yaml	100644	blob	766d5aa3c733204ece80bae738cd9453f0e1638f	246	excluded
+configs/experiment/imagenet/mixer/mixerb-cutmix-blockdiaglr.yaml	100644	blob	f31edc1a86ee77159ac1de9d3cfb3f0fb0bbbd28	242	excluded
+configs/experiment/imagenet/mixer/mixerb-cutmix-fbbfly.yaml	100644	blob	083ebf4bd48c128fa97f64903e3411db46afa927	237	excluded
+configs/experiment/imagenet/mixer/mixerb-cutmix-fbbflylr.yaml	100644	blob	0ff4ff98f45ffa4f72797b2504f9a52711bc9aa2	239	excluded
+configs/experiment/imagenet/mixer/mixerb-cutmix.yaml	100644	blob	959e29a52f50c99dd59a608f51721195062fdb29	244	excluded
+configs/experiment/imagenet/mixer/mixerb.yaml	100644	blob	dc1cb63e97daa8d909ccab3c57adcc5352e71fa9	302	excluded
+configs/experiment/imagenet/mixer/mixers-fbbfly.yaml	100644	blob	a3f30bc3be7d3c9836edbd3b2a07ba92cc1c8310	230	excluded
+configs/experiment/imagenet/mixer/mixers-fbbflylr.yaml	100644	blob	77f159301191e0c18335ab99334b700d83088071	232	excluded
+configs/experiment/imagenet/mixer/mixers.yaml	100644	blob	3f63892b0e4ddf29cdade98d191606e86d3fe653	2054	excluded
+configs/experiment/imagenet/swin	040000	tree	805b8de95463b969438f17d9cd8db6abed5891bd		context
+configs/experiment/imagenet/swin/swin-b.yaml	100644	blob	6445fb0fd5651c4f98630f85201db14c60a05614	193	excluded
+configs/experiment/imagenet/swin/swin-s.yaml	100644	blob	bc9a199154646079dc9f9f9cbb58a7d2a41871f4	193	excluded
+configs/experiment/imagenet/swin/swin-t-eval.yaml	100644	blob	0aed305debe4b2f020b19db8ea5b71b749849fb6	1055	excluded
+configs/experiment/imagenet/swin/swin-t.yaml	100644	blob	9c12a681cf9d6009517cc5643d849ffc7eb38dd2	2296	excluded
+configs/experiment/imagenet/swin/swinmlp-b.yaml	100644	blob	39b70f754e886b514594eadc165b89892c690ec1	237	excluded
+configs/experiment/imagenet/swin/swinmlp-t-c12.yaml	100644	blob	d04e2bd794a2ff1cde01aa127cb12278921d31ac	210	excluded
+configs/experiment/imagenet/swin/swinmlp-t-c24-eval.yaml	100644	blob	ea5f6c16dfee0f1422bdc7dcbc313875a71e8dfd	381	excluded
+configs/experiment/imagenet/swin/swinmlp-t-c24.yaml	100644	blob	7662dcf1dcbe87edfea413b36bed19db220bbf49	263	excluded
+configs/experiment/imagenet/swin/swinmlp-t-c6.yaml	100644	blob	302bc9f1afefe29cb1b8d61ff7bc7f01564ce9c6	209	excluded
+configs/experiment/imagenet/t2tvit	040000	tree	e80db4cdb26c094d54aa73c08d41e65bb70a0f32		context
+configs/experiment/imagenet/t2tvit/t2tvit14.yaml	100644	blob	d95e510b638d1e6bb4b9f017618f84e3eebcf440	256	excluded
+configs/experiment/imagenet/t2tvit/t2tvit14t-eval.yaml	100644	blob	d779098ffd90b1bb0980e8d7803c16fc4e7b6f5c	1156	excluded
+configs/experiment/imagenet/t2tvit/t2tvit14t.yaml	100644	blob	a8bce0f60d7afa4a62e6e3f7d2d0cd5e0967984e	284	excluded
+configs/experiment/imagenet/t2tvit/t2tvit7.yaml	100644	blob	faf97ce74f56ef5934763b2a3d00cbb6eeaf6083	2264	excluded
+configs/experiment/imagenet/t2tvit/t2tvit7t-performer.yaml	100644	blob	7a41acd353e88482e7eb47f3e1bbea646e7d1caa	248	excluded
+configs/experiment/imagenet/t2tvit/t2tvit7t.yaml	100644	blob	dbe53b2bf733cd6707f8938a037ac471d53384aa	226	excluded
+configs/experiment/imagenet/vit	040000	tree	c7f0fdf4d75226cd6f3e939546ea6b3cdd020857		context
+configs/experiment/imagenet/vit/vit-b-fbbfly-mlp.yaml	100644	blob	ff834c9b6f5da5239eb9c7e0d55ec2c80ea31053	178	excluded
+configs/experiment/imagenet/vit/vit-b-fbbfly-mlpattnlinear.yaml	100644	blob	2c8447da348103be032e92b41d58c245d5040eaf	225	excluded
+configs/experiment/imagenet/vit/vit-b-fbbflylr-mlp.yaml	100644	blob	c3322ef4b7e1e7f63e6d6f7075edf9afdedc4d0d	180	excluded
+configs/experiment/imagenet/vit/vit-b-fbbflylr-mlpattnlinear.yaml	100644	blob	b382355363cbe0f2971ed4ae3c19548cb8d1430e	227	excluded
+configs/experiment/imagenet/vit/vit-b.yaml	100644	blob	7bbddd4ae8d01a02adbfe91c038d79805b10187e	109	excluded
+configs/experiment/imagenet/vit/vit-s-butterflyblockdiag-mlp.yaml	100644	blob	c9dc56972ba307566b2c76373d9bc896059c4767	151	excluded
+configs/experiment/imagenet/vit/vit-s-fbbfly-mlp.yaml	100644	blob	c334f644fc8d2e8cf5d09dc2364a1504c82659f1	139	excluded
+configs/experiment/imagenet/vit/vit-s-fbbfly-mlpattnlinear.yaml	100644	blob	b97ffb7b7d9ea119a5f59835cf43cd94373d8a7c	186	excluded
+configs/experiment/imagenet/vit/vit-s-fbbflylr-mlp.yaml	100644	blob	7f10cde22b2e6ae4cfb78e2b0a9eabddff890dd6	141	excluded
+configs/experiment/imagenet/vit/vit-s-fbbflylr-mlpattnlinear.yaml	100644	blob	67ad7487330a4813cb08f753375b5ef2fc16afdc	188	excluded
+configs/experiment/imagenet/vit/vit-s.yaml	100644	blob	4a5e11bd5ecf528b471605519a48c873f0e7266d	322	excluded
+configs/experiment/imagenet21k	040000	tree	6fdd17704e08723a2197693b6ea69c1ad2160ffc		context
+configs/experiment/imagenet21k/convnext	040000	tree	553e1404a436116550a531b3db00ead8fa1e9b72		context
+configs/experiment/imagenet21k/convnext/convnext-b.yaml	100644	blob	e3d2d732e1d57a0c5f67bde7cec23695f2700f81	415	excluded
+configs/experiment/lra	040000	tree	ca2707488117b41d235608fdec7ebccbeef45bdc		context
+configs/experiment/lra/imagec	040000	tree	07caf0ede9f5e9cb9590f61eec6079dc079c4219		context
+configs/experiment/lra/imagec/combination.yaml	100644	blob	ffa5053e6d6715501d8bddab2c2b8e06470335c0	344	excluded
+configs/experiment/lra/imagec/full.yaml	100644	blob	bb641962270c48f1c6fc455fa88f2638b4c134a9	229	excluded
+configs/experiment/lra/imagec/linear-attention-performer.yaml	100644	blob	2bd075f5d885ce05e53541d6b66d5e61a7a8f1de	338	excluded
+configs/experiment/lra/imagec/linear-attention.yaml	100644	blob	ef097f2ecfdd91d60c0e74455cc33f4c9c0082b4	199	excluded
+configs/experiment/lra/imagec/linformer.yaml	100644	blob	ab11dfa520cf0efdad222bdc5be0f137d4089a60	263	excluded
+configs/experiment/lra/imagec/local.yaml	100644	blob	ed334bba4bcf154307c90952c72121de0f630c48	477	excluded
+configs/experiment/lra/imagec/performer.yaml	100644	blob	770f4f9d80a64da7243e160fcbefd93fda2287e5	232	excluded
+configs/experiment/lra/imagec/reformer.yaml	100644	blob	1a5a2599b9245815ec7637f5346664a532bf7ffe	281	excluded
+configs/experiment/lra/imagec/sblocal.yaml	100644	blob	5984e9bc5e9f87739fa2622f1f39662320b1913d	218	excluded
+configs/experiment/lra/imagec/sbsmyrf.yaml	100644	blob	11c9b8df4034c0f375a05a090ee721414dd309e5	274	excluded
+configs/experiment/lra/imagec/smyrf.yaml	100644	blob	feab786bfd0b6dc8736c8c79b382c9c938ec187f	290	excluded
+configs/experiment/lra/imagec/topk.yaml	100644	blob	e20837cc8163c8e80990c5df3e7451ecb707e0b8	349	excluded
+configs/experiment/lra/imagec/transformer.yaml	100644	blob	096e1582f37cea9b78625659fe2d15ccaa129eef	1522	excluded
+configs/experiment/lra/listops	040000	tree	70e032c025f27938f37c93273582000be99d4a08		context
+configs/experiment/lra/listops/combination.yaml	100644	blob	3c42d03056847dde214f547fdc58881adb24e873	345	excluded
+configs/experiment/lra/listops/full.yaml	100644	blob	5c0982a9272277ea481fd06a5ac4e9e0ba44756d	229	excluded
+configs/experiment/lra/listops/linear-attention-performer.yaml	100644	blob	28d509257e4ee87bee7856ccf4d84dcccc0978ba	339	excluded
+configs/experiment/lra/listops/linear-attention.yaml	100644	blob	250bc7cb27645016bf467d1b4fda98639e0125e0	200	excluded
+configs/experiment/lra/listops/linformer.yaml	100644	blob	0e98e00c6b560223f678182fa42f0d390d21729f	265	excluded
+configs/experiment/lra/listops/local.yaml	100644	blob	bdc46926983f53c4cb38fcf5021a572d6f34084a	483	excluded
+configs/experiment/lra/listops/performer.yaml	100644	blob	27441b31dff47980cbf1adcac107f8b04d1da277	233	excluded
+configs/experiment/lra/listops/reformer.yaml	100644	blob	b057b343fd3d18a6254019bc27ee3c6364d670f1	223	excluded
+configs/experiment/lra/listops/sblocal.yaml	100644	blob	d4a78e7aae920be24c3d97ec51f3f532297d807e	219	excluded
+configs/experiment/lra/listops/sbsmyrf.yaml	100644	blob	6ccb854eafe5a9f692891835743c43489b027533	275	excluded
+configs/experiment/lra/listops/smyrf.yaml	100644	blob	1568fd9d5769f1650e97f8becb04bc2851498b47	231	excluded
+configs/experiment/lra/listops/topk.yaml	100644	blob	490b4688bc54d76e81ebcf4a1b6bcd592933f28b	500	excluded
+configs/experiment/lra/listops/transformer.yaml	100644	blob	b66bb9e56ed4e839ea8ba187f55ffe108ff52fcd	1086	excluded
+configs/experiment/lra/pathfinder32	040000	tree	4c249518475904d0616db6c5a01d0b95608a3018		context
+configs/experiment/lra/pathfinder32/combination.yaml	100644	blob	2146c1a5a5f22548fc6574e557a24c26ab6c002d	350	excluded
+configs/experiment/lra/pathfinder32/full.yaml	100644	blob	7151cd3aa5b401e041fbf72c70613cb74a5f8e2a	236	excluded
+configs/experiment/lra/pathfinder32/linear-attention-performer.yaml	100644	blob	8ee887fbc93d6e323fc2e20c8d0bb53215f1e251	344	excluded
+configs/experiment/lra/pathfinder32/linear-attention.yaml	100644	blob	963920408edfb6365d27dded78c410d44bd995e8	205	excluded
+configs/experiment/lra/pathfinder32/linformer.yaml	100644	blob	5f1c74c1744d75480fccbe133f318446d6c111d8	269	excluded
+configs/experiment/lra/pathfinder32/local.yaml	100644	blob	0556c4a0fa5f07b78d2822b22d3ade81153abb7d	487	excluded
+configs/experiment/lra/pathfinder32/performer.yaml	100644	blob	9d24315986562fd50aaca69edd1b32fc3171c805	238	excluded
+configs/experiment/lra/pathfinder32/reformer.yaml	100644	blob	71cd471647d626ad00700d4e32593d81c3dcc585	228	excluded
+configs/experiment/lra/pathfinder32/sblocal.yaml	100644	blob	cbb9b564a81834a82d3987cdd69fb97258f41783	224	excluded
+configs/experiment/lra/pathfinder32/sbsmyrf.yaml	100644	blob	705f1a25fcb60a86385e3e00318146f15fbb3aed	280	excluded
+configs/experiment/lra/pathfinder32/smyrf.yaml	100644	blob	25c8b275168dab616418c7143e923b74c4c83c06	236	excluded
+configs/experiment/lra/pathfinder32/topk.yaml	100644	blob	e1023a2414908996749ccd1c21588b98a1deca40	506	excluded
+configs/experiment/lra/pathfinder32/transformer.yaml	100644	blob	50d98771a0b399c471dc16a50ab7b2cbbc46c35d	1337	excluded
+configs/experiment/lra/retrieval	040000	tree	4de77a0d783fa77db2e6f44910672552dcc009a1		context
+configs/experiment/lra/retrieval/combination.yaml	100644	blob	58bb223afb5b51be78ad6bad4e7d91c8adce4fe7	347	excluded
+configs/experiment/lra/retrieval/full.yaml	100644	blob	36f2add5277118a9ecaa13f5abdee5fd6389f3ab	148	excluded
+configs/experiment/lra/retrieval/linear-attention-performer.yaml	100644	blob	a6f6b06d1dcb9b18bd538a9228221a5c3ce0fada	259	excluded
+configs/experiment/lra/retrieval/linear-attention.yaml	100644	blob	b90ad6537b97600adc4f6ec0554bbcf8a25d5a86	119	excluded
+configs/experiment/lra/retrieval/linformer.yaml	100644	blob	701c30bd2287f1ce916c180abe35c806484c27b2	267	excluded
+configs/experiment/lra/retrieval/local.yaml	100644	blob	5426758f3d67ae073cc518de3679b6d92d7cfa09	402	excluded
+configs/experiment/lra/retrieval/performer.yaml	100644	blob	e1eb0279c15d0963c8c6c1de86472ff62d0f7333	153	excluded
+configs/experiment/lra/retrieval/reformer.yaml	100644	blob	2221080db0f9660bf99675b4e7f7af49d50690eb	226	excluded
+configs/experiment/lra/retrieval/sblocal.yaml	100644	blob	f87548370d8bcacc702d0c81e00bce79f7158402	222	excluded
+configs/experiment/lra/retrieval/sbsmyrf.yaml	100644	blob	5a8545a907cb7fd7720db0cd5af073e133f87f72	277	excluded
+configs/experiment/lra/retrieval/smyrf.yaml	100644	blob	66466bbb6d9a8c419388b77286e3e38b774b6ce9	234	excluded
+configs/experiment/lra/retrieval/topk.yaml	100644	blob	bbc4ba63def0d19cfe93917e3c6b9db0f3393aa0	197	excluded
+configs/experiment/lra/retrieval/transformer.yaml	100644	blob	3120bac858474da341684ebd7df40e2ac0708c97	1452	excluded
+configs/experiment/lra/textc	040000	tree	c035ba41c5eb099ed9cdde5b971a6d3477ea7d16		context
+configs/experiment/lra/textc/combination.yaml	100644	blob	b05453d2c24fcc9e9fecbc822289edc04e1bb515	343	excluded
+configs/experiment/lra/textc/full.yaml	100644	blob	822ce073c8435159168c42820ac86b828c2fa473	198	excluded
+configs/experiment/lra/textc/linear-attention-performer.yaml	100644	blob	a8b9351e2d32e5a371acaf4dfa3b4730f84d1d32	337	excluded
+configs/experiment/lra/textc/linear-attention.yaml	100644	blob	f7ad021e3878e09b8e17f9fabdfc7cea1fd3384a	198	excluded
+configs/experiment/lra/textc/linformer.yaml	100644	blob	f09e4549544ff2e6a5826d04083ea84279bc1608	262	excluded
+configs/experiment/lra/textc/local.yaml	100644	blob	2287bf7c4ec6abd947ddbcf88c11c1fb267a962c	480	excluded
+configs/experiment/lra/textc/performer.yaml	100644	blob	c177de18f2169336104bd7c0079b6026ff6ed48b	231	excluded
+configs/experiment/lra/textc/reformer.yaml	100644	blob	cd4fa2b3184f1d7b1844ea26c29c0cde6d7e5419	221	excluded
+configs/experiment/lra/textc/sblocal.yaml	100644	blob	b0c65f607155d97d2e9804b1dc649faff2f471ff	217	excluded
+configs/experiment/lra/textc/sbsmyrf.yaml	100644	blob	96daa4e54c52ee2462449ea0b7c06516ce4f9a26	273	excluded
+configs/experiment/lra/textc/smyrf.yaml	100644	blob	d87bcd69b0e17c773946a5bb55e9b220d22036e2	229	excluded
+configs/experiment/lra/textc/topk.yaml	100644	blob	3811802d403e22e3655500a44373456a4373938b	346	excluded
+configs/experiment/lra/textc/transformer.yaml	100644	blob	90c847b6c271773faa7a0840465875405d7437ac	1088	excluded
+configs/experiment/owt	040000	tree	fa1912b59a724b805e0f716f2d6076e28bb9233f		context
+configs/experiment/owt/gpt2-bflyblockdiag.yaml	100644	blob	ff46f544ba554d255723e5cabc01328ff5f93923	122	excluded
+configs/experiment/owt/gpt2-blockdiag.yaml	100644	blob	50ab055e408bafd27c20b5fc57a4d4a5163cee9e	118	excluded
+configs/experiment/owt/gpt2-ninjaturtle32.yaml	100644	blob	f87c533a4ecfec979bcceb093ac582f7a16edafe	122	excluded
+configs/experiment/owt/gpt2-tied.yaml	100644	blob	01979bbc225fabcb3e93a33091859666717b386f	100	excluded
+configs/experiment/owt/gpt2.yaml	100644	blob	63c1aa412444a2a9ca5294ced382545e5d3073fb	1981	excluded
+configs/experiment/owt/gpt2l.yaml	100644	blob	9ae00cd1f382ff7a360618bc62e8daab1a1a5147	143	excluded
+configs/experiment/owt/gpt2m-bflyblockdiag.yaml	100644	blob	21c9d18aef29ba710f9955b9d17dc3e206627eff	123	excluded
+configs/experiment/owt/gpt2m-blockdiag.yaml	100644	blob	e075e459e2f731e037eae9830c06abd6c0ad9d2b	119	excluded
+configs/experiment/owt/gpt2m.yaml	100644	blob	59d81f1dac1892ebf53d66ce16b3c754f461ac7a	179	excluded
+configs/experiment/wt103	040000	tree	a597e9561a9dae3a11e2bb7cba1aff72011a29ba		context
+configs/experiment/wt103/gpt2-bflyblockdiag.yaml	100644	blob	9733a91898cecc96df5391572d2946a2394f3629	124	excluded
+configs/experiment/wt103/gpt2-blockdiag.yaml	100644	blob	bd1f9b452f9bc00a0c8dbfe872d087a46629fce9	120	excluded
+configs/experiment/wt103/gpt2-fbbfly.yaml	100644	blob	b13625332bfc56d46dc71e61206720e8c8057f06	200	excluded
+configs/experiment/wt103/gpt2-fbbflylr.yaml	100644	blob	d8483444c34e1fb694e06f94a723fbd6a9618458	202	excluded
+configs/experiment/wt103/gpt2-ninjaturtle32.yaml	100644	blob	511d18cf9fe7e74cb760ab2deac2bbddf2be489e	124	excluded
+configs/experiment/wt103/gpt2-tied.yaml	100644	blob	3dd1775db155cd794f2073916c2c0e308dfb4fc8	102	excluded
+configs/experiment/wt103/gpt2.yaml	100644	blob	6faa6e5d2fdef9b2e7226b903a365e3a61b540b2	1561	excluded
+configs/experiment/wt103/gpt2l.yaml	100644	blob	f2d5ceef73c723d51df9661a393489d4f66711b2	145	excluded
+configs/experiment/wt103/gpt2m-blockdiag.yaml	100644	blob	02ad84c58344961237a388ed3aa8ed311dbb542a	121	excluded
+configs/experiment/wt103/gpt2m.yaml	100644	blob	f164e8502f6684a53fe59477620a75f35dc85ef9	181	excluded
+configs/hparams_search	040000	tree	b198195dbe960b3c90ccae46cb393d119a1b4d8e		context
+configs/hparams_search/mnist_optuna.yaml	100644	blob	20e43d34da4ec566ef9e0aa92b3e1868b084d607	1797	excluded
+configs/logger	040000	tree	27610dc8bddeee415d13b59e0e81e9e3fc236899		context
+configs/logger/comet.yaml	100644	blob	6ac99f46ca6d2d81e1bd70c230648ec5547c0df0	230	excluded
+configs/logger/csv.yaml	100644	blob	0f917e89ca1902e8ef89b524a9f2affb8bc402e3	158	excluded
+configs/logger/many_loggers.yaml	100644	blob	7bc3d6762674a8220d771e36ca10791ae6447e06	150	excluded
+configs/logger/mlflow.yaml	100644	blob	bfb3781b1591fc1d3190101da06dbce160396130	209	excluded
+configs/logger/neptune.yaml	100644	blob	117af9379319ff9b000311b863ddf42fe08b1b67	325	excluded
+configs/logger/tensorboard.yaml	100644	blob	acd1fa411d0407535066cd809dbb2a11915a4154	246	excluded
+configs/logger/wandb.yaml	100644	blob	67527809e2b9cf39df172b3e1e43d7944173e486	402	excluded
+configs/metrics	040000	tree	2a141c59f53cab328a2ab9f5f29ebb555899444f		context
+configs/metrics/acc.yaml	100644	blob	fe7a63f5c162d0bded2b19e4e227c1eb4147442e	75	excluded
+configs/metrics/acctop5.yaml	100644	blob	5f798ae0cb6d42a9f0651f928f23c13bc4ad16c1	90	excluded
+configs/metrics/f1.yaml	100644	blob	eecb022c7d7c67d51117acff3214170fbfa40fd0	338	excluded
+configs/metrics/matthews.yaml	100644	blob	22b796ea5f1076c0195d4c51d6e9a5325cbd79ef	92	excluded
+configs/metrics/mse.yaml	100644	blob	50b0484d9d0213bfa18b3e5b3e40047b990d0e02	71	excluded
+configs/metrics/pearson.yaml	100644	blob	2cab1e3df855a8df6dc8699b1e9520149ba9f82e	74	excluded
+configs/metrics/perplexity.yaml	100644	blob	2edd2178828315901be9448710f30f145d874375	75	excluded
+configs/metrics/spearman.yaml	100644	blob	3b9d4a9f736fcc075e48045a484745a6c4804059	76	excluded
+configs/mode	040000	tree	2c3752c3274cd2fa1ade47a5b95e7dac15b6df3d		context
+configs/mode/debug.yaml	100644	blob	b2335c981ab1217d3e8a9f489c0d3c1af168ec47	781	excluded
+configs/mode/default.yaml	100644	blob	ac0cae1ceebc0f43c38e98b522d44063b3f0d6f2	326	excluded
+configs/mode/exp.yaml	100644	blob	032aaa9432899c83d41d292a07c0eb3c3edb7c7e	432	excluded
+configs/mode/smoke.yaml	100644	blob	eac3dd286536a02635797f834e93ebb63007f009	637	excluded
+configs/model	040000	tree	97b7d7ae956383913d57fc9ed227267377911f39		context
+configs/model/attn_cfg	040000	tree	8374ec0cdbc97dd5d7448cdf312ee4660eaefec5		context
+configs/model/attn_cfg/combination.yaml	100644	blob	ec6fc1c8ac6c78892591abc973120b4301fcf1fb	600	excluded
+configs/model/attn_cfg/full.yaml	100644	blob	f9507ca4da0874b459507f966ac734bc78295fde	60	excluded
+configs/model/attn_cfg/linear-attention.yaml	100644	blob	590d58af272f4598399b4926b32126b22a9c9b00	231	excluded
+configs/model/attn_cfg/linformer.yaml	100644	blob	36f5b2b3bf0991d94958425ff264f4680e17cde5	83	excluded
+configs/model/attn_cfg/local.yaml	100644	blob	4f4a8c7c10a8297d0f7b871f377b8ee77d9546dc	81	excluded
+configs/model/attn_cfg/performer.yaml	100644	blob	f33666fe7edb41cc990f6e0a51146a19b0cb19e5	236	excluded
+configs/model/attn_cfg/reformer.yaml	100644	blob	40d74883110d237c09ad13bf4f05997e77751d56	99	excluded
+configs/model/attn_cfg/sblocal.yaml	100644	blob	12e1fc5fc0253446856ee72a832051d15d875416	251	excluded
+configs/model/attn_cfg/sbsmyrf.yaml	100644	blob	498188e71a66a246ca45856d9d7e76b483a4c1c4	283	excluded
+configs/model/attn_cfg/smyrf.yaml	100644	blob	d743aa31192b180ed7f3f9967d3fa7038c1284e6	116	excluded
+configs/model/attn_cfg/topk.yaml	100644	blob	65dcd81be3da79cafd6f3a386afddc39582755ae	75	excluded
+configs/model/bert.yaml	100644	blob	5d08dc876fe101b70c198ea6235aa1feb8355ce7	456	excluded
+configs/model/bert_mlp_cfg	040000	tree	389cd09597537d245d605126ea5b17d5f83c16c4		context
+configs/model/bert_mlp_cfg/blockdiag.yaml	100644	blob	a12798bc5faf85af8af9d009aa475dce769ab393	118	excluded
+configs/model/bertbase-hf.yaml	100644	blob	8cff858e14f60ac583f21246288379db40cf8076	251	excluded
+configs/model/bertbase-pretrained.yaml	100644	blob	21938508b63832f7649cde931e96f9c929cda05a	249	excluded
+configs/model/bertmodel	040000	tree	2db3ef121d0028f0dd4a7785ffa8be9bdb6f967b		context
+configs/model/bertmodel/bertbase.yaml	100644	blob	0ca42445dd14f308f201bf67fcffe4bf137c391f	163	excluded
+configs/model/bertmodel/bertlarge.yaml	100644	blob	571f37b111ab6e7e88246083304bf91f583191fe	164	excluded
+configs/model/channel_mlp_cfg	040000	tree	1b9a8ab93015f1fc8ba40be9076fe94659e7c53e		context
+configs/model/channel_mlp_cfg/bflyblockdiag.yaml	100644	blob	4174aedba75d17ab9518ffa95acea6c4d1db14cc	156	excluded
+configs/model/channel_mlp_cfg/blockdiag.yaml	100644	blob	6c25f49f7e22c200099b77a473f992b38a7d2bdc	160	excluded
+configs/model/channel_mlp_cfg/blockdiagglobal.yaml	100644	blob	91576e651960d1a6b08a7700a39b5897ba29dfae	309	excluded
+configs/model/channel_mlp_cfg/blockdiaglr.yaml	100644	blob	7efda4e0c5fad4688c3755ee3c3692b4bc87751f	245	excluded
+configs/model/channel_mlp_cfg/butterflyblockdiaglrmlp.yaml	100644	blob	c38b5ef59574b91f8a4e37831ac3ea65e8945b3e	244	excluded
+configs/model/channel_mlp_cfg/butterflyblockdiagmlp.yaml	100644	blob	2d2c1e2053955d3b1818d7be327a5e3a24219827	167	excluded
+configs/model/channel_mlp_cfg/butterflyfactorbanditnewmlp.yaml	100644	blob	a89c8d2d01523b86fdf19233546a22e625754901	98	excluded
+configs/model/channel_mlp_cfg/butterflyfactornewmlp.yaml	100644	blob	465a6e096f4db34563aca8ee8e825e43c4016275	92	excluded
+configs/model/channel_mlp_cfg/butterflymlp.yaml	100644	blob	8b42d79d9686b9f508539d1502bca6efcefbc69a	95	excluded
+configs/model/channel_mlp_cfg/butterflynewmlp.yaml	100644	blob	35faf1560f80e5a950e6b4b87cb033fa86da029c	83	excluded
+configs/model/channel_mlp_cfg/butterflysimplemlp.yaml	100644	blob	a1936a7238e683b4d31da6bc8b6deb7520ba5754	75	excluded
+configs/model/channel_mlp_cfg/fastmlp.yaml	100644	blob	9326ce369b8131600c1f238c7f49ef6ebb4652a5	66	excluded
+configs/model/channel_mlp_cfg/fbbfly.yaml	100644	blob	3787d1ea7270d6d7d0fcfb7a57d4c525c7726880	325	excluded
+configs/model/channel_mlp_cfg/fbbflylr.yaml	100644	blob	72e28761f221152c53858e636f9f1ef061cdeb38	420	excluded
+configs/model/channel_mlp_cfg/mlp.yaml	100644	blob	18be7a91a8c67f5805a459bc039dfec4cb92f614	46	excluded
+configs/model/channel_mlp_cfg/newmlp.yaml	100644	blob	172a9fa5c6af4d3f3282b283e6f5501a3c3412ee	49	excluded
+configs/model/channel_mlp_cfg/randommlp.yaml	100644	blob	d550a863fbe98274dadce01596ba4ece8841e93e	69	excluded
+configs/model/channel_mlp_cfg/randomsparsenewmlp.yaml	100644	blob	5c8ba6b3d255f8581ee317e0f30dceca8a24f646	78	excluded
+configs/model/channel_mlp_cfg/semlp.yaml	100644	blob	85afe755dc59578d0f90eccd698845a5ec9250f4	48	excluded
+configs/model/channel_mlp_cfg/simplemlp.yaml	100644	blob	9f8b35b6870cdbdb467526d448c33b2951d0e8e9	52	excluded
+configs/model/channel_mlp_cfg/slmlp.yaml	100644	blob	9a8ce4e6b51868c91054ab7e6282b40c6d3dc20b	104	excluded
+configs/model/channel_mlp_cfg/topkactmlp.yaml	100644	blob	d05eb96b0be30b31425433cc8d59add2d19aa2fc	58	excluded
+configs/model/channel_mlp_cfg/topkgradmlp.yaml	100644	blob	8ea7ca537d09554665bb7fce4112cdc61ba1f230	59	excluded
+configs/model/channel_mlp_cfg/topklrmlp.yaml	100644	blob	2b336303ab0c8b26147ee9e1c27a78d1b752203f	98	excluded
+configs/model/channel_mlp_cfg/topkmlp.yaml	100644	blob	f8498a5b11387b3bf11fcea3f5cca8f4dff17c79	80	excluded
+configs/model/fno1d.yaml	100644	blob	7e5c63b6355d6fb89d1f870a80cc00b64ae3612f	53	excluded
+configs/model/fno2d.yaml	100644	blob	3e978b38ad34ba589e831047f7a6324236cea1aa	66	excluded
+configs/model/gpt2-hf.yaml	100644	blob	f6e7f39e9db214b59034490b7097d3a2cd7d1998	338	excluded
+configs/model/gpt2.yaml	100644	blob	64cc2590b218e86ee8f2dc83d7157f8ca4e8aefd	474	excluded
+configs/model/gpt2_mlp_cfg	040000	tree	cb9fcdbc734a9c17d49663d7306981d2736b4b4e		context
+configs/model/gpt2_mlp_cfg/bflyblockdiag.yaml	100644	blob	4174aedba75d17ab9518ffa95acea6c4d1db14cc	156	excluded
+configs/model/gpt2_mlp_cfg/blockdiag.yaml	100644	blob	6c25f49f7e22c200099b77a473f992b38a7d2bdc	160	excluded
+configs/model/gpt2_mlp_cfg/fbbfly.yaml	100644	blob	3787d1ea7270d6d7d0fcfb7a57d4c525c7726880	325	excluded
+configs/model/gpt2_mlp_cfg/fbbflylr.yaml	100644	blob	72e28761f221152c53858e636f9f1ef061cdeb38	420	excluded
+configs/model/gpt2_mlp_cfg/mlp.yaml	100644	blob	6a40dfb0c6af587d31b1e222972135b76f5c5c3f	42	excluded
+configs/model/gpt2_mlp_cfg/ninjaturtle32.yaml	100644	blob	eafba351471e023fe508e9a37ab65210ee2d2fea	349	excluded
+configs/model/gpt2model	040000	tree	a5a8159b21b9557940f199d0783dd82025781624		context
+configs/model/gpt2model/gpt2-large.yaml	100644	blob	434a61eb99141305a7f01b9fa812614a0a1b7109	85	excluded
+configs/model/gpt2model/gpt2-medium.yaml	100644	blob	786091836aa683b26e4d39ab557b1556a5331250	85	excluded
+configs/model/gpt2model/gpt2-small.yaml	100644	blob	039c9180226c1f504b43ce559ad6bd9cbdcc8cf9	84	excluded
+configs/model/mixerb.yaml	100644	blob	e79d3e1e8db1211668dbb81e240f3115b44583f3	204	excluded
+configs/model/mixers.yaml	100644	blob	a19382bcfe3cef0bf8160d234d6490bfe16f70d1	117	excluded
+configs/model/mnist_model.yaml	100644	blob	907ae6eb542dbb841661875f1a181661f3ffc017	156	excluded
+configs/model/s4-classifier.yaml	100644	blob	067cd0fcce42b3852a96dacb9ac8ea1d6321b748	286	excluded
+configs/model/swin.yaml	100644	blob	c1781a5078afe2fc176ef6a6b5b4f991bb4365ba	361	excluded
+configs/model/swinmlp.yaml	100644	blob	59769968c479863579b8bfef44bc0435cbbb1c1b	322	excluded
+configs/model/swinmlpmodel	040000	tree	3383e0204052f1ad0c9a172c0aa5186e16dbd2f5		context
+configs/model/swinmlpmodel/swinmlp-b.yaml	100644	blob	b74042eb20d7a9bb8947632513b15107c9de6a19	135	excluded
+configs/model/swinmlpmodel/swinmlp-t-c12.yaml	100644	blob	f01ea2afa9505ee38f4a0f2455dddb868bb6c4a2	164	excluded
+configs/model/swinmlpmodel/swinmlp-t-c24.yaml	100644	blob	9429375112346943171dd083bc534bb48b424a95	163	excluded
+configs/model/swinmlpmodel/swinmlp-t-c6.yaml	100644	blob	92e49298cd1f5f46e29115d34ad2457582b097d7	166	excluded
+configs/model/swinmodel	040000	tree	0420b7aeb95f7ef23451c0c7f769070265d200cf		context
+configs/model/swinmodel/swin-b.yaml	100644	blob	b74042eb20d7a9bb8947632513b15107c9de6a19	135	excluded
+configs/model/swinmodel/swin-s.yaml	100644	blob	adfd98a5d055767d67a89ecbea220a453eb634d0	134	excluded
+configs/model/swinmodel/swin-t.yaml	100644	blob	894564951883398ab2729e1a3c70096504e044df	133	excluded
+configs/model/t2tattn_cfg	040000	tree	7c33c8eba4c5660f782ce99a00aa594fb1e12b52		context
+configs/model/t2tattn_cfg/bs-bigbird.yaml	100644	blob	c89e11c7aba8c696a5a8fbee872570463bd223f6	702	excluded
+configs/model/t2tattn_cfg/bs-longformer.yaml	100644	blob	68aa813fef80d31a670d60684eb9e286b593b2f0	707	excluded
+configs/model/t2tattn_cfg/bs-openai.yaml	100644	blob	75e77e1231add36340e8661dbc6a3e1ca6a6ca81	682	excluded
+configs/model/t2tattn_cfg/combination-local-performer.yaml	100644	blob	d1f28fd8888bd9cc28c8c1f8641bdf8f8c42c843	895	excluded
+configs/model/t2tattn_cfg/combination-smyrf-performer.yaml	100644	blob	3fb6b933846b3e2ea668baf8912c80a7f886083e	1006	excluded
+configs/model/t2tattn_cfg/full.yaml	100644	blob	8792dfbb83626a2ae9d91b3cb8746bcc308b1325	146	excluded
+configs/model/t2tattn_cfg/linear-attention-performer.yaml	100644	blob	5114dc5616fb3743c729631418999a83750a7d92	864	excluded
+configs/model/t2tattn_cfg/local.yaml	100644	blob	df347c0130821ad0574b8544ea31e3968451b437	299	excluded
+configs/model/t2tattn_cfg/performer.yaml	100644	blob	fc22029c76849445a38001ee8c48ba1ee0137d66	597	excluded
+configs/model/t2tattn_cfg/reformer.yaml	100644	blob	7894a3e7e398e45dd8d3176a875399542d123094	331	excluded
+configs/model/t2tattn_cfg/sbbs-bigbird.yaml	100644	blob	484cbcdab34ea304508f71bdc68da96f8bdd9ce5	799	excluded
+configs/model/t2tattn_cfg/sbbs-longformer.yaml	100644	blob	d0f7f57a3b5cc7dbf5850fafd95f07ff30bd4924	804	excluded
+configs/model/t2tattn_cfg/sbbs-openai.yaml	100644	blob	379aece59e3a1c0522fbf926ff52727f4bae2385	779	excluded
+configs/model/t2tattn_cfg/sblocal.yaml	100644	blob	d466700926f37ca16cb683a83a9df67dcc6c7a28	395	excluded
+configs/model/t2tattn_cfg/sbsmyrf.yaml	100644	blob	d7fea3f170fbaeb519e44ac3db3de66e27f1d0a8	491	excluded
+configs/model/t2tattn_cfg/smyrf.yaml	100644	blob	b1c4c7abfff8e9b8ea8249a2d1bb725cbd97b04e	405	excluded
+configs/model/t2tmodel	040000	tree	fff032f68ac40467cea697ff3009111972a1441b		context
+configs/model/t2tmodel/t2t_vit_12_wide.yaml	100644	blob	045f7a244a4170f3b8ceda2c03bf5b899f5b5157	202	excluded
+configs/model/t2tmodel/t2t_vit_14.yaml	100644	blob	4e5d8db83097c1b86a23e048778e8719b9d33856	73	excluded
+configs/model/t2tmodel/t2t_vit_14_t.yaml	100644	blob	1f2f0fa8bac9d3faa7b67a8d4c5e73cd5aebc77f	75	excluded
+configs/model/t2tmodel/t2t_vit_7.yaml	100644	blob	6a3afc9c8bdd09f19c7d1280440587f8b37fbe80	72	excluded
+configs/model/t2tmodel/t2t_vit_7_t.yaml	100644	blob	01fc94da74120c0180a66fe4244e773f1d2df689	157	excluded
+configs/model/t2tmodel/t2t_vit_8_wide.yaml	100644	blob	9e637c29bd16b0457d1a3c9027e81d3b5ba61c30	200	excluded
+configs/model/t2tmodel/vit_b_16.yaml	100644	blob	512d974184a6ead5a696ca8604b348db950d9e59	79	excluded
+configs/model/t2tmodel/vit_l_16.yaml	100644	blob	a9d0f995ac79c431df5d7b8ff12e2415eadc47b2	80	excluded
+configs/model/t2tmodel/vit_s_16.yaml	100644	blob	35992fcaf7bc5a1fd03b94500134412e28bc8e09	80	excluded
+configs/model/t2tvit.yaml	100644	blob	30fb123c17d11eda4562ee3f48a47d40a8f12663	127	excluded
+configs/model/token_mlp_cfg	040000	tree	52b8b11cdd5b890a4cb77846ff566640e8ec5120		context
+configs/model/token_mlp_cfg/butterflyblockdiagmlp.yaml	100644	blob	2d2c1e2053955d3b1818d7be327a5e3a24219827	167	excluded
+configs/model/token_mlp_cfg/butterflyfactorbanditnewmlp.yaml	100644	blob	a89c8d2d01523b86fdf19233546a22e625754901	98	excluded
+configs/model/token_mlp_cfg/butterflyfactornewmlp.yaml	100644	blob	465a6e096f4db34563aca8ee8e825e43c4016275	92	excluded
+configs/model/token_mlp_cfg/butterflymlp.yaml	100644	blob	8b42d79d9686b9f508539d1502bca6efcefbc69a	95	excluded
+configs/model/token_mlp_cfg/butterflynewmlp.yaml	100644	blob	35faf1560f80e5a950e6b4b87cb033fa86da029c	83	excluded
+configs/model/token_mlp_cfg/butterflysimplemlp.yaml	100644	blob	a1936a7238e683b4d31da6bc8b6deb7520ba5754	75	excluded
+configs/model/token_mlp_cfg/fastmlp.yaml	100644	blob	9326ce369b8131600c1f238c7f49ef6ebb4652a5	66	excluded
+configs/model/token_mlp_cfg/mlp.yaml	100644	blob	18be7a91a8c67f5805a459bc039dfec4cb92f614	46	excluded
+configs/model/token_mlp_cfg/newmlp.yaml	100644	blob	172a9fa5c6af4d3f3282b283e6f5501a3c3412ee	49	excluded
+configs/model/token_mlp_cfg/randommlp.yaml	100644	blob	d550a863fbe98274dadce01596ba4ece8841e93e	69	excluded
+configs/model/token_mlp_cfg/randomsparsenewmlp.yaml	100644	blob	5c8ba6b3d255f8581ee317e0f30dceca8a24f646	78	excluded
+configs/model/token_mlp_cfg/semlp.yaml	100644	blob	85afe755dc59578d0f90eccd698845a5ec9250f4	48	excluded
+configs/model/token_mlp_cfg/simplemlp.yaml	100644	blob	9f8b35b6870cdbdb467526d448c33b2951d0e8e9	52	excluded
+configs/model/token_mlp_cfg/slmlp.yaml	100644	blob	2f1875fb049b3709021d6973bda8a44519ae3c75	105	excluded
+configs/model/token_mlp_cfg/topkactmlp.yaml	100644	blob	d05eb96b0be30b31425433cc8d59add2d19aa2fc	58	excluded
+configs/model/token_mlp_cfg/topkgradmlp.yaml	100644	blob	8ea7ca537d09554665bb7fce4112cdc61ba1f230	59	excluded
+configs/model/token_mlp_cfg/topklrmlp.yaml	100644	blob	2b336303ab0c8b26147ee9e1c27a78d1b752203f	98	excluded
+configs/model/token_mlp_cfg/topkmlp.yaml	100644	blob	f8498a5b11387b3bf11fcea3f5cca8f4dff17c79	80	excluded
+configs/model/transformer-classifier.yaml	100644	blob	6daf1c6b74ab0dee4966970af8e134c1c35929f2	429	excluded
+configs/model/vitmlp_cfg	040000	tree	56fcf33858d23234c8de9ed4ff46ef50265ebe3a		context
+configs/model/vitmlp_cfg/butterflyblockdiag.yaml	100644	blob	7c218f65987af6d5ecb3fc9f6aee0f68b7df0d7f	192	excluded
+configs/model/vitmlp_cfg/butterflyblockdiaglr.yaml	100644	blob	16801f1a0a90788f6127d6650434674415dfa166	283	excluded
+configs/model/vitmlp_cfg/butterflyglobal-slow.yaml	100644	blob	b494c48ca575ad323c3eb345152ef364754474bf	150	excluded
+configs/model/vitmlp_cfg/butterflyglobal.yaml	100644	blob	36a619d38d42251b69b0353c71b905226947d1bc	367	excluded
+configs/model/vitmlp_cfg/fbbfly.yaml	100644	blob	5b855b38233b841687befdf1b9cab94511676b39	371	excluded
+configs/model/vitmlp_cfg/fbbfly16-2.yaml	100644	blob	a2bf4e8e77a4e1e410b0bad24d52de4da106ef8b	423	excluded
+configs/model/vitmlp_cfg/fbbfly16-3.yaml	100644	blob	9805cc27d6276a265928dd0b7f2efeca1165e0cb	423	excluded
+configs/model/vitmlp_cfg/fbbfly16-4.yaml	100644	blob	f110d34b41f4575ab72c4b5a0dfa286d93adfc8c	423	excluded
+configs/model/vitmlp_cfg/fbbfly32-3.yaml	100644	blob	60bf36e2fa6025b7e7f8a241c5607f5bf173e1a1	423	excluded
+configs/model/vitmlp_cfg/fbbfly8-2.yaml	100644	blob	d48e64ea05c0e8ede5d865116db4df3186fc4a2a	422	excluded
+configs/model/vitmlp_cfg/fbbfly8-3.yaml	100644	blob	acf0785115aab6513519909142a69e48a0ac9065	422	excluded
+configs/model/vitmlp_cfg/fbbflylr.yaml	100644	blob	db20fd38806e379fa2fee0d2402d0d679decfb7c	472	excluded
+configs/model/vitmlp_cfg/fbbflylr16-2.yaml	100644	blob	07ca26b237e88269a3803e53dfe20641df44d3e4	524	excluded
+configs/model/vitmlp_cfg/fbbflylr16-3.yaml	100644	blob	b7b96af3d33e8cb77cd3bf6d2194dd9e109f11bf	524	excluded
+configs/model/vitmlp_cfg/fbbflylr16-4.yaml	100644	blob	8e9c6e98da6a83e352789928ac521ffaee30dba3	524	excluded
+configs/model/vitmlp_cfg/fbbflylr32-3.yaml	100644	blob	fcc76b75899df8fa3a13d320f866236d5012094b	524	excluded
+configs/model/vitmlp_cfg/fbbflylr8-2.yaml	100644	blob	2de9ba043396b031e886e5bab1c3866ea7683341	523	excluded
+configs/model/vitmlp_cfg/fbbflylr8-3.yaml	100644	blob	9b2a84964ce3abe513716494fdc508dfb84adeca	523	excluded
+configs/model/vitmlp_cfg/ninjaturtle-slow.yaml	100644	blob	83c9b8645eacd02b0dbb6db84267accff6369bd1	146	excluded
+configs/model/vitmlp_cfg/ninjaturtle.yaml	100644	blob	b02f810af29af67af171f5f6a9708e622891886b	363	excluded
+configs/model/vitmlp_cfg/ninjaturtle32.yaml	100644	blob	a697c87a380796029a832123f439ac890a7cda59	363	excluded
+configs/model/vitmlp_cfg/ninjaturtlelr.yaml	100644	blob	a0ee16f4c630771c8d87adc22d4165120f83eb78	466	excluded
+configs/model/vitmlp_cfg/ninjaturtlelr32.yaml	100644	blob	57b025361f024fc487f4f74ea790c24edbc94277	466	excluded
+configs/optimizer	040000	tree	c64294d56fd24bf0499a2b934153081d62a0df7b		context
+configs/optimizer/adam.yaml	100644	blob	f8821d74ced32918343f78ecb55d13c5102cf5ec	54	excluded
+configs/optimizer/adamw.yaml	100644	blob	02252ec1cec06b2b06ef99fdeb9e324c1035738d	55	excluded
+configs/optimizer/fusedlamb-ds.yaml	100644	blob	a4fffbfb3e5fa97124841810a3ed66207bf1bf6a	66	excluded
+configs/optimizer/fusedlamb.yaml	100644	blob	c8d7b2b8ede4c8733b5dde4dca6b75a942e88882	63	excluded
+configs/optimizer/sgd.yaml	100644	blob	43b834653e8735acf54ca3b21f89cc480a65ac3e	53	excluded
+configs/scheduler	040000	tree	9d66dde99443cf955ae46b9271b15a8b56db626c		context
+configs/scheduler/cosine-warmup.yaml	100644	blob	afaf0f618ecc41c9182c7df34717c973aa4af974	82	excluded
+configs/scheduler/invsqrt.yaml	100644	blob	bb16f3c15bfd4f3a337a3b082a12e37f14bafd1b	90	excluded
+configs/scheduler/linear-warmup.yaml	100644	blob	bb6a69896e8f042a9a2ca2b1102c853e863db936	82	excluded
+configs/scheduler/multi-step.yaml	100644	blob	42cd60716a4654f469aa7d6384098bc1068f381c	74	excluded
+configs/scheduler/plateau.yaml	100644	blob	436c264dc2acd534a333e0bc4b28f93139d8ec7c	288	excluded
+configs/scheduler/poly-warmup.yaml	100644	blob	79808ea42c6c1d851ef94da812f7c2d448ec6ca0	92	excluded
+configs/scheduler/step.yaml	100644	blob	e0d9a0ce808720175c708b3f1a7d55db655bec28	84	excluded
+configs/task	040000	tree	6778f082366968981ab2d8b73b80cfb127cd0bce		context
+configs/task/sequence-model.yaml	100644	blob	435cf0501a3c4b24efd35d72fbcabcaf19748589	38	excluded
+configs/trainer	040000	tree	ea76fd14ba1fd61849c3e5eb21ac7bfa3b58583f		context
+configs/trainer/all_params.yaml	100644	blob	067c2953b51399c71c869ea7744fcd99f6be9d6d	1105	excluded
+configs/trainer/ddp.yaml	100644	blob	3c9544407298d1e839b0c7851cc2cce4a0f01cc3	70	excluded
+configs/trainer/debug.yaml	100644	blob	18b73ed889bcd2c540f5d50584f12170f8016191	333	excluded
+configs/trainer/default.yaml	100644	blob	9429cc316c9b6190e234b4022cd80acaae0c38eb	172	excluded
+notebooks	040000	tree	d564d0bc3dd917926892c55e3706cc116d5b165e		context
+notebooks/.gitkeep	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+run.py	100644	blob	50d4825bb040af94630cbdc04577d1738324f532	1958	excluded
+scripts	040000	tree	c7e2008fd20ad65f4b82143256a6846512819857		context
+scripts/convert_checkpoint_t2t_vit.py	100644	blob	9ac8dd3392d70ca59fba1cb43f4f1d91868fdbe0	1122	excluded
+setup.cfg	100644	blob	113a32f3ee282968fc678dcfba0aab93498f94f1	836	excluded
+src	040000	tree	639e0ff7af26dd1ffdbd9b00544a66295cf0bb04		context
+src/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/callbacks	040000	tree	44dd77497a2d9df6e989751af6372fe935ca38cb		context
+src/callbacks/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/callbacks/ema.py	100644	blob	2e72d5129e6b4e4ac60ed397ec2f808b15a9e4d2	2871	excluded
+src/callbacks/flop_count.py	100644	blob	a8c72703f162eea66a36f81f584091b55b7c6d1a	2081	excluded
+src/callbacks/params_log.py	100644	blob	70d089c09cf765973f560b06b03eb20e49402841	1459	excluded
+src/callbacks/speed_monitor.py	100644	blob	84ed93dd55969dffe7141f580108c85c348ed71a	3147	excluded
+src/callbacks/wandb_callbacks.py	100644	blob	4e0a46523d98168e83e2e0e0054542e8473e5451	10003	excluded
+src/datamodules	040000	tree	677f18063e47c816d9b4ce873ea50754d6076341		context
+src/datamodules/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/datamodules/aan.py	100644	blob	d891d1a04fa765ce354562ed6c321d18d3aff0a1	7710	excluded
+src/datamodules/cifar.py	100644	blob	998cc7f323f9b425504c53f2c42248157a3454a0	4676	excluded
+src/datamodules/datasets	040000	tree	cdb66be1cceb9c895b1c0e5548cf34534cc99fb2		context
+src/datamodules/datasets/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	excluded
+src/datamodules/datasets/archive_imagefolder.py	100644	blob	f8386c282a8fa4899204d1edf4aba03a476f6cca	10949	excluded
+src/datamodules/datasets/getdata.sh	100755	blob	9a2f93d99ebb78b02fbe7e473dfb8a980bba5e26	5369	excluded
+src/datamodules/datasets/tardataset.py	100644	blob	af2ca3e0339c3fd52a25ef9eeb68daf112e03b58	6461	excluded
+src/datamodules/datasets/tarimagefolder.py	100644	blob	7f7b4aa9a005f432ac045e68198d96c2c25e282a	4861	excluded
+src/datamodules/datasets/vocabulary.py	100644	blob	69dd2e750945cecd3925d7f0658c8b772a8aff25	8521	excluded
+src/datamodules/imagenet.py	100644	blob	8c8155505f843e3ba0d88bc56d376e1b1d0b20ab	10643	excluded
+src/datamodules/imagenet_dali_loader.py	100644	blob	71e7e0312f9412d552e6a72d24ca62302b93d742	6584	excluded
+src/datamodules/imdb.py	100644	blob	84b5a8b4f3ce074a64728c5dfb5f6aead1403797	7124	excluded
+src/datamodules/language_modeling.py	100644	blob	1df7094372e643a094b998c025197d11fc817033	9387	excluded
+src/datamodules/language_modeling_hf.py	100644	blob	1ef96038f8d9a53ecba0ac1ec0535d81b656ef77	7569	excluded
+src/datamodules/listops.py	100644	blob	df87fe8f1f9202e60d007b3cfbbf21df0b8dcc3b	6988	excluded
+src/datamodules/mnist_datamodule.py	100644	blob	4fa63126a4a8cfefa8a355a6598cf4a77519c835	3807	excluded
+src/datamodules/pathfinder.py	100644	blob	44cfcd80794e65dc2240582cc114b91a23b7060f	15708	excluded
+src/datamodules/timm_mixup.py	100644	blob	2d468576d38d7941bbbd9ee696a2333db824ba32	796	excluded
+src/eval.py	100644	blob	09ea2f20378f90e003e36d10e9d406220b43baf7	3992	excluded
+src/losses	040000	tree	550798aa038cd027e5039e2156ded416212c5f02		context
+src/losses/relative_l2.py	100644	blob	c4881a7206bf83ca22f502c06e2b4b4fddbdf873	376	excluded
+src/losses/supcon.py	100644	blob	bfe9a6ea69706dbac3c1cac9d73a84db48949721	3836	excluded
+src/metrics	040000	tree	501f702688f3e4ef07837d20544c9ab8e42e7e93		context
+src/metrics/accuracy.py	100644	blob	924b7c9fc266e9a7abebec32e9e24e58cec15c2e	1842	excluded
+src/metrics/perplexity.py	100644	blob	78f65d2334c06fa038877b5580f51ed2d09dcef4	3260	excluded
+src/models	040000	tree	cf984f9309c772656b2457e87b2e5af853bf379c		context
+src/models/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/models/attention	040000	tree	1795368c411ec3d5fad9b8eb075402e03f1326bd		context
+src/models/attention/batching_utils.py	100644	blob	5c73f9e114233c1b630862ccdcc9c1d9102848a1	557	selected
+src/models/attention/blocksparse_attention.py	100644	blob	7c271162528940fab5aa0f7f2d9865e38796fa98	8137	excluded
+src/models/attention/blocksparse_logsumexp.py	100644	blob	c81b1f8492b399a3bb227338d9fe51f54d38aa3c	6482	excluded
+src/models/attention/blocksparse_matmul.py	100644	blob	2cdbfed2e6cb04c780d54afa2cd23be800e5c017	27789	excluded
+src/models/attention/blocksparse_sum.py	100644	blob	a539a41fc0654110dd87cb3c0eb569a03bff8f90	6279	excluded
+src/models/attention/blocksparse_utils.py	100644	blob	c8694fa7feeec38c2c3398d37ff19eacde2483ee	5373	excluded
+src/models/attention/combination_attention.py	100644	blob	720ed02120a2fe3c3aaf852a13840d2dd192b819	2683	excluded
+src/models/attention/feature_maps_sb.py	100644	blob	7c6fe0c52dd806ef34424a027415121850a357f2	7504	selected
+src/models/attention/full_attention.py	100644	blob	74b9c964e1937adbe8ff6f38219316ddf45bde86	2516	excluded
+src/models/attention/hash_utils.py	100644	blob	47224c645c07457042bd4ef4cca3844d6242dd17	10317	selected
+src/models/attention/linear_attention.py	100644	blob	f3a26ff5d0e51c26f22834ff3d6d49bbf765b0b8	3378	excluded
+src/models/attention/linformer_attention.py	100644	blob	e5c23b493166d8dc465dc9f22321f7659694fb48	3178	excluded
+src/models/attention/local_attention.py	100644	blob	a845b0462554be0fdfd0b9c65d9950c567336b86	5168	excluded
+src/models/attention/mask_utils.py	100644	blob	011443cfcac494484ba5f1b67b9ef2a05f97d52b	755	selected
+src/models/attention/performer_attention.py	100644	blob	8a4dcf1b128efe873950a8b10b06d8a2f4f13176	5553	excluded
+src/models/attention/performer_feature_map.py	100644	blob	e209384e35a763c702c11fda53139c9cd4422f33	3914	excluded
+src/models/attention/performer_utils.py	100644	blob	dfd122cc79eaf415339da0ac71f6509494fdf221	5141	excluded
+src/models/attention/projection_utils.py	100644	blob	5f103649a7a664a8303108611b6261965a550a0a	1255	selected
+src/models/attention/reformer_attention.py	100644	blob	c15b54dd5d993ffb314fc6e0288a9118a465e601	15307	selected
+src/models/attention/sbblocksparse_attention.py	100644	blob	c2f07ec001470fedfdbf73b71e0e6e501ea13af1	10736	excluded
+src/models/attention/sblocal_attention.py	100644	blob	68894c60d5ca622609f20ee3fbb6be1bf9f540ef	7005	excluded
+src/models/attention/sbsmyrf_attention.py	100644	blob	882c3e5e8410279ec858a2f0b8a057fa4da7dbe0	14896	selected
+src/models/attention/scatterbrain_utils.py	100644	blob	61f022b9d5a482669fe4eeacec4521ebf6490ac4	1923	selected
+src/models/attention/smyrf_attention.py	100644	blob	ddea42dbcf4979a9702992cf4f96afcefd21b5fe	7489	excluded
+src/models/attention/topk_attention.py	100644	blob	c9cd211b898aea941e1f893388e2012ccce81886	2350	excluded
+src/models/bert.py	100644	blob	db888a61011a8831bd5af64f9c63f3a98ab08e18	87139	excluded
+src/models/fno.py	100644	blob	91f9aec55e38c52e0544eb74a525f238f8317086	5578	excluded
+src/models/gpt2.py	100644	blob	84c3bdec98963dc5cdd9ca65ad4bd1a05f328578	39008	excluded
+src/models/layers	040000	tree	3c1d79805c1872be31b98ee58e4f4a277c1c3661		context
+src/models/layers/__init__.py	100644	blob	8b137891791fe96927ad78e64b0aad7bded08bdc	1	excluded
+src/models/layers/block_butterfly_multiply.py	100644	blob	9c113b8d62fba263a3e0d2dee1a71dd1a548c83c	3837	excluded
+src/models/layers/blockdiag_butterfly_multiply.py	100644	blob	c99a4f8727a1c23848f59c2938c95019d78fa091	5150	excluded
+src/models/layers/blockdiag_linear.py	100644	blob	058eff9019e9a732125d89403bfd0b49e6eb8ae9	3109	excluded
+src/models/layers/blocksparse_linear.py	100644	blob	2a825823fb01b328eab577e5791fe1451cbc11d9	9539	excluded
+src/models/layers/fastlinear.py	100644	blob	ae424afd54e5ba4cc2c9bc6defb6879555636169	35288	excluded
+src/models/layers/maskedlinear.py	100644	blob	07f1d5003fd3fd7328b2df018ea3589e7a6403be	4651	excluded
+src/models/layers/mlp.py	100644	blob	ee31c7cd73ba9059affa55803a6085c38b14553a	25278	excluded
+src/models/layers/monarch_linear.py	100644	blob	bbd63564b39cf588d27fbda10e63e03dd20e923c	2166	excluded
+src/models/layers/patch_embed.py	100644	blob	4f0dc30c797e8d6e3393ca0183ee4d53c9b68b24	1826	excluded
+src/models/layers/rotary.py	100644	blob	6acb872c2c5eceee21800ed5464ad3ac531410b2	3727	excluded
+src/models/layers/spectral_conv.py	100644	blob	872f1a57d4d3c999db3b43d6ed3914954ada8ebc	4815	excluded
+src/models/layers/structured_linear.py	100644	blob	1a047efb6809d05c778a81740ea6fd9843c84bcc	2499	excluded
+src/models/layers/weight_init_helper.py	100644	blob	e40816b5759b2fd7e21cc8b889832fd2c12156f4	3433	excluded
+src/models/mlp_mixer.py	100644	blob	c2f2ec71fe8e3b6b7473541e27d788c41a6282d1	26272	excluded
+src/models/mnist_model.py	100644	blob	4732f2301c7dee7f53fbae7702dc612013becace	4028	excluded
+src/models/modules	040000	tree	5e7094958bbf998cfe57834606a485841fc3864a		context
+src/models/modules/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/models/modules/masking.py	100644	blob	784e4b10670849a227cedcec8f65881e405fe24c	7524	selected
+src/models/modules/multihead_attention.py	100644	blob	5332b7c4b3037d1da09cd299bc269eb408acfdf7	24887	excluded
+src/models/modules/s4.py	100644	blob	0456a2e373c44fd31888dfb92d3f21aa45b54272	42486	excluded
+src/models/modules/seq_common.py	100644	blob	7d9cc994ee613513047133b37dbd62a5f76dfe73	11686	excluded
+src/models/modules/simple_dense_net.py	100644	blob	ef5fe5304bfd008df6e00fbb36c56db940bc74e1	870	excluded
+src/models/modules/t2t.py	100644	blob	be3f84ac5c011b84c473241d24badf029bd1b09f	3930	excluded
+src/models/modules/token_performer.py	100644	blob	e2e0f90a35856fcdf3c85ec4d3df685a230d3c2a	2370	excluded
+src/models/modules/token_transformer.py	100644	blob	4304c1142227ec84d202b5d43a06fe3a16a18534	3189	excluded
+src/models/modules/vision_common.py	100644	blob	aa5e84ad7d7324d1565c4acb82a3b3d4dc57c102	4662	excluded
+src/models/resnet_supcon.py	100644	blob	e3b3a96e8895c9dee2c2060889de96ee750c15d5	7309	excluded
+src/models/s4_seq.py	100644	blob	b5ad709867f33e6cf272153767ced341d228107a	12658	excluded
+src/models/simple_dense_net.py	100644	blob	ef5fe5304bfd008df6e00fbb36c56db940bc74e1	870	excluded
+src/models/swin_mlp.py	100644	blob	f610b7b95dba3bc2535ca876734bd5f6323fea86	13319	excluded
+src/models/swin_transformer.py	100644	blob	99e7f841027d0b653aec9fa4d5e7b54876dccf12	22961	excluded
+src/models/transformer.py	100644	blob	e3ca9d0334487472ecf4002fd35e54ec90bfe51b	19885	excluded
+src/models/vit	040000	tree	bfef21a8ef8d13786e3225851e6a0d1d7545c013		context
+src/models/vit/t2t_vit.py	100644	blob	dd3deb0fd93af5153ac62e39f6a92f25471a63aa	9928	excluded
+src/models/vit/vit.py	100644	blob	3e2ea241ce7c5c1e3afe61ec74b99a0b130564e1	30196	excluded
+src/ops	040000	tree	95ddd668161086654487c8e576887a2bfafe5ac0		context
+src/ops/bert_fmha.py	100644	blob	034d5d8e1d5cf9fe317da5bb5c13cb9c677ab4c6	2887	excluded
+src/ops/bert_padding.py	100644	blob	0e6fc9bfc6b3c3efc888060d0500c712f79d5595	4154	excluded
+src/ops/blockdiag_butterfly_einsum.py	100644	blob	a5c64baf26e34eedf5f626a25bfac6c9ce8884f3	3978	excluded
+src/ops/blockdiag_butterfly_projection.py	100644	blob	a57237d84dd69a2d0b82f19e29c5267cd84daa73	3096	excluded
+src/ops/blockdiag_multiply.py	100644	blob	fd0b11c0785734b5c51e73d811f6db386b42944d	2838	excluded
+src/ops/butterfly_factor.py	100644	blob	ecb937f84cae6e88fe4d3c4d4cfb35c8f5036dcc	1488	excluded
+src/ops/fused_dense.py	100644	blob	8c46d945df3bc402692b483d57647fb57c034ed0	2656	excluded
+src/ops/fused_dropout_add.py	100644	blob	c2000e3eb39d456d4a3fe772e064db78aea8ab3c	1021	excluded
+src/ops/fused_softmax_dropout.py	100644	blob	b98ec7d5520239cd00cd34dca6ae6b20b41ecda9	1395	excluded
+src/ops/gelu_activation.py	100644	blob	537880716205343b87eddc3d7bb2f2c86f438a3a	2390	excluded
+src/ops/low_rank.py	100644	blob	12ea5b55bfab9de63d634610f1f988846d20566b	356	excluded
+src/ops/permutation.py	100644	blob	c09e9cbb1c955cbb50c23767444225617699e0e1	1057	selected
+src/ops/sparse.py	100644	blob	7a2c2e83eb541e1c82f3e6b00ba460a357f98c40	1778	excluded
+src/ops/triton	040000	tree	dc485d5118756c37e3c9b57be66f5f9ae2558984		context
+src/ops/triton/k_softmax.py	100644	blob	5c493b6289a3cf71469090448d69b7e2a05aad83	5674	excluded
+src/ops/triton/k_softmax_dropout.py	100644	blob	938fd647845ca7cde183dc1b8842200105cabff9	2955	excluded
+src/ops/triton/softmax.py	100644	blob	becd3ce4fbfe139e453ed3f66f46559c5c03c24b	6850	excluded
+src/ops/triton/softmax_dropout.py	100644	blob	0b3063d4ed268116a61947807a1a034d456b88b5	8920	excluded
+src/optim	040000	tree	3e652a54f8e848bced67da77f246be8e369c1679		context
+src/optim/lr_scheduler.py	100644	blob	92dadcf9dab0f6fc451e473071b464e6a6e30220	1311	excluded
+src/optim/timm_lr_scheduler.py	100644	blob	bad1b74026a77b35904e7fe01419843c6c766d28	619	excluded
+src/tasks	040000	tree	d41d50e0d9066558676657a33b0a20e5603d603b		context
+src/tasks/seq.py	100644	blob	f475a54dfcce7eb1eac2bb9fdc290f53ad7a23b4	11355	excluded
+src/train.py	100644	blob	08a79f9b11b21221828547b4ea635c257b5cce62	3486	excluded
+src/utils	040000	tree	840faa4e036dcc381c2aecb07fbaf5e7b5cf2d20		context
+src/utils/__init__.py	100644	blob	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	0	selected
+src/utils/autoaug.py	100644	blob	8c9ab02f32b1e3eddc196c73abd6341e6c9a2390	7173	excluded
+src/utils/checkpoint.py	100644	blob	6780eb3bd441132439a52a90e49013b94a273ff1	1303	excluded
+src/utils/distributed.py	100644	blob	073b6135def83045e18cc1ce5169c98dfcb9c74b	3504	excluded
+src/utils/ema.py	100644	blob	dfcbc98dcb9d40f90ce3b245df2c6ee907b1326d	11352	excluded
+src/utils/flops.py	100644	blob	91e4d3e31566c4075d2bbaa890cb2e4da6e7918e	2094	excluded
+src/utils/gpu_affinity.py	100644	blob	8636d504ae4e8e602f3ed9cb39d1deceb348dd5c	4760	excluded
+src/utils/padding.py	100644	blob	4889c845b0c5335b2c68573ef9d83ae4a55b57b4	905	selected
+src/utils/transforms.py	100644	blob	e76d0f9e6eda4d37314707e70f96b2553e7e5621	2879	excluded
+src/utils/tuples.py	100644	blob	90c317125b41c9a62958b79250586a806e492b47	458	excluded
+src/utils/utils.py	100644	blob	32e64ab4dac5dc41e2548835bd92a42531b07933	4811	excluded
+tests	040000	tree	f15071b459fa7b8d14fa16612d7a595e5b303d6d		context
+tests/datamodules	040000	tree	e9df36ce562c52cac14a89a47995f4ce42935718		context
+tests/datamodules/test_aan.py	100644	blob	b4af59b6f6ecb5eb3c1dba49c51341d6c1ed84ae	3454	excluded
+tests/datamodules/test_cifar.py	100644	blob	c47a7ec6cefeaab9169a47c7d97bd06ff07b618a	2762	excluded
+tests/datamodules/test_imdb.py	100644	blob	2e258790ded02317972830adf998261a1bddba04	2985	excluded
+tests/datamodules/test_language_modeling.py	100644	blob	8734b48c87f3bfb363a9542c5fb2e89c4882db5a	4041	excluded
+tests/datamodules/test_language_modeling_hf.py	100644	blob	313930ca458bc8fa72a3be85251ab8fa2e22f0f8	4776	excluded
+tests/datamodules/test_listops.py	100644	blob	1856a929f8d1acded2dfb2b9c31c11b896c23d3e	2620	excluded
+tests/datamodules/test_masked_language_modeling.py	100644	blob	70638d335324600accf696e3270bb616ab045638	10246	excluded
+tests/datamodules/test_pathfinder.py	100644	blob	41aa75412637f36b0008707dffbba23ae41d17fa	3033	excluded
+tests/models	040000	tree	2d302222f676bbd4c40036d1a1cf75a6afed2a04		context
+tests/models/attention	040000	tree	b4f71fe64a559de36641b07b22beb02384597d96		context
+tests/models/attention/test_blocksparse_attention.py	100644	blob	830399fdd2b23bf801ed8749c8e56ab34628ed1c	6818	excluded
+tests/models/attention/test_blocksparse_logsumexp.py	100644	blob	b293daed6e4d016a90ce8e3ae89619de2da0e0af	1063	excluded
+tests/models/attention/test_blocksparse_sum.py	100644	blob	65b8ac80bae69c565600624ff0f707ab340b634e	1073	excluded
+tests/models/attention/test_linformer_attention.py	100644	blob	269b170f7d62cb13f95a5e56ebdca73ad3dbb63a	2226	excluded
+tests/models/attention/test_local_attention.py	100644	blob	ab2b5f4855f8395a4a5c828e6c9dc30d56c23e13	4983	excluded
+tests/models/attention/test_reformer_attention.py	100644	blob	d63caa6216c946cd9cb865eb6f5f41a411ab29eb	2478	excluded
+tests/models/attention/test_sbblocksparse_attention.py	100644	blob	9f78372520bd2c8beaf6da0f15ec13932bc8cdcc	5427	excluded
+tests/models/attention/test_sblocal_attention.py	100644	blob	145fea7dff51eeef974347a17cfc27ac6fe2fd63	5107	excluded
+tests/models/attention/test_sbsmyrf_attention.py	100644	blob	8f2a3a748d7d0c124f0f02e16908896421117f8a	5163	excluded
+tests/models/attention/test_smyrf_attention.py	100644	blob	b0156fa489e359c27c212a51a4dd9977f5c8a36a	2909	excluded
+tests/models/attention/test_triton.py	100644	blob	9f71040650b0a8c36ac98718098c1fc4ff13c39e	1900	excluded
+tests/models/layers	040000	tree	5ca655f1c6ed6b9b577b900816bde0454aa3e0b0		context
+tests/models/layers/test_block_butterfly_multiply.py	100644	blob	ae4ef16e8ec1a1c8e67dedf1179172944f269fd3	2334	excluded
+tests/models/layers/test_blockdiag_butterfly_multiply.py	100644	blob	08c8d5592ac3381a7886d34d9b2474e4a6448bf6	4769	excluded
+tests/models/layers/test_blocksparse_linear.py	100644	blob	079b1bb276124f70e218372da4a7dd221e2c24b7	7266	excluded
+tests/models/layers/test_flatblockbutterfly_sparsity.py	100644	blob	761778cac772f5c51dba35cd5dbc09cda3d30afc	2341	excluded
+tests/models/modules	040000	tree	15869bfacb715c581c43cb90d80e0f8151a46da3		context
+tests/models/modules/test_multihead_attention.py	100644	blob	0426ebd80653706b40cfeca4befe83214b5dead9	7206	excluded
+tests/ops	040000	tree	7168b693b5635902dbd13bcabca9eecc27c59ce2		context
+tests/ops/test_blockdiag_butterfly_einsum.py	100644	blob	bd736dd419280f7b87c770f379d92f32c00a1360	7083	excluded
+tests/ops/test_blockdiag_butterfly_projection.py	100644	blob	59e385a9e2ebb9f9d46d3c273496a5ea718cddfe	5362	excluded
+tests/ops/test_blockdiag_multiply.py	100644	blob	aa47c37b0101bdd2ad908dc2e58de555d9787377	1122	excluded
+tests/ops/test_fused_softmax_dropout.py	100644	blob	79b8e5614f725d9729d75bac3c4132c994cde60e	1586	excluded
+tests/ops/triton	040000	tree	e038fa8ad8307532adc5f77e5dc023729a320f49		context
+tests/ops/triton/test_softmax_dropout.py	100644	blob	5c3ddc804ab95ecc3ceb7df4c2a367398aa4d5f6	1585	excluded
+tests/optim	040000	tree	caba0a95e9a8063cbe9c958ee33aa0e35b5cd56c		context
+tests/optim/test_timm_lr_schedulers.py	100644	blob	d1cc4dd5d92b9d07e86e57adb105f2d621f3f08e	1100	excluded

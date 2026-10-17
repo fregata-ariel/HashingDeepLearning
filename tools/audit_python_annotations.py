@@ -102,7 +102,7 @@ def strict_typecheck(groups: list[TypingGroup], repository: Path) -> None:
         env = dict(os.environ)
         env["MYPYPATH"] = os.pathsep.join(str(p) for p in group.mypy_path)
         command = [sys.executable, "-m", "mypy", "--strict"]
-        if group.name in {"magicpig", "scatterbrain"}:
+        if group.name in {"magicpig", "scatterbrain", "scatterbrain-later"}:
             # Preserve existing projects' NumPy typing (NDArray uses an Any
             # shape internally), while forbidding Any in the new native APIs.
             command.append("--disallow-any-explicit")

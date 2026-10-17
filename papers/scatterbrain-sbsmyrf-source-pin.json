@@ -1,0 +1,243 @@
+{
+  "schema_version": 1,
+  "repository": "https://github.com/HazyResearch/scatterbrain",
+  "commit": "74cc6b14347b4edcf5c49098e80a9ef47c0b21bf",
+  "tree": "1821d435ef810ce88038ef81965c65cd0ac8c6bc",
+  "commit_object": "papers/source-objects/scatterbrain/sbsmyrf-introduction.commit",
+  "upstream_inventory": "papers/scatterbrain-sbsmyrf-upstream-manifest.tsv",
+  "inventory_sha256": "0c24b3cc6c339b808addaca236d0ef19a581d105b8357c334d3ec2eb06664163",
+  "upstream_entries": 589,
+  "upstream_blobs": 517,
+  "scope": "selected-sbsmyrf-source-subset",
+  "archive_root": "third_party/scatterbrain-sbsmyrf",
+  "selected_blobs": {
+    "LICENSE": {
+      "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "mode": "100644",
+      "size": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    },
+    "README.md": {
+      "sha": "f1d3503c5bbd4fc6b5387bcdb835abfc36439c88",
+      "mode": "100644",
+      "size": 3262,
+      "sha256": "b2b1cd39c316495405ad47933bf36c0db30b9699d3df72ab35a85597455db1d3"
+    },
+    "src/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/models/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/models/attention/batching_utils.py": {
+      "sha": "5c73f9e114233c1b630862ccdcc9c1d9102848a1",
+      "mode": "100644",
+      "size": 557,
+      "sha256": "44498a101debbeeccd43d2d9985203db1c79c99b41aded1bf0c982507d664fa4"
+    },
+    "src/models/attention/feature_maps_sb.py": {
+      "sha": "7c6fe0c52dd806ef34424a027415121850a357f2",
+      "mode": "100644",
+      "size": 7504,
+      "sha256": "9de3386dd31fdc9818e0d1e1202a027099595528c04bb7212244a1bcefdfb164"
+    },
+    "src/models/attention/hash_utils.py": {
+      "sha": "47224c645c07457042bd4ef4cca3844d6242dd17",
+      "mode": "100644",
+      "size": 10317,
+      "sha256": "91012c5b7c92665517da4e98bdec386fa8211c2cd294dd6b96c326d08c061b70"
+    },
+    "src/models/attention/mask_utils.py": {
+      "sha": "011443cfcac494484ba5f1b67b9ef2a05f97d52b",
+      "mode": "100644",
+      "size": 755,
+      "sha256": "07bdff72a0793ad51142ee13abb380f9358e15cf592777c7839d210cfc609bcc"
+    },
+    "src/models/attention/projection_utils.py": {
+      "sha": "5f103649a7a664a8303108611b6261965a550a0a",
+      "mode": "100644",
+      "size": 1255,
+      "sha256": "ec2ebfae61ea226e78bf9da9c54d0bfd9d005c57320d6671ae6fafcbf77ee10b"
+    },
+    "src/models/attention/reformer_attention.py": {
+      "sha": "c15b54dd5d993ffb314fc6e0288a9118a465e601",
+      "mode": "100644",
+      "size": 15307,
+      "sha256": "c6a9dad003279b00ec1f062287e2cade903882e86dc834cebc6c7fa10e0d7b93"
+    },
+    "src/models/attention/sbsmyrf_attention.py": {
+      "sha": "882c3e5e8410279ec858a2f0b8a057fa4da7dbe0",
+      "mode": "100644",
+      "size": 14896,
+      "sha256": "709614aa5b2f0363591d23f068ceefc9a1a42b227c879ff636450f631e78681f"
+    },
+    "src/models/attention/scatterbrain_utils.py": {
+      "sha": "61f022b9d5a482669fe4eeacec4521ebf6490ac4",
+      "mode": "100644",
+      "size": 1923,
+      "sha256": "0dbca5f571b63c91cd1f7920717cf68d5cb3226884306f00beb31c1db030b33a"
+    },
+    "src/models/modules/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/models/modules/masking.py": {
+      "sha": "784e4b10670849a227cedcec8f65881e405fe24c",
+      "mode": "100644",
+      "size": 7524,
+      "sha256": "f20f3c7004015752260050281f9dc09d214566a54d5b45c43af86c66a8d21755"
+    },
+    "src/ops/permutation.py": {
+      "sha": "c09e9cbb1c955cbb50c23767444225617699e0e1",
+      "mode": "100644",
+      "size": 1057,
+      "sha256": "d97893e27f11767d319cde52516ebb0c4f4486974222a2e686dce17cdf7ea21a"
+    },
+    "src/utils/__init__.py": {
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+      "mode": "100644",
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/utils/padding.py": {
+      "sha": "4889c845b0c5335b2c68573ef9d83ae4a55b57b4",
+      "mode": "100644",
+      "size": 905,
+      "sha256": "142fd3351f4bafb010afec02be17739154278527d270cb75604da67572826030"
+    }
+  },
+  "licenses": [
+    "LICENSE"
+  ],
+  "dependency_source_files": [
+    "src/__init__.py",
+    "src/models/__init__.py",
+    "src/models/attention/batching_utils.py",
+    "src/models/attention/feature_maps_sb.py",
+    "src/models/attention/hash_utils.py",
+    "src/models/attention/mask_utils.py",
+    "src/models/attention/projection_utils.py",
+    "src/models/attention/reformer_attention.py",
+    "src/models/attention/sbsmyrf_attention.py",
+    "src/models/attention/scatterbrain_utils.py",
+    "src/models/modules/__init__.py",
+    "src/models/modules/masking.py",
+    "src/ops/permutation.py",
+    "src/utils/__init__.py",
+    "src/utils/padding.py"
+  ],
+  "component_license": "GPL-3.0",
+  "preserved_notices": {
+    "papers/notices/scatterbrain-sbsmyrf/Fly-Apache-LICENSE": {
+      "repository": "https://github.com/HazyResearch/scatterbrain",
+      "commit": "74cc6b14347b4edcf5c49098e80a9ef47c0b21bf",
+      "source_path": "LICENSE",
+      "sha": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "size": 11357,
+      "license": "Apache-2.0",
+      "applies_to": [
+        "src/__init__.py",
+        "src/models/__init__.py",
+        "src/models/attention/batching_utils.py",
+        "src/models/attention/feature_maps_sb.py",
+        "src/models/attention/hash_utils.py",
+        "src/models/attention/mask_utils.py",
+        "src/models/attention/projection_utils.py",
+        "src/models/attention/reformer_attention.py",
+        "src/models/attention/sbsmyrf_attention.py",
+        "src/models/attention/scatterbrain_utils.py",
+        "src/models/modules/__init__.py",
+        "src/models/modules/masking.py",
+        "src/ops/permutation.py",
+        "src/utils/__init__.py",
+        "src/utils/padding.py"
+      ]
+    },
+    "papers/notices/scatterbrain-sbsmyrf/SMYRF-GPL-3.0-LICENSE": {
+      "repository": "https://github.com/giannisdaras/smyrf",
+      "commit": "bbbc82e0126233da07841275daa238d447c37f66",
+      "source_path": "LICENSE",
+      "sha": "f288702d2fa16d3cdf0035b15a9fcbc552cd88e7",
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "size": 35149,
+      "license": "GPL-3.0",
+      "applies_to": [
+        "src/models/attention/hash_utils.py",
+        "src/models/attention/sbsmyrf_attention.py"
+      ]
+    },
+    "papers/notices/scatterbrain-sbsmyrf/Reformer-MIT-LICENSE": {
+      "repository": "https://github.com/lucidrains/reformer-pytorch",
+      "commit": "2cbc36bb280c0a6de46d838baad11a533a015fc3",
+      "source_path": "LICENSE",
+      "sha": "145245790672b7d569096d08199b38a35d6f4d36",
+      "sha256": "6f1f954f55eaf40060448b6a0f32312e148f3b1d05526797b96c7e2bd37a8959",
+      "size": 1069,
+      "license": "MIT",
+      "applies_to": [
+        "src/models/attention/reformer_attention.py",
+        "src/utils/padding.py"
+      ]
+    },
+    "papers/notices/scatterbrain-sbsmyrf/Performer-MIT-LICENSE": {
+      "repository": "https://github.com/lucidrains/performer-pytorch",
+      "commit": "0a4a520e9195972f0a3fa1a577c78cfdfccf7338",
+      "source_path": "LICENSE",
+      "sha": "cad43213602892aadc2290cca7afa74cc9f6af64",
+      "sha256": "02cf6ed7df17f94fafa61e67a089ee51faac006db35ffa173c70e6763c253cf6",
+      "size": 1066,
+      "license": "MIT",
+      "applies_to": [
+        "src/models/attention/scatterbrain_utils.py"
+      ]
+    },
+    "papers/notices/scatterbrain-sbsmyrf/Idiap-MIT-LICENSE": {
+      "repository": "https://github.com/idiap/fast-transformers",
+      "commit": "f22c13716fc748bb21a7b226ada7f7b5f87f867f",
+      "source_path": "LICENSE",
+      "sha": "2c828d5ff01b3971442ba1a5ea47b1119b52c186",
+      "sha256": "db2b1cdf9bda73650d860da722095b8f3a817be008e94e3522bad2c40979915d",
+      "size": 1199,
+      "license": "MIT",
+      "applies_to": [
+        "src/models/attention/feature_maps_sb.py",
+        "src/models/modules/masking.py"
+      ]
+    }
+  },
+  "derivation_evidence": [
+    {
+      "repository": "https://github.com/giannisdaras/smyrf",
+      "commit": "bbbc82e0126233da07841275daa238d447c37f66",
+      "source_path": "smyrf/torch/utils.py",
+      "sha": "89863929a031c993899cd855c1e2e82255d22665",
+      "sha256": "b575ec24a06d34150be95d2fe25018eb0618d55fd4193bc1c3c42cf751fec38d",
+      "size": 9790,
+      "source_url": "https://github.com/giannisdaras/smyrf/blob/bbbc82e0126233da07841275daa238d447c37f66/smyrf/torch/utils.py",
+      "archive_path": "src/models/attention/hash_utils.py",
+      "archive_start_line": 2,
+      "source_start_line": 1,
+      "line_count": 85,
+      "matched_lines_sha256": "f16102784ae1d50103b4a848fec3a24e8f79663291b93038c8382811f0106746",
+      "license_notice": "papers/notices/scatterbrain-sbsmyrf/SMYRF-GPL-3.0-LICENSE"
+    }
+  ],
+  "scope_notes": [
+    "Exactly eleven project source files in the coherent first-SBSmyrf import closure, four empty package initializers, and original root LICENSE/README. Original archive bytes and attribution comments remain unchanged.",
+    "The selected derived SBSmyrf component is distributed under GPL-3.0 with the original Fly Apache-2.0 and applicable historical MIT attributions preserved. This does not relabel the entire Fly repository or alter its original root LICENSE.",
+    "Selected hash_utils.py and sbsmyrf_attention.py explicitly attribute giannisdaras/smyrf. The former retains 85 identical contiguous lines from pinned historical SMYRF utils.py; recorded donor fingerprints and pinned URLs are origin metadata. Offline validation checks the local archive slice against its recorded digest; it does not fetch or independently rederive the donor blob from metadata.",
+    "SBSmyrf header also cites historical SMYRF smyrf/torch/attn.py (bbbc82e0126233da07841275daa238d447c37f66, Git blob 7b0655878e6e9eaf341efe307b90032d2827e680, SHA256 74116be53058a50d91d35d24271b5da4d5d5cba8794e9147b21c71f0c59b79d3). These fingerprints identify matching historical sources, not the exact copy commit.",
+    "Reformer attention and padding retain lucidrains Reformer MIT attribution; scatterbrain_utils retains Performer-derived causal/Apex/null_context scaffolding and the original EPFL causal-helper attribution. Idiap MIT applies to copied feature-map/masking code.",
+    "The immutable dependency closure includes unused helpers/classes and lazy native/CUDA imports for source context. Source identity does not establish a successful import/build, dependency installation, numerical execution, theorem, performance, or GPU claim. A maintained minimal component and CPU evidence are separately scoped.",
+    "Existing later-head metadata at 6b73449 is retained separately; this archive is exclusively coherent first introduction 74cc6b1, not a mixture of commits."
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "SCATTERBRAIN-SBSMYRF-HYBRID-CPU",
+      "paper": "scatterbrain-2021",
+      "paper_location": "Section4.2 Equations(1)-(2); AppendixC Algorithm1 common normalization; later rank-cluster support is a source variant",
+      "mechanism": "Execute maintained later SBSmyrf with actual XBOX+/E2LSH rank permutations, overlap correction, low-rank subtraction and shared normalization; independently reconstruct selected support and raw H, HV, H1, outputs, weights and conditional Q/K/V gradients.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/scatterbrain-later/scatterbrain_later/attention.py",
+        "symbol": "SBSmyrfAttention"
+      },
+      "test": {
+        "file": "tests/traceability/test_scatterbrain_sbsmyrf_cpu.py",
+        "id": "SCATTERBRAIN-SBSMYRF-HYBRID-CPU"
+      },
+      "conditions": {
+        "source": "Coherent74cc6b1 original closure, separately preserved17-file immutable reference; selected maintained GPL-derived component with explicit type/import/domain/dtype deltas and preserved notices",
+        "execution": "Actual maintained noncausal CPU float32/float64 forward; no production monkeypatch or downloaded-source fallback",
+        "cases": 26,
+        "inputs": "B2/H2/T3/S5/E4/V3, padded T4/S6; one/three hash rounds; full/prefix/zero key lengths; with/without returned weights; separate full-support and exact-zero-residual controls",
+        "oracle": "Independent scalar raw features and exponential kernel; selected-pair set reconstructed from actual validated padded permutations, independent of returned nonzero-residual mask",
+        "gradients": "FP32 and FP64 conditional actual Q/K/V derivatives compared with independent scalar finite differences; returned-weights-times-V output and Q/K/V gradients compared directly in both dtypes, with explicit dtype-specific budgets; sampled support/projection frozen only for derivative comparisons",
+        "sensitivity": "Fourteen actual-source mutants reject dtype regressions, missing subtraction/duplicate correction, wrong normalization, common raw scaling, and late NaN/+Inf/-Inf in outputs or returned weights",
+        "lifecycle": "Actual continuing training forward after float32-to-float64 module conversion uses shared repaired #106 feature core and its newly sampled projection",
+        "limits": "Moderate deterministic unclamped-positive-mass fixtures plus zero-key-mass controls; no arbitrary-mask/causal/GPU/native-sanitizer/model metric or independent full hash-math/probability proof"
+      },
+      "note": "The separately pinned original reference continues to characterize original defects. Maintained correctness does not repair immutable bytes, identify paper-experiment commits, or establish statistical unbiasedness/variance or normalized-ratio unbiasedness. Exact-zero residuals need not reveal selected support."
+    },
+    {
+      "id": "SCATTERBRAIN-SBSMYRF-DTYPE-CPU",
+      "paper": "scatterbrain-2021",
+      "paper_location": "Section4.2 sparse/low-rank composition; maintained dtype and precision support for the later source variant",
+      "mechanism": "Thread input dtype through actual E2LSH alpha/beta sampling, accumulate returned weights in computation dtype and compute duplicate-count logarithms in that dtype without changing global default dtype.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/scatterbrain-later/scatterbrain_later/hash_utils.py",
+        "symbol": "E2LSH"
+      },
+      "test": {
+        "file": "tests/traceability/test_scatterbrain_sbsmyrf_cpu.py",
+        "id": "SCATTERBRAIN-SBSMYRF-DTYPE-CPU"
+      },
+      "conditions": {
+        "global_default": "Ordinary torch.float32 throughout; actual FP64 hash allocations and weights execute without a global-default workaround",
+        "source_parity": "Separate gated original74cc subprocess matches first-forward FP32 alpha/beta values/dtype/device, XBOX transforms, permutations, sampled projection, output and normalized/raw weights exactly",
+        "fp64": "Strict independent raw H/HV/H1, normalized output and weight checks; full support detects restored float32 duplicate logarithm even when ratio error cancels",
+        "derivatives": "FP32/FP64 one/three-round direct output=weights@V and Q/K/V gradient equivalence plus independent scalar conditional finite differences",
+        "rejections": "Explicit unsupported construction/input/mask/dtype/device/shape and nonfinite-result boundaries; missing dtype fixes must fail their intended mutant diagnostics",
+        "identity": "Fresh summary binds original pin/tree, all maintained source/fixture/driver hashes, shared runtime hashes and the exact separate-process reference; stale success summaries are removed",
+        "limits": "CPU float32/float64 only; allocation/source parity is not an independent derivation of XBOX+/E2LSH mathematics or a collision-probability theorem"
+      },
+      "note": "Refs #104/#105. The raw precision repair is separately sensitivity-tested; benign normalized cancellation is not accepted as a raw FP64 pass. Native/GPU and large training/accuracy/performance remain deferred."
+    }
+  ]
+}

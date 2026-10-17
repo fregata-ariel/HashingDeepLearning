@@ -1,0 +1,30 @@
+This is the separately maintained later Scatterbrain CPU component. It contains
+selected SMYRF-derived code subject to GPL-3.0; the exact historical GPL text is
+preserved in LICENSE. This notice does not change the license of all Fly files,
+the initial Scatterbrain port, or the surrounding repository.
+
+Selected definitions originate from HazyResearch/fly commit
+74cc6b14347b4edcf5c49098e80a9ef47c0b21bf (first SBSmyrf introduction).
+Fly's root Apache-2.0 text is retained in notices/Fly-Apache-2.0-LICENSE.
+The original attention file explicitly states:
+  Adapted from https://github.com/giannisdaras/smyrf/blob/master/smyrf/torch/attn.py
+The original hash utilities explicitly state:
+  Adapted from https://github.com/giannisdaras/smyrf/blob/master/smyrf/torch/utils.py
+Historical SMYRF reference: bbbc82e0126233da07841275daa238d447c37f66.
+
+Selected Reformer helpers and padding retain their source correspondence:
+https://github.com/lucidrains/reformer-pytorch
+Historical reference: 2cbc36bb280c0a6de46d838baad11a533a015fc3.
+Copyright (c) 2020 Phil Wang. Exact MIT text: notices/Reformer-MIT-LICENSE.
+
+The shared initial feature/projection/linear-attention/masking modules are
+imported from ports/scatterbrain rather than copied. Their preserved Idiap and
+Performer MIT notices remain in that component. This component preserves those
+attributions by explicit dependency and does not call their code GPL-only.
+
+Maintenance changes: unique namespace and reduced selected-definition import
+closure; strict types; noncausal CPU validation; explicit input dtype in E2LSH
+alpha/beta allocation; duplicate-count logarithm in computation dtype; returned
+weight accumulation in dots.dtype; actual-nonfinite result rejection. See
+SOURCE_PROVENANCE.json and CPU_CONTRACT.md for exact correspondence and limits.
+Maintained adaptation date: 2026-10-17.

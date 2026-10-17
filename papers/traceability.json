@@ -35,9 +35,27 @@
     },
     "scatterbrain-2021": {
       "title": "Scatterbrain: Unifying Sparse and Low-rank Attention Approximation",
-      "version": "NeurIPS 2021 conference manuscript supplied by user; 14 pages, main text and references; Appendices C/D absent; arXiv v1 not compared",
+      "version": "NeurIPS2021 user-supplied conference main,14pages; separately archived publisher supplement reviewed; arXivv1 preserved distinctly",
       "source_url": "https://proceedings.neurips.cc/paper/2021/file/9185f3ec501c674c7c788464a36e7fb3-Paper.pdf",
       "local_file": "papers/pdf/scatterbrain-2021-neurips.pdf"
+    },
+    "scatterbrain-2021-supplement": {
+      "title": "Scatterbrain: Unifying Sparse and Low-rank Attention Approximation — Supplementary Material",
+      "version": "NeurIPS2021 publisher supplement; AppendixC Algorithm1 andD.3 inspected; finalpage extraction warning documented",
+      "source_url": "https://proceedings.neurips.cc/paper/2021/file/9185f3ec501c674c7c788464a36e7fb3-Supplemental.pdf",
+      "local_file": "papers/pdf/scatterbrain-2021-neurips-supplement.pdf"
+    },
+    "scatterbrain-2021-arxiv-v1": {
+      "title": "Scatterbrain: Unifying Sparse and Low-rank Attention Approximation",
+      "version": "arXiv:2110.15343v1,34pages; distinct from supplied conference main",
+      "source_url": "https://arxiv.org/pdf/2110.15343v1",
+      "local_file": "papers/pdf/scatterbrain-2021-arxiv-v1.pdf"
+    },
+    "angular-lsh-2015": {
+      "title": "Practical and Optimal LSH for Angular Distance",
+      "version": "arXiv:1509.02897v1,21pages; cited Theorem1 and AppendixB.2 inspected",
+      "source_url": "https://arxiv.org/abs/1509.02897v1",
+      "local_file": "papers/pdf/angular-lsh-2015-arxiv-v1.pdf"
     }
   },
   "experiments": [

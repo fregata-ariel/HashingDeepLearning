@@ -29,7 +29,7 @@
         "known_lifecycle_failures": "Four retained behavior characterizations are reported separately under #106, not as supported cold-eval/redraw/state semantics",
         "statistical_limits": "Deterministic and projection-structural checks do not prove Gaussian-marginal sampling, independence, entrywise variance bounds, normalized-output unbiasedness or paper model metrics"
       },
-      "note": "The conference main text displays IID-Gaussian features; this release uses optional cosh/orthogonal features and stabilizing log scales. Sampling-law/proof correspondence remains distinct from executed finite arithmetic. Missing Appendices C/D are tracked in #102, lifecycle fixes in #106; no GPU/causal/native sanitizer claim is made."
+      "note": "The conference main text displays IID-Gaussian features; this release uses optional cosh/orthogonal features and stabilizing log scales. Sampling-law/proof correspondence remains distinct from executed finite arithmetic. Appendix C/D.3 are now inspected with documented assumptions and causal inconsistencies; lifecycle fixes remain #106; no GPU/causal/native sanitizer claim is made."
     }
   ]
 }

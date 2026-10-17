@@ -162,10 +162,19 @@ Beidi Chen, Tri Dao, Eric Winsor, Zhao Song, Atri Rudra, Christopher Ré.
   with remote bytes is not claimed. Acquisition and PDF metadata are recorded
   in `papers/scatterbrain-paper-provenance.json`.
 - The supplied manuscript contains the main text and references, **not the
-  Appendices C/D** cited for the full algorithm and proof. Its title/footer and
-  main-text equations can be reviewed; the absent appendices cannot.
-- arXiv locator: https://arxiv.org/abs/2110.15343v1 . Its bytes/version have not
-  been compared with this conference manuscript; it is not silently substituted.
+  Appendices C/D** cited for the full algorithm and proof. Those were acquired
+  separately on 2026-10-17 as the publisher supplement and arXiv v1; Algorithm1
+  and D.3 have now been inspected. See the [appendix review](../docs/SCATTERBRAIN_APPENDIX_REVIEW.md).
+- arXiv locator: https://arxiv.org/abs/2110.15343v1 ; separately preserved full
+  PDF: `papers/pdf/scatterbrain-2021-arxiv-v1.pdf` (34 pages). Publisher
+  supplement: `papers/pdf/scatterbrain-2021-neurips-supplement.pdf` (20 pages).
+  Version-specific hashes, sizes and locators are recorded in paper provenance;
+  neither file silently replaces the supplied conference main manuscript.
+- Cited angular-LSH prerequisite: *Practical and Optimal LSH for Angular
+  Distance*, https://arxiv.org/abs/1509.02897v1 ; exact PDF is preserved at
+  `papers/pdf/angular-lsh-2015-arxiv-v1.pdf`. Its Theorem1 distance/range/single-
+  hash hypotheses were inspected separately from Scatterbrain's threshold and
+  K/L amplification. See the appendix review for the precise distinction.
 - Historical repository: https://github.com/HazyResearch/scatterbrain . Both
   historical and canonical https://github.com/HazyResearch/fly resolve to
   GitHub repository ID `421284664`.

@@ -11,10 +11,11 @@ The primary baseline is the user-supplied **NeurIPS 2021 conference manuscript**
 [local PDF](../papers/pdf/scatterbrain-2021-neurips.pdf), 14 pages, SHA-256
 `1503ff9a48b07855bbcb8e0cb3a09ff312dcdd3c8c6e1356ca1b0c67f9e97846`.
 The title is *Scatterbrain: Unifying Sparse and Low-rank Attention Approximation*.
-Its main text and references are available, but the Appendices C/D cited for
-the normalization algorithm and proof are absent. arXiv `2110.15343v1` remains
-a distinct, uncompared version. Acquisition details and the blocked direct
-publisher download are recorded in
+The supplied main file has no appendices. The separately published supplement
+and distinct arXiv `2110.15343v1` were acquired on 2026-10-17; Appendix C/D.3
+are now inspected, with printed causal inconsistencies and implicit moment
+conditions recorded in [the appendix review](SCATTERBRAIN_APPENDIX_REVIEW.md).
+Acquisition details and the historical blocked direct main-PDF download are in
 [paper provenance](../papers/scatterbrain-paper-provenance.json).
 
 Initial intake PR #103 at `916d988` established source identity and a reviewed
@@ -113,8 +114,8 @@ explicit implementation variants to characterize.
 
 Theorem 2 states a per-entry variance reduction factor `1 − p` for nearby
 unit-sphere q/k, with p expressed using dimension and the distance bound. Its
-proof is referred to missing Appendix D. The displayed main-text statement
-does not spell out independence of feature and support randomness. Unbiased
+proof in Appendix D.3 is now inspected. Its conditional-to-unconditional moment
+substitutions do not explicitly spell out their justification. Unbiased
 features and independence of feature/support randomness are sufficient
 assumptions for the simple variance identity used in our independent algebra;
 suitable conditional moment assumptions can also suffice. Fixed-feature output

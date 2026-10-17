@@ -19,7 +19,13 @@
         "execution": "Actual separately compiled MIT fast-transformers C++ CPU extension and unchanged upstream autograd wrapper; no pure-Torch local-product substitute",
         "native_source_pin": "idiap/fast-transformers@f22c13716fc748bb21a7b226ada7f7b5f87f867f; exact three-blob selected dependency archive",
         "profile": "Python3.12, Torch2.14.1+cpu, einops0.8.1, setuptools84.0.0, GNU14/C++20; one build worker and bounded OpenMP",
-        "primitive_contexts": [1, 2, 3, 4, 9],
+        "primitive_contexts": [
+          1,
+          2,
+          3,
+          4,
+          9
+        ],
         "inputs": "FP32 CPU, two batches/two heads, Q5/K4, prefix key lengths4/3, physical boundaries and one additive mask",
         "oracle": "Independent dense/indexed Torch multiplication and reductions; actual custom native backwards compared with reference gradients",
         "identity": "Required fresh build and real extension import path; exact C++/wrapper/license source identities, port/fixture/binary/compiler/runtime/ABI hashes recorded",
@@ -44,8 +50,17 @@
       "conditions": {
         "source": "Initial eeb689c five-module core; annotations, narrow type declarations, identity casts and documentation preserve numerical ASTs",
         "inputs": "FP32 CPU, noncausal, dropout0, feature eps0, six cosh features, finite moderate Q/K/V, positive finite row mass; B2/H2/Q5/K4/E3/V2 and prefix key lengths4/3",
-        "contexts": [1, 2, 3, 4, 16],
-        "temperatures": ["1/sqrt(3)", "0.25"],
+        "contexts": [
+          1,
+          2,
+          3,
+          4,
+          16
+        ],
+        "temperatures": [
+          "1/sqrt(3)",
+          "0.25"
+        ],
         "composed_cases": 10,
         "full_local_dense_cases": 2,
         "oracle": "Independent raw FP64 cosh features from sampled projection, full low-rank matrix and literal local support replacement; detached FP64 leaves for reference gradients",
@@ -53,7 +68,7 @@
         "sensitivity": "Executed one-statement AST mutants omitting low-rank subtraction or mismatching normalization are rejected by all ten composed fixtures; production files are never modified",
         "limits": "Conditional sampled projection only; cold deterministic eval/redraw/state repairs remain #106. No arbitrary masks/all-zero key rows/extreme clamp/causal/GPU/statistical-unbiasedness/native-sanitizer claim"
       },
-      "note": "The local support, orthogonal/cosh feature and finite implementation choices are explicit variants. Equation (2) is unnormalized; the supplied manuscript omits Appendices C/D, so this does not claim their full algorithm/proof is inspected. Kernel equality on selected entries is not equality of normalized probabilities or unbiased normalized output."
+      "note": "The local support, orthogonal/cosh feature and finite implementation choices are explicit variants. Equation (2) is unnormalized; the supplied main has no appendices; separately acquired C Algorithm1 confirms common normalization, while D.3 moment assumptions and source variants remain explicit. Kernel equality on selected entries is not equality of normalized probabilities or unbiased normalized output."
     }
   ]
 }

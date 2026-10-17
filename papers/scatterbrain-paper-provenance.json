@@ -21,5 +21,53 @@
     "creation_date_utc": "2022-01-27T05:08:52Z",
     "modification_date_utc": "2022-01-27T05:08:52Z"
   },
-  "scope": "Primary-text review uses this exact supplied conference manuscript. Its title and NeurIPS footer are inspected; no byte identity with the inaccessible publisher endpoint or arXiv v1 is asserted. PDF metadata timestamps do not identify the code revision used for experiments."
+  "scope": "The exact user-supplied conference main manuscript remains unchanged. Separately acquired publisher supplement and arXiv v1 provide Appendix C/D.3; version-specific bytes and pagination remain distinct. Remote main-PDF equality is still unasserted.",
+  "related_primary_artifacts": [
+    {
+      "version": "arXiv:2110.15343v1",
+      "source_url": "https://arxiv.org/pdf/2110.15343v1",
+      "local_file": "papers/pdf/scatterbrain-2021-arxiv-v1.pdf",
+      "sha256": "24d255fb7bd129ae6a2fb25cbafe80709d98430e5e4ee52d86c484987124ca07",
+      "size_bytes": 3277983,
+      "pages": 34,
+      "acquired_at_utc": "2026-10-17T02:49:21.819970+00:00",
+      "http_status": 200,
+      "tls_verification": "default enabled, no insecure options",
+      "attempts": 1,
+      "reviewed_appendix_C_pdf_page": 22,
+      "reviewed_appendix_D3_pdf_page": 30,
+      "extraction_note": "Complete pdftotext extraction succeeds"
+    },
+    {
+      "version": "NeurIPS2021 publisher supplement",
+      "source_url": "https://proceedings.neurips.cc/paper/2021/file/9185f3ec501c674c7c788464a36e7fb3-Supplemental.pdf",
+      "local_file": "papers/pdf/scatterbrain-2021-neurips-supplement.pdf",
+      "sha256": "0b4adeba7c339a3f997ff35c39e99232fc44ca5e78457c719614b5bf23773ed9",
+      "size_bytes": 2302251,
+      "pages": 20,
+      "acquired_at_utc": "2026-10-17T02:49:24.210230+00:00",
+      "http_status": 200,
+      "tls_verification": "default enabled, no insecure options",
+      "attempts": 1,
+      "reviewed_appendix_C_pdf_page": 7,
+      "reviewed_appendix_D3_pdf_page": 15,
+      "extraction_note": "Final page20 object warning; cited C/D pages extract/render successfully"
+    },
+    {
+      "paper": "Practical and Optimal LSH for Angular Distance",
+      "version": "arXiv:1509.02897v1 (visible PDF stamp)",
+      "source_url": "https://arxiv.org/pdf/1509.02897",
+      "version_locator": "https://arxiv.org/abs/1509.02897v1",
+      "local_file": "papers/pdf/angular-lsh-2015-arxiv-v1.pdf",
+      "sha256": "a771ebf1f0982b102ee1e47bd0cf886eefd9af04588248c3f4956fa105dee466",
+      "size_bytes": 625805,
+      "pages": 21,
+      "http_status": 200,
+      "tls_verification": "default enabled, no insecure options",
+      "attempts": 1,
+      "reviewed_locations": "Theorem1 PDF5; AppendixB.2 PDF17",
+      "scope": "Cited primary hypothesis audit, not an implementation or independent theorem reproduction",
+      "acquired_at_utc": "2026-10-17T02:52:31.712659+00:00"
+    }
+  ]
 }

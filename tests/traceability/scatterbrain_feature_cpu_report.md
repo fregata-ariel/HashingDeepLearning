@@ -16,12 +16,13 @@ For isolated preparation, `--port-root /tmp/scatterbrain-maintained/ports/scatte
 selected the actual typed maintained modules. The default selects the integrated
 repository port; there is no archive fallback or replacement numerical helper.
 Python 3.12.14, Torch 2.14.1+cpu, einops 0.8.1, x86_64 CPU, one Torch thread:
-2,126 assertions passed across 72 dense feature cases, 12 restored sampled kernels,
+The PR107 baseline passed 2,126 assertions. After the #106 repair, 2,122 assertions
+pass across the same 72 dense feature cases, 12 restored sampled kernels,
 24 input-gradient cases, 24 projection-gradient cases, 16 projection cases, and
-three rejected arithmetic mutants. Four additional lifecycle characterizations
-observe known #106 defects separately. This does not close #106.
+three rejected arithmetic mutants. Lifecycle assertions now check repaired
+behavior; the separate state fixture supplies the detailed regression below.
 
-The JSON evidence contains passed assertion/case counts, separate known failures,
+The JSON evidence contains passed assertion/case counts, an empty known-failures list,
 SHA256 of both executed maintained sources and the test, runtime metadata and its
 SHA256, error budgets, observed maximum absolute errors, and explicit false flags
 for native dependency execution, GPU execution, statistical unbiasedness, and
@@ -76,20 +77,24 @@ implementation. Projection tolerances are 2e-6 for FP32 and 2e-14 for FP64.
 Invalid scaling must raise `ValueError` with the explicit invalid-scaling message.
 No statistical distribution claim follows from these deterministic checks.
 
-## Existing lifecycle boundaries (#106)
+## Repaired lifecycle (#106)
 
-- Cold `deterministic_eval` returns without initialization, preserves the transposed
-  placeholder, and ordinary forward raises the expected dimension `RuntimeError`.
-- Requested `redraw=1` is replaced by pi. After the first draw, calls 1 through 8
-  neither change the projection nor advance RNG state. Warm deterministic eval
-  preserves the buffer and counter.
-- Default loading of a warm state into a fresh module raises the expected buffer
-  size mismatch. Loading into an initialized compatible module preserves feature
-  output exactly. `state_dict` contains only the projection; the call counter is
-  not restored.
+- Cold deterministic evaluation initializes lazily, including direct query/key
+  encoding, without consuming RNG in the constructor.
+- Requested positive integral periods and +inf are honored; warm deterministic
+  evaluation freezes projection and cadence. Query/key encoding shares a sample.
+- Saved projection, initialization, counter and period load into a fresh module;
+  exact future random samples also require caller-owned Torch RNG restoration.
+  Projection-only legacy checkpoints follow the explicit migration policy in
+  the port contract; ambiguous allzero legacy projections become cold.
+- Redraw uses the current projection buffer dtype after `.to(...)`.
 - Cosh with seven requested features returns six, preserving the initial truncation.
 
-These observations are explicit assertions about current behavior, not successful
-initialization/redraw/serialization guarantees. Native local-product builds,
+`test_scatterbrain_feature_state.py --port-root ports/scatterbrain --evidence PATH`
+checks four schedules, 40 independent scalar FP64 feature expressions, six
+checkpoint paths, 31 invalid-input rejections and five actual-source mutants.
+Its preimage mode reproduces four failures in the separate frozen baseline or
+immutable original; it does not relabel original defects as repaired source.
+Native local-product builds,
 models, datasets, long-sequence performance, theorem assumptions, unbiasedness,
 variance reduction, and GPU behavior remain outside this fixture.

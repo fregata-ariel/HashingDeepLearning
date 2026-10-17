@@ -257,10 +257,13 @@ jobs:
           python tools/check_scatterbrain_initial_cpu.py --verify-dependency-only
           python tools/check_scatterbrain_initial_cpu.py --test-dependency-contracts
 
-      - name: Maintained positive features, projections and state characterization
+      - name: Maintained positive features, projections and lifecycle regressions
         run: |
           python tests/traceability/test_scatterbrain_feature_cpu.py \
             --emit-dir scatterbrain-cpu-artifact/features
+          python tests/traceability/test_scatterbrain_feature_state.py \
+            --port-root ports/scatterbrain \
+            --evidence scatterbrain-cpu-artifact/features/lifecycle.json
 
       - name: Actual maintained SBLocal with original native CPU kernels
         run: |

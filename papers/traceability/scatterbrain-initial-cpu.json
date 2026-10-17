@@ -48,7 +48,7 @@
         "id": "SCATTERBRAIN-LOCAL-HYBRID-CPU"
       },
       "conditions": {
-        "source": "Initial eeb689c five-module core; annotations, narrow type declarations, identity casts and documentation preserve numerical ASTs",
+        "source": "Initial eeb689c five-module core with explicit types and #106 feature lifecycle repair; kernel/projection arithmetic retained",
         "inputs": "FP32 CPU, noncausal, dropout0, feature eps0, six cosh features, finite moderate Q/K/V, positive finite row mass; B2/H2/Q5/K4/E3/V2 and prefix key lengths4/3",
         "contexts": [
           1,
@@ -66,7 +66,8 @@
         "oracle": "Independent raw FP64 cosh features from sampled projection, full low-rank matrix and literal local support replacement; detached FP64 leaves for reference gradients",
         "normalizer_scope": "Raw H1 and HV reconstructed from returned raw hybrid matrix, compared independently; actual normalized output times H1 must agree with HV. Internal log-normalization variable is not directly traced",
         "sensitivity": "Executed one-statement AST mutants omitting low-rank subtraction or mismatching normalization are rejected by all ten composed fixtures; production files are never modified",
-        "limits": "Conditional sampled projection only; cold deterministic eval/redraw/state repairs remain #106. No arbitrary masks/all-zero key rows/extreme clamp/causal/GPU/statistical-unbiasedness/native-sanitizer claim"
+        "limits": "Conditional gradient oracle freezes an actual sampled projection; four additional actual-native default-training/evaluation forwards use their current sampled projection. No arbitrary masks/all-zero key rows/extreme clamp/causal/GPU/statistical-unbiasedness/native-sanitizer claim",
+        "connected_lifecycle_cases": 4
       },
       "note": "The local support, orthogonal/cosh feature and finite implementation choices are explicit variants. Equation (2) is unnormalized; the supplied main has no appendices; separately acquired C Algorithm1 confirms common normalization, while D.3 moment assumptions and source variants remain explicit. Kernel equality on selected entries is not equality of normalized probabilities or unbiased normalized output."
     }

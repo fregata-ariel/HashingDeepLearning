@@ -62,8 +62,8 @@ class SBLocalAttention(nn.Module):
         Paper mapping: NeurIPS 2021 conference manuscript, p6 Section4.2,
         Eq(1) replaces selected low-rank entries with exact exponent entries;
         Eq(2) factors the unnormalized low-rank-plus-residual product. The
-        common normalizer is checked against this source, not the absent
-        AppendixC. Cosh/orthogonal features, eps and the remainder clamp are
+        common normalizer also matches separately acquired AppendixC
+        Algorithm1 lines21-23. Cosh/orthogonal features, eps and the remainder clamp are
         implementation variants; this is not a variance or unbiasedness proof.
 
         Tested support: actual pinned CPU local-product extension and initial

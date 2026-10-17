@@ -27,7 +27,7 @@
         "scope": "Cosh and noncosh, query/key stabilizers, temperatures, eps/log boundaries, finite small inputs, FP32/FP64 numerical budgets; all actual/reference/errors explicitly finite",
         "sensitivity": "Three executed actual-function arithmetic mutants are rejected",
         "statistical_limits": "Deterministic and projection-structural checks do not prove Gaussian-marginal sampling, independence, entrywise variance bounds, normalized-output unbiasedness or paper model metrics",
-        "lifecycle": "Repaired lifecycle has its own SCATTERBRAIN-FEATURE-STATE-CPU regression; arithmetic fixtures freeze the sampled projection explicitly"
+        "lifecycle": "Repaired lifecycle has its own SCATTERBRAIN-FEATURE-STATE-CPU regression; arithmetic fixtures use supplied projections, while native composition explicitly freezes an actual sampled projection"
       },
       "note": "The conference main text displays IID-Gaussian features; this release uses optional cosh/orthogonal features and stabilizing log scales. Sampling-law/proof correspondence remains distinct from executed finite arithmetic. Appendix C/D.3 are now inspected with documented assumptions and causal inconsistencies; lifecycle is repaired separately under #106; no GPU/causal/native sanitizer claim is made."
     },
@@ -39,7 +39,7 @@
       "relation": "support",
       "implementation": {
         "file": "ports/scatterbrain/src/models/modules/attention/feature_maps_sb.py",
-        "symbol": "new_feature_map"
+        "symbol": "SBPerformerFeatures"
       },
       "test": {
         "file": "tests/traceability/test_scatterbrain_feature_state.py",

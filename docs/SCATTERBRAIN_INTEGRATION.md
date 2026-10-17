@@ -230,7 +230,9 @@ exception categories/diagnostics. Downloaded/mutant source is excluded from
 artifacts. Numeric XBOX+/E2LSH correctness itself is not independently validated.
 FP64 multi-round raw precision has a separate budget because of
 `log(dup_counts.float())`; benign ratio cancellation is not a strict raw-FP64
-pass. #104/#105 remain open. No maintained-later-port, theoretical hash-selection
+pass. #104/#105 remain open. The repaired #106 core applies to the initial
+maintained port; the frozen later reference retains its original lifecycle.
+No maintained-later-port, theoretical hash-selection
 probability or general archive-maintenance pass is claimed.
 
 Python3.12, CPU Torch2.14.1 and the narrow dependencies in

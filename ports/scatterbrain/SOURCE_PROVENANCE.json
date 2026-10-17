@@ -2,7 +2,7 @@
   "upstream_repository": "HazyResearch/scatterbrain (renamed HazyResearch/fly)",
   "initial_commit": "eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab",
   "immutable_archive": "third_party/scatterbrain",
-  "scope": "five runtime modules, original namespace and arithmetic; type annotations/identity casts/documentation only",
+  "scope": "five initial runtime modules with original namespace; typed maintained port plus explicit #106 feature-map lifecycle repair; sampling/kernel arithmetic unchanged",
   "original_runtime_files": {
     "src/models/modules/attention/sblocal_attention.py": "752610a4dd607d599decdb4df602fd801cbc57db17a2502c763ecf421332b634",
     "src/models/modules/attention/feature_maps_sb.py": "2df1b1a938c6e38d185bdd62ae76e9eed7f171b47eda394d5614d357f0fe01f1",
@@ -24,5 +24,14 @@
       "commit": "0a4a520e9195972f0a3fa1a577c78cfdfccf7338",
       "sha256": "02cf6ed7df17f94fafa61e67a089ee51faac006db35ffa173c70e6763c253cf6"
     }
-  }
+  },
+  "maintained_deviations": [
+    {
+      "issue": 106,
+      "file": "src/models/modules/attention/feature_maps_sb.py",
+      "scope": "correct placeholder shape and lazy cold initialization; requested redraw period; persistent init/counter/period; legacy checkpoint migration; current-buffer dtype on redraw",
+      "unchanged": "softmax_kernel and gaussian_orthogonal_random_matrix arithmetic, odd cosh truncation, ignored orthogonal option",
+      "preimage": "maintained481dfd955701dab5f95c62ac60c84fa8ca3aae9f and immutable initial archive"
+    }
+  ]
 }

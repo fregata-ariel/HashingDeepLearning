@@ -20,8 +20,10 @@ Acquisition details and the historical blocked direct main-PDF download are in
 
 Initial intake PR #103 at `916d988` established source identity and a reviewed
 main-text/source map, without registering numerical experiments. The subsequent
-CPU baseline below adds three bounded executable entries. Full theoretical
-hypotheses, GPU execution and paper model accuracy/performance remain separate.
+CPU work below separates the frozen references from repaired maintained
+components. #102 is complete as a bounded primary acquisition and hypothesis
+audit, including the cited cross-polytope Theorem 1; it is not independent proof
+reproduction. GPU execution and paper model accuracy/performance remain separate.
 
 ## Source history and archive scope
 
@@ -62,9 +64,12 @@ GPU/application environment with unpinned dependencies, not a setup script.
 
 Later SBSmyrf has an eleven-file project import closure using ordinary Torch
 operations on its noncausal path. All eleven blobs at its first-introduction
-pin are identical at the separately recorded later HEAD. Future CPU execution
-must fetch one coherent pinned tree, not assemble unrelated helper revisions.
-Later source metadata is not an archive or an execution result.
+pin are identical at the separately recorded later HEAD. A separate immutable
+17-file archive at `third_party/scatterbrain-sbsmyrf/` preserves that coherent
+first-introduction closure, four package markers and original LICENSE/README.
+Its pin and complete inventory are separate from the initial archive and later
+HEAD metadata. Source identity is distinct from the frozen-reference execution
+and changed maintained component below.
 
 ## Attribution and redistribution boundaries
 
@@ -81,11 +86,14 @@ Other upstream files explicitly cite `giannisdaras/smyrf`. Its pre-Scatterbrain
 snapshot `bbbc82e0126233da07841275daa238d447c37f66` carries GPL-3.0, and a
 historical source comparison confirms copied hash-helper text. This documents
 an attribution ambiguity; it does not determine the license of every Fly
-file. Initial hash/SMYRF and later SBSmyrf-derived files are not redistributed
-in this selected archive or silently described as Apache-only. Pinned ephemeral
-source retrieval can support CPU research while a maintained redistribution
-strategy is investigated in #99. Any later imported dependencies need their
-own applicable notices, including additional lucidrains helpers where used.
+file. Initial hash/SMYRF files remain excluded from the initial 15-file archive.
+The separately selected later SBSmyrf component retains GPL-3.0 terms, the
+unchanged Fly Apache-2.0 notice and applicable historical Idiap, Performer and
+Reformer MIT notices. Its exact archive pin is
+`papers/scatterbrain-sbsmyrf-source-pin.json`; the maintained subset has its own
+NOTICE and definition-level provenance. This does not relicense the complete
+Fly repository or replace the original root LICENSE. Shared initial helpers
+retain their existing Apache/MIT attribution and declared #106 lifecycle repair.
 
 ## Reviewed main-text correspondence
 
@@ -135,7 +143,7 @@ neuron training path is a different integration target.
 | --- | --- | --- |
 | SB1, milestone 14 | [#95](https://github.com/fregata-ariel/HashingDeepLearning/issues/95) | Supplied paper identity and main-text/source map; identify missing appendix/version evidence |
 | SB1 | [#96](https://github.com/fregata-ariel/HashingDeepLearning/issues/96) | Exact initial archive, source/history attribution, full-tree identity gate |
-| SB1 | [#102](https://github.com/fregata-ariel/HashingDeepLearning/issues/102) | Obtain absent Appendices C/D and verify complete algorithm/proof assumptions |
+| SB1 | [#102](https://github.com/fregata-ariel/HashingDeepLearning/issues/102) | Completed bounded C/D.3 and cited-primary hypothesis audit; printed ambiguities and source variants remain explicit |
 | SB2, milestone 15 | [#97](https://github.com/fregata-ariel/HashingDeepLearning/issues/97) | Actual features/projection/redraw state on Torch CPU |
 | SB2 | [#98](https://github.com/fregata-ariel/HashingDeepLearning/issues/98) | Initial local residual, common normalizer, masks and gradients; native boundary is explicit |
 | SB2 | [#99](https://github.com/fregata-ariel/HashingDeepLearning/issues/99) | Later actual SBSmyrf CPU path, independent support and duplicate correction, attribution strategy |
@@ -185,9 +193,9 @@ GPU and large experiment scope remains #101.
 `ports/scatterbrain/` retains the initial five-module core and original namespace.
 The original PR107 baseline preserved all five numerical ASTs after erasing
 type-only additions. The #106 repair intentionally changes feature lifecycle
-and checkpoint behavior while retaining feature/sampling arithmetic. Eight Python files and
-five narrow native/optional-import stubs are enrolled in strict mypy, including
-`--disallow-any-explicit`. Archived source is not included in this typing claim.
+and checkpoint behavior while retaining feature/sampling arithmetic. Eight Python
+files and five narrow native/optional-import stubs are enrolled in strict mypy,
+including `--disallow-any-explicit`. Archived source is not included in this typing claim.
 
 The real native dependency has a separate three-blob MIT archive at
 `third_party/scatterbrain-fast-transformers/`: LICENSE, CPU C++ source and the
@@ -204,7 +212,9 @@ stale evidence is removed before execution.
 | `SCATTERBRAIN-FEATURES-CPU` | 72 feature, 12 restored-kernel, 24 input-gradient, 24 projection-gradient and 16 projection cases; scalar FP64 expressions/analytic derivatives, structural projection checks, three actual-function mutants |
 | `SCATTERBRAIN-FEATURE-STATE-CPU` | Four redraw schedules, 40 scalar raw-feature checks, six checkpoint paths, 31 invalid-input rejections and five rejected lifecycle mutants |
 | `SCATTERBRAIN-LOCAL-PRODUCT-CPU` | Five actual native product contexts and original custom backwards; independent dense/indexed expectations, lengths and an additive-mask primitive case |
-| `SCATTERBRAIN-LOCAL-HYBRID-CPU` | Ten maintained forward/backward fixtures, two full-local dense equalities; independent detached FP64 oracle and two AST mutants rejected in all ten cases |
+| `SCATTERBRAIN-LOCAL-HYBRID-CPU` | Ten fixed-projection forward/backward fixtures, two full-local dense equalities and four connected native lifecycle forwards; independent detached FP64 oracle and two AST mutants rejected in all ten conditional cases |
+| `SCATTERBRAIN-SBSMYRF-HYBRID-CPU` | Maintained later composition: 26 cases, permutation-derived support, raw H/HV/H1, outputs/weights and conditional gradients; 14 rejected mutations across composition, dtype and finite-value checks |
+| `SCATTERBRAIN-SBSMYRF-DTYPE-CPU` | Actual FP64 hash allocations and weight accumulation under global FP32 default, strict raw duplicate-log precision, dtype-movement forward, and exact FP32 parity of 12 captured reference fields |
 
 Local-hybrid scope is FP32 CPU/noncausal/dropout0/eps0, finite moderate inputs
 and positive finite row mass. Raw H1/HV are reconstructed from the returned raw
@@ -220,20 +230,40 @@ an explicitly documented variant, separate from repaired lifecycle behavior.
 See the [port contract](../ports/scatterbrain/CPU_CONTRACT.md) and
 [feature report](../tests/traceability/scatterbrain_feature_cpu_report.md).
 
-Later SBSmyrf remains a **pinned reference characterization**, not this maintained
-port. The driver fetches exact `74cc6b1` into an ephemeral directory, checks all
-eleven dependency fingerprints, and executes ten whole-module cases plus ten
-source mutants. Independent permutation-derived support and raw H/HV/H1 gates
-catch duplicate/subtraction errors and common scaling invisible in the ratio;
-nonfinite outputs/weights are rejected. Source-failure controls constrain exact
-exception categories/diagnostics. Downloaded/mutant source is excluded from
-artifacts. Numeric XBOX+/E2LSH correctness itself is not independently validated.
-FP64 multi-round raw precision has a separate budget because of
-`log(dup_counts.float())`; benign ratio cancellation is not a strict raw-FP64
-pass. #104/#105 remain open. The repaired #106 core applies to the initial
-maintained port; the frozen later reference retains its original lifecycle.
-No maintained-later-port, theoretical hash-selection
-probability or general archive-maintenance pass is claimed.
+The **frozen later reference** remains a separate characterization at exact
+`74cc6b1`: ten whole-module cases and ten source mutants, with original failures
+and the `log(dup_counts.float())` raw-FP64 budget retained as historical evidence.
+Neither the archive nor that reference is rewritten by the maintained repairs.
+
+The maintained later subset is eight Python files in the unique
+`ports/scatterbrain-later/scatterbrain_later/` namespace. It retains the selected
+actual SBSmyrf forward, XBOX+ transform and floating projection/rank-clustering
+helpers, and imports the repaired initial feature/projection/linear/masking
+core rather than copying it. #104 supplies query dtype to both E2LSH allocations
+and preserves duplicate-log precision; #105 uses `dots.new_zeros` for returned
+weights. The [later contract](../ports/scatterbrain-later/CPU_CONTRACT.md) and
+provenance distinguish these changes, input rejections and the shared #106 state
+dependency from the frozen source.
+
+Its fixture runs 26 moderate FP32/FP64 cases and rejects 14 source mutations.
+Independent scalar oracles derive union support from actual padded permutations
+and compare raw H, HV, H1, normalized output, returned weights, conditional Q/K/V
+gradients and gradients through weights. A selected zero-residual pair shows why
+the returned residual-value mask is not a support oracle. Real FP64 hashing and
+weights run under the ordinary global FP32 default; training after a coherent
+module dtype move uses a real second forward and the shared lifecycle repair.
+A separate original-source subprocess establishes exact FP32 parity of 12
+captured fields, including alpha/beta, transforms, permutations, projection,
+output and weights/raw kernel. Downloaded references and mutant copies stay
+outside emitted artifacts.
+
+This supports the declared CPU domains, including separately checked zero-key
+mass rows, not all finite extremes, clamped denominators or arbitrary masks.
+The source's inferred self-attention query-mask policy remains a qualified
+boundary. Hash source parity and dtype/device sampling checks do not independently
+validate XBOX+/E2LSH mathematics or a theoretical collision law. Actual/reference
+values and errors must be finite; required failures remove stale success evidence.
+No native extension is used by the maintained later noncausal path.
 
 Python3.12, CPU Torch2.14.1 and the narrow dependencies in
 `tools/scatterbrain-cpu-requirements.txt` reproduce these suites:
@@ -243,11 +273,15 @@ python tests/traceability/test_scatterbrain_feature_cpu.py --emit-dir /tmp/sb-fe
 python tests/traceability/test_scatterbrain_feature_state.py --port-root ports/scatterbrain --evidence /tmp/sb-features/lifecycle.json
 python tools/check_scatterbrain_initial_cpu.py --test-dependency-contracts
 python tools/check_scatterbrain_initial_cpu.py --cxx g++-14 --build-dir /tmp/sb-initial
-python tools/check_scatterbrain_later_cpu.py --emit-dir /tmp/sb-later
+python tools/check_scatterbrain_later_cpu.py --emit-dir /tmp/sb-later-reference
+python tools/check_scatterbrain_sbsmyrf_sources.py
+python tools/check_scatterbrain_sbsmyrf_cpu.py --emit-dir /tmp/sb-later-maintained
 ```
 
 The existing traceability workflow owns CPU execution/artifacts; existing strict
-typing owns the maintained files. No new workflow or GPU job is added. Native
-memory sanitizers, causal paths, arbitrary masks, initial all-zero-key rows,
+typing inventories the initial and later maintained components with narrow shared
+imports. Final acceptance requires the reviewed combined candidate and its exact
+head/tree CI evidence; local fixture coverage is not a hosted CI pass claim. No
+new workflow or GPU job is added. Native memory sanitizers, causal paths, arbitrary masks, initial all-zero-key rows,
 extreme/clamped masses, full training and model accuracy/performance remain
 unverified by these fixtures.

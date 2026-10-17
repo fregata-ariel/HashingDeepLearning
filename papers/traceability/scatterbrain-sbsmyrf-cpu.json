@@ -21,7 +21,7 @@
         "cases": 26,
         "inputs": "B2/H2/T3/S5/E4/V3, padded T4/S6; one/three hash rounds; full/prefix/zero key lengths; with/without returned weights; separate full-support and exact-zero-residual controls",
         "oracle": "Independent scalar raw features and exponential kernel; selected-pair set reconstructed from actual validated padded permutations, independent of returned nonzero-residual mask",
-        "gradients": "Conditional actual Q/K/V derivatives compared with independent finite differences; returned-weights-times-V output and Q/K/V gradients compared directly; sampled support/projection frozen only for derivative comparisons",
+        "gradients": "FP32 and FP64 conditional actual Q/K/V derivatives compared with independent scalar finite differences; returned-weights-times-V output and Q/K/V gradients compared directly in both dtypes, with explicit dtype-specific budgets; sampled support/projection frozen only for derivative comparisons",
         "sensitivity": "Fourteen actual-source mutants reject dtype regressions, missing subtraction/duplicate correction, wrong normalization, common raw scaling, and late NaN/+Inf/-Inf in outputs or returned weights",
         "lifecycle": "Actual continuing training forward after float32-to-float64 module conversion uses shared repaired #106 feature core and its newly sampled projection",
         "limits": "Moderate deterministic unclamped-positive-mass fixtures plus zero-key-mass controls; no arbitrary-mask/causal/GPU/native-sanitizer/model metric or independent full hash-math/probability proof"
@@ -46,7 +46,7 @@
         "global_default": "Ordinary torch.float32 throughout; actual FP64 hash allocations and weights execute without a global-default workaround",
         "source_parity": "Separate gated original74cc subprocess matches first-forward FP32 alpha/beta values/dtype/device, XBOX transforms, permutations, sampled projection, output and normalized/raw weights exactly",
         "fp64": "Strict independent raw H/HV/H1, normalized output and weight checks; full support detects restored float32 duplicate logarithm even when ratio error cancels",
-        "derivatives": "One/three-round direct output=weights@V and Q/K/V gradient equivalence plus independent conditional finite differences",
+        "derivatives": "FP32/FP64 one/three-round direct output=weights@V and Q/K/V gradient equivalence plus independent scalar conditional finite differences",
         "rejections": "Explicit unsupported construction/input/mask/dtype/device/shape and nonfinite-result boundaries; missing dtype fixes must fail their intended mutant diagnostics",
         "identity": "Fresh summary binds original pin/tree, all maintained source/fixture/driver hashes, shared runtime hashes and the exact separate-process reference; stale success summaries are removed",
         "limits": "CPU float32/float64 only; allocation/source parity is not an independent derivation of XBOX+/E2LSH mathematics or a collision-probability theorem"

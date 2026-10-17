@@ -2,16 +2,15 @@
 
 This port copies the initial release's five runtime project files at
 `eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab`, preserving the
-`src.models.modules` namespace and arithmetic. Put `ports/scatterbrain` on
+`src.models.modules` namespace and attention/sampling kernels. Put `ports/scatterbrain` on
 `sys.path`; import `src.models.modules.attention.sblocal_attention`.
 The immutable original remains in `third_party/scatterbrain`.
 
-The maintained differences are explicit parameter/return/buffer types, private
-typing protocols and factory-keyword declarations, postponed annotations,
-identity `typing.cast` calls at framework boundaries, and documentation.
-Erasing those type-only additions and docstrings leaves identical ASTs for all
-five original modules. No sampling, log scale, normalization, residual,
-masking, dropout, projection allocation or redraw expression was corrected.
+The initial maintained port added types, identity casts and documentation while
+preserving the five runtime modules' numerical ASTs. The later #106 repair
+explicitly changes feature-map initialization, redraw cadence and checkpoint
+state, as described in the [CPU contract](CPU_CONTRACT.md). The feature kernel,
+projection sampling arithmetic, residual and normalization remain unchanged.
 The three original package markers are byte-identical copies. The attention
 subdirectory retains the initial implicit namespace package layout.
 

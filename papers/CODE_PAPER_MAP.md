@@ -185,7 +185,8 @@ adds `SCATTERBRAIN-FEATURES-CPU`, `SCATTERBRAIN-LOCAL-PRODUCT-CPU` and
 `SCATTERBRAIN-LOCAL-HYBRID-CPU` for independent features/gradients/projections and
 actual native-backed initial local composition. Local runtime scope is finite
 FP32/noncausal/dropout0/eps0; feature FP32/FP64 checks have separate budgets.
-Lifecycle failures remain #106. Later pinned SBSmyrf is reference characterization
+The maintained #106 lifecycle repair adds `SCATTERBRAIN-FEATURE-STATE-CPU`
+for cold initialization, redraw/eval and checkpoint behavior. Later pinned SBSmyrf is reference characterization
 without a maintained-production ledger claim; actual hash-transform correctness
 and theoretical selection probability are not independently verified.
 See [integration scope](../docs/SCATTERBRAIN_INTEGRATION.md) for the conceptual

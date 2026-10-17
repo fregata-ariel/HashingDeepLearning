@@ -183,8 +183,9 @@ GPU and large experiment scope remains #101.
 ## Maintained CPU baseline
 
 `ports/scatterbrain/` retains the initial five-module core and original namespace.
-Independent erasure of annotations, private type declarations, identity casts
-and docstrings leaves all five numerical ASTs unchanged. Eight Python files and
+The original PR107 baseline preserved all five numerical ASTs after erasing
+type-only additions. The #106 repair intentionally changes feature lifecycle
+and checkpoint behavior while retaining feature/sampling arithmetic. Eight Python files and
 five narrow native/optional-import stubs are enrolled in strict mypy, including
 `--disallow-any-explicit`. Archived source is not included in this typing claim.
 
@@ -201,6 +202,7 @@ stale evidence is removed before execution.
 | Ledger ID | Bounded execution and independent checks |
 | --- | --- |
 | `SCATTERBRAIN-FEATURES-CPU` | 72 feature, 12 restored-kernel, 24 input-gradient, 24 projection-gradient and 16 projection cases; scalar FP64 expressions/analytic derivatives, structural projection checks, three actual-function mutants |
+| `SCATTERBRAIN-FEATURE-STATE-CPU` | Four redraw schedules, 40 scalar raw-feature checks, six checkpoint paths, 31 invalid-input rejections and five rejected lifecycle mutants |
 | `SCATTERBRAIN-LOCAL-PRODUCT-CPU` | Five actual native product contexts and original custom backwards; independent dense/indexed expectations, lengths and an additive-mask primitive case |
 | `SCATTERBRAIN-LOCAL-HYBRID-CPU` | Ten maintained forward/backward fixtures, two full-local dense equalities; independent detached FP64 oracle and two AST mutants rejected in all ten cases |
 
@@ -208,9 +210,13 @@ Local-hybrid scope is FP32 CPU/noncausal/dropout0/eps0, finite moderate inputs
 and positive finite row mass. Raw H1/HV are reconstructed from the returned raw
 hybrid matrix; the internal log-normalization variable is not directly traced.
 Feature gradients cover eps0/nonlog restored features; log/nonzero-eps modes
-have forward checks. Four separately reported lifecycle observations remain
-#106, including cold eval/warm-load failures, ignored redraw and odd-count
-truncation. They are characterizations, not repaired lifecycle guarantees.
+have forward checks. The #106 repair supports lazy cold initialization,
+requested redraw cadence, deterministic warm eval, persisted cadence/period,
+explicit legacy migration, and redraw after dtype conversion. Exact future
+draws require caller-owned global RNG restoration. Four connected actual-native
+forwards exercise default training and evaluation transitions in addition to
+the fixed-projection gradient oracle. Odd cosh feature-count truncation remains
+an explicitly documented variant, separate from repaired lifecycle behavior.
 See the [port contract](../ports/scatterbrain/CPU_CONTRACT.md) and
 [feature report](../tests/traceability/scatterbrain_feature_cpu_report.md).
 
@@ -224,7 +230,9 @@ exception categories/diagnostics. Downloaded/mutant source is excluded from
 artifacts. Numeric XBOX+/E2LSH correctness itself is not independently validated.
 FP64 multi-round raw precision has a separate budget because of
 `log(dup_counts.float())`; benign ratio cancellation is not a strict raw-FP64
-pass. #104–#106 remain open. No maintained-later-port, theoretical hash-selection
+pass. #104/#105 remain open. The repaired #106 core applies to the initial
+maintained port; the frozen later reference retains its original lifecycle.
+No maintained-later-port, theoretical hash-selection
 probability or general archive-maintenance pass is claimed.
 
 Python3.12, CPU Torch2.14.1 and the narrow dependencies in
@@ -232,6 +240,7 @@ Python3.12, CPU Torch2.14.1 and the narrow dependencies in
 
 ```sh
 python tests/traceability/test_scatterbrain_feature_cpu.py --emit-dir /tmp/sb-features
+python tests/traceability/test_scatterbrain_feature_state.py --port-root ports/scatterbrain --evidence /tmp/sb-features/lifecycle.json
 python tools/check_scatterbrain_initial_cpu.py --test-dependency-contracts
 python tools/check_scatterbrain_initial_cpu.py --cxx g++-14 --build-dir /tmp/sb-initial
 python tools/check_scatterbrain_later_cpu.py --emit-dir /tmp/sb-later

@@ -211,12 +211,15 @@ checks do not execute attention, verify statistical claims or reproduce GPU
 accuracy/performance.
 
 The subsequent maintained CPU baseline copies the initial five-module core to
-`ports/scatterbrain/` with type-only changes: eight Python files and five narrow
+`ports/scatterbrain/` initially with type-only changes; #106 subsequently repairs
+feature lifecycle/checkpoint behavior while preserving sampling arithmetic.
+Eight Python files and five narrow
 stubs receive strict checks. A separate exact three-blob MIT archive at
 `third_party/scatterbrain-fast-transformers/` supplies the actual native
 local-product CPU dependency at the same historical Idiap commit. Its modern
 CPU-only GNU14/C++20 build recipe is an explicit adaptation. Three executable
-ledger records cover bounded feature/gradient/projection and native-backed
+baseline ledger records cover bounded feature/gradient/projection and native-backed
 local-hybrid tests. Later SBSmyrf is fetched at its own exact pin only for
-ephemeral reference characterization. The integration record keeps known
-dtype/state failures, numerical budgets and unverified domains explicit.
+ephemeral reference characterization. A fourth ledger record checks the repaired
+feature lifecycle independently. The integration record keeps remaining dtype
+failures, numerical budgets and unverified domains explicit.

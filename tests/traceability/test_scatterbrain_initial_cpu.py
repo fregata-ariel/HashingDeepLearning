@@ -202,6 +202,10 @@ def composition():
                 softmax_eps=0.0,
             )
             module.feature_map.new_feature_map("cpu")
+            # This oracle is conditional on that actual sampled projection.
+            # Freeze its state explicitly; default training redraw is tested below.
+            module.feature_map.deterministic_eval = True
+            module.eval()
             projection = module.feature_map.projection_matrix.detach().clone()
             q = (torch.randn(2, 5, 2, 3) * 0.25).requires_grad_()
             k = (torch.randn(2, 4, 2, 3) * 0.25).requires_grad_()
@@ -284,6 +288,35 @@ def composition():
     return metrics
 
 
+def connected_lifecycle() -> dict[str, int | bool]:
+    module = SBLocalAttention(2, 3, nb_features=6, softmax_temp=.25,
+                              attention_dropout=0.0, softmax_eps=0.0)
+    q = torch.linspace(-.3, .4, 9).reshape(1, 3, 1, 3)
+    k = q.flip(1).contiguous()
+    v = torch.linspace(-.2, .3, 6).reshape(1, 3, 1, 2)
+    lengths = torch.tensor([3]); mask = LengthMask(lengths, max_len=3)
+    previous = None; cases = 0
+    for mode, expected_counter in (("train", 0), ("train", 1), ("eval", 1), ("train", 2)):
+        if mode == "eval":
+            module.feature_map.deterministic_eval = True
+        module.train(mode == "train")
+        rng = torch.random.get_rng_state().clone()
+        actual, (weights, unnormalized, lowrank) = module(q, k, v, key_padding_mask=mask,
+                       need_weights=True, return_attn_unnormalized=True)
+        projection = module.feature_map.projection_matrix.detach().clone()
+        expected = dense_oracle(q.double(), k.double(), v.double(), projection, 2, .25, lengths)
+        close(actual, expected[0], 3e-6, "connected lifecycle output")
+        close(weights, expected[1], 3e-6, "connected lifecycle weights")
+        close(unnormalized, expected[2], 3e-6, "connected lifecycle raw attention")
+        close(lowrank, expected[3], 3e-6, "connected lifecycle lowrank")
+        require(module.feature_map._calls == expected_counter, "connected redraw request counter")
+        if previous is not None:
+            require(torch.equal(previous, projection) == (mode == "eval"), "training redraw/eval freeze")
+        require(torch.equal(rng, torch.random.get_rng_state()) == (mode == "eval"), "connected sampling RNG")
+        previous = projection; cases += 1
+    return {"cases": cases, "default_training_redraw": True, "warm_eval_freeze": True}
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--native-root", type=Path, required=True)
@@ -331,6 +364,7 @@ def main():
         sources[name] = hashlib.sha256(path.read_bytes()).hexdigest()
     primitive = products()
     composed = composition()
+    lifecycle = connected_lifecycle()
     require(
         composed["cases"] == 10 and composed["full_selection_cases"] == 2,
         "complete fixture matrix",
@@ -351,8 +385,9 @@ def main():
         "fixture_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "native_products": primitive,
         "composition": composed,
+        "feature_lifecycle": lifecycle,
         "gradient_reference": "detached FP64 leaves; independent unstabilized cosh features and dense support replacement",
-        "scope": "float32 CPU noncausal/dropout0/eps0; positive masked global rows; no GPU/causal/arbitrary masks/extremes/redraw-state/memory-sanitizer claim",
+        "scope": "float32 CPU noncausal/dropout0/eps0; positive masked global rows; no GPU/causal/arbitrary masks/extremes/memory-sanitizer claim",
         "gpu_validated": False,
         "memory_sanitizers_executed": False,
     }

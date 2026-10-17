@@ -3,7 +3,7 @@
 
 The dense oracle uses scalar FP64 exp/dot products and analytic derivatives,
 independent of the maintained normalization/amax/einsum helpers. Known initial
-lifecycle defects are characterized separately and are not repaired here.
+lifecycle regressions exercise the separate maintained #106 repair.
 TRACE_TEST_ID: SCATTERBRAIN-FEATURES-CPU
 """
 from __future__ import annotations
@@ -222,46 +222,30 @@ def projection_checks(check: Checks, projection: ModuleType) -> None:
 
 
 def lifecycle_checks(check: Checks, features: ModuleType) -> list[dict[str, object]]:
-    known: list[dict[str, object]] = []
     torch.manual_seed(98)
     cold = features.SBPerformerFeatures(3, n_features=8, deterministic_eval=True, dtype=torch.float64)
     cold.eval()
-    state = torch.random.get_rng_state().clone()
+    check.require(cold.projection_matrix.shape == (4, 3), "cold valid projection shape")
     cold.new_feature_map("cpu")
-    check.require(cold._calls == -1 and cold.projection_matrix.shape == (3, 8), "cold eval leaves wrong initial shape")
-    check.require(torch.equal(state, torch.random.get_rng_state()), "cold eval does not draw")
-    check.raises(RuntimeError, "subscript d has size", lambda: cold.forward_queries(torch.zeros(1, 2, 3, dtype=torch.float64)))
-    known.append({"issue": 106, "behavior": "cold deterministic_eval preserves transposed placeholder and forward raises RuntimeError"})
-    warm = features.SBPerformerFeatures(3, n_features=8, redraw=1, deterministic_eval=True, dtype=torch.float64)
-    warm.new_feature_map("cpu")
-    first = warm.projection_matrix.clone()
-    state = torch.random.get_rng_state().clone()
-    for _ in range(8):
-        warm.new_feature_map("cpu")
-    check.require(warm.redraw == math.pi and warm._calls == 8, "requested redraw replaced by pi")
-    check.require(torch.equal(first, warm.projection_matrix) and torch.equal(state, torch.random.get_rng_state()), "no periodic redraw in first eight calls")
-    known.append({"issue": 106, "behavior": "requested redraw=1 ignored; irrational pi cadence retains first projection through calls 1..8"})
-    warm.eval()
-    warm.new_feature_map("cpu")
-    check.require(warm._calls == 8 and torch.equal(first, warm.projection_matrix), "warm deterministic eval stable")
+    check.require(cold._calls == 0 and cold._initialized, "cold eval initializes")
     x, _ = inputs(torch.float64)
-    check.require(warm.forward_queries(x)[0].shape == (2, 3, 8), "warm query output")
-    saved = {key: value.detach().clone() for key, value in warm.state_dict().items()}
-    check.require(set(saved) == {"projection_matrix"}, "only projection is persisted")
-    fresh = features.SBPerformerFeatures(3, n_features=8, dtype=torch.float64)
-    check.raises(RuntimeError, "size mismatch for projection_matrix", lambda: fresh.load_state_dict(saved))
-    loaded = features.SBPerformerFeatures(3, n_features=8, dtype=torch.float64)
-    loaded.new_feature_map("cpu")
+    check.require(cold.forward_queries(x)[0].shape == (2, 3, 8), "cold eval feature output")
+    state, first = torch.random.get_rng_state().clone(), cold.projection_matrix.clone()
+    cold.new_feature_map("cpu")
+    check.require(cold._calls == 0 and torch.equal(first, cold.projection_matrix) and
+                  torch.equal(state, torch.random.get_rng_state()), "warm eval freezes cadence")
+    cold.train(); cold.new_feature_map("cpu")
+    check.require(cold.redraw == 1 and cold._calls == 1 and not torch.equal(first, cold.projection_matrix), "requested redraw1 honored")
+    saved = {key: value.detach().clone() for key, value in cold.state_dict().items()}
+    loaded = features.SBPerformerFeatures(3, n_features=8, redraw=3, dtype=torch.float64)
     loaded.load_state_dict(saved)
-    check.close(loaded.forward_queries(x)[0], warm.forward_queries(x)[0], "warm_save_load", atol=0, rtol=0)
-    check.require(loaded._calls == 0 and warm._calls == 8, "call counter is not persisted")
-    known.append({"issue": 106, "behavior": "default warm state load into a fresh module fails; compatible initialized load succeeds; call counter is absent from state_dict"})
+    check.require(loaded._calls == 1 and loaded.redraw == 1, "call counter and period persisted")
+    check.close(loaded.forward_queries(x)[0], cold.forward_queries(x)[0], "warm_save_load", atol=0, rtol=0)
     odd = features.SBPerformerFeatures(3, n_features=7, cosh=True, dtype=torch.float64)
     odd.new_feature_map("cpu")
-    check.require(odd.n_features == 7 and odd.forward_keys(x)[0].shape[-1] == 6, "odd cosh count truncates")
-    known.append({"issue": 106, "behavior": "cosh requested 7 features produces 6"})
-    check.cases["lifecycle_characterization"] = 4
-    return known
+    check.require(odd.n_features == 7 and odd.forward_keys(x)[0].shape[-1] == 6, "documented odd cosh truncation")
+    check.cases["lifecycle_regression"] = 4
+    return []
 
 
 def mutant_checks(check: Checks, features: ModuleType) -> None:
@@ -315,7 +299,7 @@ def main() -> None:
     mutant_checks(check, features)
     runtime = {"python": platform.python_version(), "torch": str(torch.__version__),
                "einops": importlib.import_module("einops").__version__, "device": "cpu", "threads": torch.get_num_threads(), "machine": platform.machine()}
-    result = {"status": "cpu_pass_with_characterized_lifecycle_defects", "ledger_id": "SCATTERBRAIN-FEATURES-CPU",
+    result = {"status": "cpu_pass", "ledger_id": "SCATTERBRAIN-FEATURES-CPU",
               "relation": "variant", "upstream_commit": "eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab",
               "paper_locator": "main p6 section 4.2 feature map", "cases": check.cases,
               "passed_assertions": check.assertions, "known_failures": known,

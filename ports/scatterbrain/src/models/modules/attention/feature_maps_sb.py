@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Callable, Protocol, TypeAlias, TypedDict, cast
+from collections.abc import Mapping
 
 # Adapted from https://github.com/idiap/fast-transformers/blob/master/fast_transformers/feature_maps/fourier_features.py
 import math
@@ -110,69 +111,167 @@ class SBPerformerFeatures(FeatureMap):
         query_dims: int, The input query dimensions in order to sample
                           the noise matrix
         n_features: int, The size of the feature map (should be divisible by 2)
-                (default: query_dims)
+                (default: int(query_dims * log(query_dims)))
         softmax_temp: float, The temerature for the Gaussian kernel
                       approximation exp(-t * |x-y|^2)
                       (default: 1/sqrt(query_dims))
         orthogonal: bool, When True the random matrix is initialized for
                     orthogonal random features to reduce the approximation
                     variance (default: False)
-        redraw: int, Redraw the random matrix every 'redraw' times
-                (default: 1)
+        redraw: positive integer/integral float request period, or +inf to
+                sample once and freeze (default: 1; int64 range)
         deterministic_eval: bool, Only redraw the random matrix during training
                             (default: False)
     """
     projection_matrix: torch.Tensor
+    _projection_initialized: torch.Tensor
+    _feature_map_calls: torch.Tensor
+    _redraw_period: torch.Tensor
+    _version = 2
 
     def __init__(self, query_dims: int, n_features: int | None = None, ortho_scaling: int = 0,
                  softmax_temp: float | None = None, orthogonal: bool = False, cosh: bool = True,
                  redraw: int | float = 1, deterministic_eval: bool = False, eps: float = 0.0,
                  device: torch.device | str | None = None, dtype: torch.dtype | None = None) -> None:
+        period = self._validate_redraw(redraw)
+        if query_dims <= 0:
+            raise ValueError('query_dims must be positive')
         factory_kwargs: _FactoryKwargs = {'device': device, 'dtype': dtype}
         super().__init__(query_dims)
         self.n_features = n_features or int(query_dims * math.log(query_dims))
+        rows = self.n_features // 2 if cosh else self.n_features
+        if rows <= 0:
+            raise ValueError('n_features must provide at least one projection row')
         self.ortho_scaling = ortho_scaling
-        # TODO: we're not using @orthogonal atm
+        # The historical orthogonal option remains unused; sampling is unchanged.
         self.orthogonal = orthogonal
         self.softmax_temp = 1 / math.sqrt(query_dims) if softmax_temp is None else softmax_temp
         self.cosh = cosh
-        # self.redraw = redraw
-        # TODO: not redrawing atm, so I'm setting it to an irrational number
-        self.redraw = math.pi
         self.deterministic_eval = deterministic_eval
-        self.eps = eps  # Stabilizer for softmax kernel
+        self.eps = eps
+        # Constructor/load do not sample. The correctly shaped placeholder and
+        # lifecycle metadata follow module.to(); integer/bool metadata keeps dtype.
+        self.register_buffer('projection_matrix', torch.zeros(rows, self.query_dims, **factory_kwargs))
+        self.register_buffer('_projection_initialized', torch.tensor(False, device=device))
+        self.register_buffer('_feature_map_calls', torch.tensor(-1, dtype=torch.int64, device=device))
+        self.register_buffer('_redraw_period', torch.tensor(period, dtype=torch.int64, device=device))
+        self.factory_kwargs = factory_kwargs  # Retained configuration; never the redraw dtype source.
 
-        # Make a buffer for storing the sampled projection_matrix
-        self.register_buffer("projection_matrix", torch.zeros(self.query_dims, self.n_features,
-                                                              **factory_kwargs))
-        self.factory_kwargs = factory_kwargs
-        self._calls = -1
+    @staticmethod
+    def _validate_redraw(redraw: int | float) -> int:
+        if isinstance(redraw, bool) or not isinstance(redraw, (int, float)):
+            raise ValueError('redraw must be a positive integer or positive infinity')
+        if redraw == math.inf:
+            return 0  # Persistent integer sentinel for draw-once/freeze.
+        if isinstance(redraw, float) and (not math.isfinite(redraw) or not redraw.is_integer()):
+            raise ValueError('redraw must be a positive integer or positive infinity')
+        period = int(redraw)
+        if period <= 0 or period > torch.iinfo(torch.int64).max:
+            raise ValueError('redraw must fit a positive int64 or be positive infinity')
+        return period
+
+    @property
+    def redraw(self) -> int | float:
+        period = int(self._redraw_period.item())
+        return period if period != 0 else math.inf
+
+    @redraw.setter
+    def redraw(self, value: int | float) -> None:
+        self._redraw_period.fill_(self._validate_redraw(value))
+
+    @property
+    def _calls(self) -> int:
+        return int(self._feature_map_calls.item())
+
+    @property
+    def _initialized(self) -> bool:
+        return bool(self._projection_initialized.item())
 
     def new_feature_map(self, device: torch.device | str | None) -> None:
-        # If we are not training skip the generation of a new feature map
-        if self.deterministic_eval and not self.training:
-            return
+        """Initialize once, including cold eval; explicit warm requests set cadence.
 
-        # Only redraw the new feature map every self.redraw times
-        self._calls += 1
-        if (self._calls % self.redraw) != 0:
+        First draw has counter0. Subsequent eligible requests increment it and
+        draw on multiples of redraw. Warm deterministic eval neither draws nor
+        advances it; query/key encoding itself does not advance the cadence.
+        TRACE_TEST_ID: SCATTERBRAIN-FEATURE-STATE-CPU.
+        """
+        if self._initialized and self.deterministic_eval and not self.training:
             return
+        calls = self._calls + 1
+        if calls > torch.iinfo(torch.int64).max:
+            raise OverflowError('feature-map request counter exceeds int64')
+        period = int(self._redraw_period.item())
+        draw = not self._initialized or (period != 0 and calls % period == 0)
+        if draw:
+            rows = self.n_features // 2 if self.cosh else self.n_features
+            projection_matrix = gaussian_orthogonal_random_matrix(
+                nrows=rows, ncols=self.query_dims, scaling=self.ortho_scaling,
+                device=self.projection_matrix.device if device is None else device,
+                dtype=self.projection_matrix.dtype)
+            self.register_buffer('projection_matrix', projection_matrix)
+            self._projection_initialized.fill_(True)
+        self._feature_map_calls.fill_(calls)
 
-        # We use the cosh feature map so the number of rows is halved
-        nb_rows = self.n_features if not self.cosh else self.n_features // 2
-        projection_matrix = gaussian_orthogonal_random_matrix(nrows=nb_rows,
-                                                              ncols=self.query_dims,
-                                                              scaling=self.ortho_scaling,
-                                                              device=device,
-                                                              dtype=self.factory_kwargs['dtype'])
-        self.register_buffer("projection_matrix", projection_matrix)
+    def _load_from_state_dict(self, state_dict: Mapping[str, torch.Tensor], prefix: str,
+                              local_metadata: dict[str, object], strict: bool,
+                              missing_keys: list[str], unexpected_keys: list[str],
+                              error_msgs: list[str]) -> None:
+        # Copy the loader's local mapping: compatibility injection must not edit
+        # a caller's checkpoint. Torch still owns dtype/device copy/assign policy.
+        local = dict(state_dict)
+        projection_key = prefix + 'projection_matrix'
+        metadata_keys = [prefix + name for name in
+                         ('_projection_initialized', '_feature_map_calls', '_redraw_period')]
+        present = [key in local for key in metadata_keys]
+        matrix = local.get(projection_key)
+        if matrix is None:
+            error_msgs.append(prefix + 'missing projection_matrix')
+            return
+        expected = tuple(self.projection_matrix.shape)
+        finite = matrix.device.type != 'meta' and matrix.is_floating_point() and bool(torch.isfinite(matrix).all())
+        if not finite:
+            error_msgs.append(prefix + 'projection_matrix must be finite floating-point storage')
+            return
+        if not any(present):
+            # Old archives saved only projection_matrix. All-zero legacy states
+            # are explicitly treated as cold, even when shape is ambiguous;
+            # intentional warm-zero states need new-format metadata.
+            cold = bool((matrix == 0).all())
+            old_placeholder = tuple(matrix.shape) == (self.query_dims, self.n_features)
+            if tuple(matrix.shape) != expected and not (cold and old_placeholder):
+                error_msgs.append(prefix + 'invalid legacy projection_matrix shape')
+                return
+            if cold:
+                local[projection_key] = torch.zeros_like(self.projection_matrix)
+            local[metadata_keys[0]] = self._projection_initialized.new_tensor(not cold)
+            local[metadata_keys[1]] = self._feature_map_calls.new_tensor(-1 if cold else 0)
+            local[metadata_keys[2]] = self._redraw_period.detach().clone()
+        else:
+            if not all(present) or tuple(matrix.shape) != expected:
+                error_msgs.append(prefix + 'incomplete lifecycle metadata or invalid projection shape')
+                return
+            flag, count, period = [local[key] for key in metadata_keys]
+            if any(value.device.type == 'meta' or value.ndim != 0 for value in (flag, count, period)) or (
+                    flag.dtype != torch.bool or count.dtype != torch.int64 or period.dtype != torch.int64):
+                error_msgs.append(prefix + 'invalid lifecycle metadata dtype/shape')
+                return
+            initialized, calls, cadence = bool(flag.item()), int(count.item()), int(period.item())
+            if cadence < 0 or (initialized and calls < 0) or (not initialized and (calls != -1 or bool((matrix != 0).any()))):
+                error_msgs.append(prefix + 'inconsistent feature-map lifecycle metadata')
+                return
+        super()._load_from_state_dict(local, prefix, local_metadata, strict,
+                                      missing_keys, unexpected_keys, error_msgs)
 
     def forward_queries(self, x: torch.Tensor, return_log: bool = False) -> tuple[torch.Tensor, torch.Tensor]:
+        if not self._initialized:
+            self.new_feature_map(x.device)
         return softmax_kernel(x, projection_matrix=self.projection_matrix, is_query=True,
                               softmax_temp=self.softmax_temp, eps=self.eps, cosh=self.cosh,
                               return_log=return_log)
 
     def forward_keys(self, x: torch.Tensor, return_log: bool = False) -> tuple[torch.Tensor, torch.Tensor]:
+        if not self._initialized:
+            self.new_feature_map(x.device)
         return softmax_kernel(x, projection_matrix=self.projection_matrix, is_query=False,
                               softmax_temp=self.softmax_temp, eps=self.eps, cosh=self.cosh,
                               return_log=return_log)

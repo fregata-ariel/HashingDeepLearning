@@ -5,7 +5,7 @@
       "id": "SCATTERBRAIN-FEATURES-CPU",
       "paper": "scatterbrain-2021",
       "paper_location": "Conference manuscript p6, Section 4.2, Low-rank Approximation; actual orthogonal/cosh/stabilization choices are source variants",
-      "mechanism": "Execute maintained positive feature and projection functions on Torch CPU, independently reconstruct raw features and restored kernels with scalar FP64 arithmetic, check analytic input/projection derivatives and projection structural invariants, and separately characterize retained lifecycle defects.",
+      "mechanism": "Execute maintained positive feature and projection functions on Torch CPU, independently reconstruct raw features and restored kernels with scalar FP64 arithmetic, check analytic input/projection derivatives and projection structural invariants.",
       "relation": "variant",
       "implementation": {
         "file": "ports/scatterbrain/src/models/modules/attention/feature_maps_sb.py",
@@ -26,10 +26,38 @@
         "oracle": "Scalar FP64 exponent/dot/norm feature expression and analytic derivatives, independent of maintained normalization/amax/einsum helpers; structural projection properties without a second QR algorithm",
         "scope": "Cosh and noncosh, query/key stabilizers, temperatures, eps/log boundaries, finite small inputs, FP32/FP64 numerical budgets; all actual/reference/errors explicitly finite",
         "sensitivity": "Three executed actual-function arithmetic mutants are rejected",
-        "known_lifecycle_failures": "Four retained behavior characterizations are reported separately under #106, not as supported cold-eval/redraw/state semantics",
-        "statistical_limits": "Deterministic and projection-structural checks do not prove Gaussian-marginal sampling, independence, entrywise variance bounds, normalized-output unbiasedness or paper model metrics"
+        "statistical_limits": "Deterministic and projection-structural checks do not prove Gaussian-marginal sampling, independence, entrywise variance bounds, normalized-output unbiasedness or paper model metrics",
+        "lifecycle": "Repaired lifecycle has its own SCATTERBRAIN-FEATURE-STATE-CPU regression; arithmetic fixtures use supplied projections, while native composition explicitly freezes an actual sampled projection"
       },
-      "note": "The conference main text displays IID-Gaussian features; this release uses optional cosh/orthogonal features and stabilizing log scales. Sampling-law/proof correspondence remains distinct from executed finite arithmetic. Appendix C/D.3 are now inspected with documented assumptions and causal inconsistencies; lifecycle fixes remain #106; no GPU/causal/native sanitizer claim is made."
+      "note": "The conference main text displays IID-Gaussian features; this release uses optional cosh/orthogonal features and stabilizing log scales. Sampling-law/proof correspondence remains distinct from executed finite arithmetic. Appendix C/D.3 are now inspected with documented assumptions and causal inconsistencies; lifecycle is repaired separately under #106; no GPU/causal/native sanitizer claim is made."
+    },
+    {
+      "id": "SCATTERBRAIN-FEATURE-STATE-CPU",
+      "paper": "scatterbrain-2021",
+      "paper_location": "Section4.2 low-rank approximation; maintained feature lifecycle support, not a printed scheduling algorithm",
+      "mechanism": "Initialize cold feature maps, honor requested redraw periods, freeze warm deterministic evaluation, persist projection/cadence/period and migrate declared legacy checkpoints while retaining current buffer dtype.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/scatterbrain/src/models/modules/attention/feature_maps_sb.py",
+        "symbol": "SBPerformerFeatures"
+      },
+      "test": {
+        "file": "tests/traceability/test_scatterbrain_feature_state.py",
+        "id": "SCATTERBRAIN-FEATURE-STATE-CPU"
+      },
+      "conditions": {
+        "execution": "Actual maintained CPU feature class and unchanged projection sampler",
+        "schedules": 4,
+        "raw_feature_oracles": 40,
+        "checkpoint_paths": 6,
+        "invalid_input_rejections": 31,
+        "mutants_rejected": 5,
+        "oracle": "Explicit expected draw-request sequences and RNG continuation; independent scalar FP64 raw-feature expressions; serialized checkpoints and invalid metadata nonmutation checks",
+        "rng": "Global Torch RNG is caller owned and restored explicitly for identical future draws; it is not part of feature state_dict",
+        "legacy_policy": "Projection-only nonzero valid matrices resume warm at counter0/receiver period; old allzero matrices explicitly migrate cold, including shape-ambiguous legacy zeros",
+        "limits": "Lifecycle metadata prevalidation is not a general transactional PyTorch load guarantee; no GPU, Gaussian-law, variance or normalized-unbiasedness claim"
+      },
+      "note": "Constructor consumes no RNG. First draw has counter0; warm explicit requests advance cadence, q/key encoding does not. Positive integral numeric periods and +inf are supported; strings, bools, nonintegral and out-of-range periods are rejected. Five source mutants must fail."
     }
   ]
 }

@@ -7,7 +7,7 @@ unvalidated (#34). It supplements the existing five CUDA-body CPU extraction
 suites rather than reclassifying their scalar adapters as parallel execution.
 
 Configure `tests/gslide_sycl` with AdaptiveCpp and run CTest. Toolchain activation
-is described by `ports/sycl-common/README.md`. The test prints device metadata
+is described by `docs/SYCL_CPU_BACKEND.md`. The test prints device metadata
 and a check count, throws on failed comparisons, and waits for asynchronous
 errors at each boundary. No datasets, GPU or paid resource are needed.
 

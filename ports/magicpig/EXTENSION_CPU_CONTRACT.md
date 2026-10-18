@@ -51,3 +51,12 @@ CPU/OS flags are checked before loading an AVX512 binary; unsupported AVX512 or
 BF16 modes are emitted as skips, never native passes. The portable numerical
 model remains the existing default CPU suite. CUDA/FlashInfer, streams,64-thread
 NUMA performance and model generation remain #62 and unverified here.
+
+The optional local acceptance gate `--require-native` requires both native build modes:
+either native build mode
+skipping fails the command after its evidence file has been written. Default
+exploratory runs preserve capability skips without treating them as execution.
+Each completed build mode emits a bounded, percent/CR/LF-escaped Actions notice
+with the tested commit and `EXECUTED_PASS` metrics or `SKIPPED` missing flags.
+These log notices remain inspectable when the full evidence artifact cannot
+be retrieved. They do not change the numerical or GPU scope.

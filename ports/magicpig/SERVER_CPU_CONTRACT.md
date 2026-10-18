@@ -89,3 +89,9 @@ RULER/accuracy/performance and unused variants. No pretrained generation claim
 is made. Alternate distributed/Quest/TopK/Mistral/70B historical closures remain
 outside this issue. Unsupported native CPUs record a skip, not server success;
 portable pre-existing numerical suites remain required.
+
+The optional local gate `--require-native` fails a skipped
+native orchestrator after writing evidence and a bounded escaped Actions notice.
+The server requires the BF16-disabled native CPU mode, without requiring the
+AVX512 BF16 ISA; #117 separately requires both native build modes. Default
+exploratory skip behavior and imported `build_extensions` calls are unchanged.

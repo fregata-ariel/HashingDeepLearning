@@ -11,7 +11,7 @@ from pathlib import Path
 import subprocess
 import sys
 
-from check_magicpig_extension_cpu import ROOT, build_extensions
+from check_magicpig_extension_cpu import ROOT, build_extensions, emit_native_notice
 
 
 def provenance() -> dict[str, object]:
@@ -41,6 +41,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--build-dir", type=Path, required=True)
     parser.add_argument("--cxx", default="g++-14")
+    parser.add_argument("--require-native", action="store_true", help="fail after recording evidence if the native CPU orchestrator skips")
     args = parser.parse_args()
     args.build_dir.mkdir(parents=True, exist_ok=True)
     originals = provenance()
@@ -62,8 +63,21 @@ def main() -> None:
     evidence["driver_sha256"] = {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in ["tools/check_magicpig_server_cpu.py", "tools/check_magicpig_extension_cpu.py"]}
     evidence["commit"] = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     evidence["thread_limit"] = os.environ.get("OMP_THREAD_LIMIT")
+    evidence["native_required"] = args.require_native
     (args.build_dir / "server-evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
     print(json.dumps(evidence, indent=2))
+    if evidence["status"] == "skip":
+        details = f"SKIPPED commit={evidence['commit']} missing_flags={json.dumps(evidence['missing_native_capabilities'])}"
+    elif evidence["status"] == "pass":
+        details = (f"EXECUTED_PASS commit={evidence['commit']} "
+                   f"main_union_checks={evidence['head_union_checks']} two_KV_GQA4_union_checks={evidence['two_KV_GQA4_union_checks']} "
+                   f"overflow_rejections={evidence['overflow_rejections']} branches={json.dumps(evidence['branches'])} "
+                   f"full_orchestrator={evidence['full_orchestrator']} gpu_verified={evidence['gpu_verified']}")
+    else:
+        raise ValueError("unknown server execution status")
+    emit_native_notice("MagicPIG native CPU server", "mode=bf16_disabled " + details)
+    if args.require_native and evidence["status"] == "skip":
+        raise SystemExit("required MagicPIG native CPU orchestrator skipped; see server-evidence.json")
 
 
 if __name__ == "__main__":

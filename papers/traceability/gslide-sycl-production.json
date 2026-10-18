@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-SYCL-PRODUCTION-116",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.3-4.4: WTA sparsification, sparse forward/backward and updates",
+      "mechanism": "Execute the same maintained production train_step operation control through a real SYCL CPU backend, with full-capacity delta reset and parameter-driven index rebuild.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/include/TrainingControl.h",
+        "symbol": "train_step"
+      },
+      "test": {
+        "file": "tests/gslide_sycl/test_network.cpp",
+        "id": "GSLIDE-SYCL-PRODUCTION-116"
+      },
+      "conditions": {
+        "suite": "gslide_sycl_training_test",
+        "dimensions": {
+          "input": 3,
+          "hidden": 4,
+          "output": 4,
+          "max_batch": 2
+        },
+        "updates": 2,
+        "partial_update": true,
+        "seed": 40,
+        "oracle": "independent scalar FP64 activations, probabilities, deltas, parameters, Adam moments/velocities, WTA bucket sets and active sets",
+        "absolute_tolerance": 8e-06,
+        "negative_fixtures": [
+          "production controller replay with reset disabled changes hidden deltas and actual parameters",
+          "stale index changes connected queried active set"
+        ],
+        "execution": "public shared-control SYCL Network::train on actual CPU device; native CUDA adapter not executed",
+        "gpu_validated": false,
+        "native_cuda_train_executed": false
+      },
+      "note": "Support adaptation with one hidden ReLU layer. Same controller is invoked by maintained native Network::train; runtime operations and reference numerical kernels remain backend-specific. Actual CPU USM/copy/clear, kernel submission, scan/filter/key-sort, row/column dense products, query, updates, buffer reuse and ordinary RAII teardown execute. CUDA source reset is wired but native confirmation/ownership/library/stream/race/performance acceptance stays #34/#43; no assertion that all original 54 host bodies ran."
+    }
+  ]
+}

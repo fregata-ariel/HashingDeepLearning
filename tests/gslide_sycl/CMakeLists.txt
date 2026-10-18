@@ -7,3 +7,8 @@ target_include_directories(gslide_sycl_test PRIVATE ../../ports/sycl-common/incl
 add_sycl_to_target(TARGET gslide_sycl_test SOURCES test_kernels.cpp)
 enable_testing()
 add_test(NAME gslide_sycl_test COMMAND gslide_sycl_test)
+add_executable(gslide_sycl_training_test test_network.cpp)
+target_compile_features(gslide_sycl_training_test PRIVATE cxx_std_17)
+target_include_directories(gslide_sycl_training_test PRIVATE ../../ports/sycl-common/include ../../ports/g-slide/sycl)
+add_sycl_to_target(TARGET gslide_sycl_training_test SOURCES test_network.cpp)
+add_test(NAME gslide_sycl_training_test COMMAND gslide_sycl_training_test)

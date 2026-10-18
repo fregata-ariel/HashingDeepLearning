@@ -178,3 +178,16 @@ After activating the shared toolchain:
 python3 tools/check_gslide_sycl.py --build-dir /tmp/gslide-sycl
 python3 tools/check_gslide_source_regressions.py --build-dir /tmp/gslide-source-regressions
 ```
+
+
+## Shared production caller control (#116)
+
+`Network::train` now delegates its operation ordering to `TrainingControl.h`;
+that exact controller also runs through the SYCL numerical backend. The new
+[production contract](sycl/production.md) describes the public caller, actual
+CPU allocation/copy/scan/filter/sort/dense products, connected updates, active
+sets and rebuild checks. The actual caller clears full hidden-delta capacity
+before backward; stale reset and stale index runs remain explicit negative
+fixtures. This is CPU execution of shared production control, not native CUDA
+`Network::train` or all original host bodies. The native reset source repair
+still requires #43 GPU acceptance, and #34 remains open.

@@ -4,6 +4,7 @@
 
 #include "GPUTimer.h"
 #include "Network.h"
+#include "TrainingControl.h"
 
 Network::Network(const std::vector<int> &node_num_per_layer,
                  const std::vector<int> &node_capacity_per_layer,
@@ -98,58 +99,51 @@ void Network::train(const std::vector<int> &h_cmprs_input_nodes,
                     const float lr, const int max_label_num,
                     const int thread_num, const bool rebuild,
                     const bool reshuffle) {
-  GPUTimer timer;
-
-  csc_inputs.extract_from(h_cmprs_input_nodes, h_cmprs_input_vals,
-                          h_cmprs_input_offsets);
-  cmprs_labels.extract_from(h_cmprs_label_nodes, h_cmprs_label_offsets);
-
-  // forward
-  timer.start();
-  for (int l = 0; l < relu_layers.size(); ++l) {
-    if (l == 0) {
-      relu_layers[l]->forward(csc_inputs, batch_size, thread_num,
-                              max_act_nums[l]);
-    } else {
+  gslide::TrainingOperations ops;
+  ops.hidden_layers = static_cast<int>(relu_layers.size());
+  ops.transfer = [&]() {
+    csc_inputs.extract_from(h_cmprs_input_nodes, h_cmprs_input_vals,
+                            h_cmprs_input_offsets);
+    cmprs_labels.extract_from(h_cmprs_label_nodes, h_cmprs_label_offsets);
+  };
+  ops.hidden_forward = [&](int l) {
+    if (l == 0)
+      relu_layers[l]->forward(csc_inputs, batch_size, thread_num, max_act_nums[l]);
+    else
       relu_layers[l]->forward(*relu_layers[l - 1], batch_size, thread_num,
                               max_act_nums[l]);
-    }
-    // timer.record("[FW " + std::to_string(l) + "] ");
-  }
-  softmax_layer->forward(*relu_layers.back(), cmprs_labels, batch_size,
-                         thread_num, *(max_act_nums.end() - 2),
-                         max_act_nums.back(), max_label_num);
-  // timer.record("[FW " + std::to_string(layer_num - 1) + "] ");
-
-  // backpropagate
-  softmax_layer->bp(*relu_layers.back(), batch_size, thread_num,
-                    *(max_act_nums.end() - 2), max_act_nums.back());
-  // timer.record("[BP " + std::to_string(layer_num - 1) + "] ");
-  for (int l = relu_layers.size() - 1; l >= 0; --l) {
-    if (l == 0) {
+  };
+  ops.output_forward = [&]() {
+    softmax_layer->forward(*relu_layers.back(), cmprs_labels, batch_size,
+                           thread_num, *(max_act_nums.end() - 2),
+                           max_act_nums.back(), max_label_num);
+  };
+  ops.reset_hidden_deltas = [&]() {
+    for (const auto &layer : relu_layers)
+      CUDA_CHECK(cudaMemset(layer->d_cmprs_bp_deltas, 0,
+                             sizeof(float) * layer->csc_acts.node_capacity));
+  };
+  ops.output_backward = [&]() {
+    softmax_layer->bp(*relu_layers.back(), batch_size, thread_num,
+                      *(max_act_nums.end() - 2), max_act_nums.back());
+  };
+  ops.hidden_backward = [&](int l) {
+    if (l == 0)
       relu_layers[l]->bp_first_layer(csc_inputs, batch_size, thread_num,
                                      max_act_nums[l]);
-    } else {
+    else
       relu_layers[l]->bp(*relu_layers[l - 1], batch_size, thread_num,
                          max_act_nums[l]);
-    }
-    // timer.record("[BP " + std::to_string(l) + "] ");
-  }
-
-  // update
-  for (int l = 0; l < relu_layers.size(); ++l) {
+  };
+  ops.hidden_update = [&](int l) {
     relu_layers[l]->update_weights(thread_num, lr);
     relu_layers[l]->update_biases(thread_num, lr);
-    // timer.record("[UPDATE " + std::to_string(l) + "] ");
-  }
-  softmax_layer->update_weights(thread_num, lr);
-  softmax_layer->update_biases(thread_num, lr);
-  // timer.record("[UPDATE " + std::to_string(layer_num - 1) + "] ");
-
-  if (rebuild || reshuffle) {
-    softmax_layer->rebuild(reshuffle);
-    // timer.record("[REBUILD] ");
-  }
-
-  CUDA_CHECK(cudaDeviceSynchronize());
+  };
+  ops.output_update = [&]() {
+    softmax_layer->update_weights(thread_num, lr);
+    softmax_layer->update_biases(thread_num, lr);
+  };
+  ops.rebuild_index = [&](bool shuffle) { softmax_layer->rebuild(shuffle); };
+  ops.complete = [&]() { CUDA_CHECK(cudaDeviceSynchronize()); };
+  gslide::train_step(ops, rebuild, reshuffle);
 }

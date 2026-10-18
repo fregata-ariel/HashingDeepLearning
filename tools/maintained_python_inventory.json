@@ -100,7 +100,10 @@
         "src/models/modules/attention/projection_utils.py",
         "src/models/modules/attention/sblocal_attention.py",
         "src/models/modules/attention/scatterbrain_utils.py",
-        "src/models/modules/masking.py"
+        "src/models/modules/masking.py",
+        "sycl/sblocal_sycl.py",
+        "sycl/sycl_local_product.py",
+        "sycl/tests/validate.py"
       ],
       "stub_files": [
         "typings/apex/__init__.pyi",
@@ -110,6 +113,7 @@
         "typings/fast_transformers/local_product.pyi"
       ],
       "mypy_path": [
+        "ports/scatterbrain/sycl",
         "ports/scatterbrain",
         "ports/scatterbrain/typings",
         "typings"

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "paper": "scatterbrain-2021",
+      "paper_location": "NeurIPS2021 conference p6 Section4.2, Eq1/2 and selected local sparse support; AppendixC common normalization",
+      "conditions": {
+        "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",
+        "execution": "Real AdaptiveCpp generic/OpenMP CPU device; production shared SYCL kernel bodies via synchronous ctypes/autograd adapter",
+        "domain": "FP32 CPU host tensors; B2/H2/Q5/K4/E3/V2, unequal Q/K supported; noncausal, dropout0, feature eps0, prefix lengths4/3",
+        "queue_lifetime": "caller-selected queue in C++ API; call-scoped CPU queue in C adapter; SYCL buffers; wait_and_throw before copyback; no pointer escape or CPU fallback",
+        "identity": "exact candidate/kernel/fixture/library hashes, native device/runtime description in test log, shared compiler build evidence",
+        "original_CUDA": "unexecuted",
+        "native_GPU": "unexecuted",
+        "sanitizers": "unexecuted",
+        "windows": [
+          1,
+          2,
+          3,
+          4,
+          9
+        ],
+        "oracle": "Unchanged independent dense/gather primitive oracle plus extra scalar FP64 all4-operation oracle and detached FP64 gradient leaves; finite actual/reference errors bounded2e-6..5e-6",
+        "license": "MIT selected Idiap source f22c13716fc748bb21a7b226ada7f7b5f87f867f; full notice retained"
+      },
+      "id": "SCATTERBRAIN-LOCAL-PRODUCT-SYCL-CPU",
+      "relation": "support",
+      "mechanism": "Execute shared SYCL local dot/weighted-average and both backwards against independent dense/gather FP64/scalar expectations.",
+      "implementation": {
+        "file": "ports/scatterbrain/sycl/include/scatterbrain/local_product.hpp",
+        "symbol": "local_dot_product"
+      },
+      "test": {
+        "file": "ports/scatterbrain/sycl/tests/validate.py",
+        "id": "SCATTERBRAIN-LOCAL-PRODUCT-SYCL-CPU"
+      },
+      "note": "All4operations actually execute SYCL CPU bodies, distinct from existing SCATTERBRAIN-LOCAL-PRODUCT-CPU original native C++ evidence. Physical/prefix boundaries, additive mask and Q/K/weight/V first derivatives checked; eight extra repeated scalar-FP64 all4-operation cases cover Q/K1/1,7/3,3/7,17/16 and zero prefixes."
+    },
+    {
+      "paper": "scatterbrain-2021",
+      "paper_location": "NeurIPS2021 conference p6 Section4.2, Eq1/2 and selected local sparse support; AppendixC common normalization",
+      "conditions": {
+        "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",
+        "execution": "Real AdaptiveCpp generic/OpenMP CPU device; production shared SYCL kernel bodies via synchronous ctypes/autograd adapter",
+        "domain": "FP32 CPU host tensors; B2/H2/Q5/K4/E3/V2, unequal Q/K supported; noncausal, dropout0, feature eps0, prefix lengths4/3",
+        "queue_lifetime": "caller-selected queue in C++ API; call-scoped CPU queue in C adapter; SYCL buffers; wait_and_throw before copyback; no pointer escape or CPU fallback",
+        "identity": "exact candidate/kernel/fixture/library hashes, native device/runtime description in test log, shared compiler build evidence",
+        "original_CUDA": "unexecuted",
+        "native_GPU": "unexecuted",
+        "sanitizers": "unexecuted",
+        "windows": [
+          1,
+          2,
+          3,
+          4,
+          16
+        ],
+        "temperatures": [
+          "1/sqrt3",
+          0.25
+        ],
+        "cases": 10,
+        "full_support_dense_cases": 2,
+        "lifecycle_cases": 4,
+        "mutants": {
+          "omit_subtraction": 10,
+          "mismatched_normalizer": 10
+        },
+        "oracle": "Independent raw unstabilized FP64 cosh projection, dense exact local support replacement, H/HV/H1 and detached-leaf gradients; finite error bounds3e-6..4e-6",
+        "rejected": "causal/dropout/eps/arbitrary attention masks/non-CPU/non-FP32; no causal dependency added",
+        "license": "Maintained Apache-2.0 Torch composition plus MIT SYCL local boundary; notices preserved"
+      },
+      "id": "SCATTERBRAIN-LOCAL-HYBRID-SYCL-CPU",
+      "relation": "variant",
+      "mechanism": "Execute maintained Torch initial SBLocal composition with actual SYCL local4/autograd boundary; independently compare raw H/HV/H1, common normalization, output, weights and conditional Q/K/V gradients.",
+      "implementation": {
+        "file": "ports/scatterbrain/sycl/sblocal_sycl.py",
+        "symbol": "SBLocalSYCLAttention"
+      },
+      "test": {
+        "file": "ports/scatterbrain/sycl/tests/validate.py",
+        "id": "SCATTERBRAIN-LOCAL-HYBRID-SYCL-CPU"
+      },
+      "note": "Hybrid/features/normalization remain maintained Torch CPU algebra; this is not an all-SYCL hybrid or CUDA-body execution claim. Cosh projection is actually sampled and frozen for independent conditional FP64 oracle. Existing feature/state lifecycle is preserved; original CPU/C++ IDs remain distinct."
+    }
+  ]
+}

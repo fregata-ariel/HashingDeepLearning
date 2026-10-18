@@ -1,0 +1,21 @@
+{
+  "name": "real_cpu_server",
+  "issue": 118,
+  "driver": "tools/check_magicpig_server_cpu.py",
+  "fixture": "tests/traceability/test_magicpig_server_cpu.py",
+  "original_sha256": {
+    "third_party/magicpig/models/attnserver.py": "31de3e6c7f12703563e0a770b0e094d6706e3de1b35aaa2afacb7b3d304dd79b",
+    "third_party/magicpig/models/utils.py": "5f7d4065cc870ff5181d7db85b247032c9468ec508347ebeb0542965b090bfee"
+  },
+  "scope": [
+    "whole maintained CPU orchestrator: ctor,alloc_buffer,fill,build_table,plan,decode,clear",
+    "LSH and K0baseline native callees",
+    "causal mask,repeat_kv,rotate_half,RoPE,RMSNorm"
+  ],
+  "exclusions": [
+    "top-p",
+    "LLM/LLMLayer",
+    "generation/CLI/model loading",
+    "CUDA/FlashInfer #62"
+  ]
+}

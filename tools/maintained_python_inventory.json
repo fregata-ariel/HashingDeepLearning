@@ -72,7 +72,11 @@
     {
       "name": "magicpig",
       "root": "ports/magicpig",
-      "python_files": [],
+      "python_files": [
+        "magicpig_cpu/__init__.py",
+        "magicpig_cpu/helpers.py",
+        "magicpig_cpu/orchestration.py"
+      ],
       "stub_files": [],
       "mypy_path": [
         "ports/magicpig",

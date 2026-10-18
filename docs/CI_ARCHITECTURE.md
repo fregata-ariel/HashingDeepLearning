@@ -256,3 +256,9 @@ using the wheel ABI, emits separate capability skips, observes four OpenMP
 workers and uploads source hashes/dispatch traces with the existing artifact.
 The pre-existing selected-body sanitizer gate remains separate from the
 unsanitized Torch wheel. See `ports/magicpig/EXTENSION_CPU_CONTRACT.md`.
+
+Issue #118 adds complete maintained MagicPIG CPU server control to the same
+Torch job, reusing native builds from #117. Its evidence distinguishes actual
+Torch/native callees, maintained source adaptation and CPU resident/merge math
+from uncalled FlashInfer/CUDA. Three maintained Python files enroll in the
+existing strict typing inventory; no new permanent workflow is introduced.

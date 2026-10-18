@@ -130,6 +130,12 @@ def check_enrollment(suites: dict[str, Suite], bf16: Suite, python_suites: dict[
         if descriptor["name"] != "real_torch_extension" or descriptor["driver"] != "tools/check_magicpig_extension_cpu.py":
             raise ValueError("invalid external Torch suite registration")
         enrolled.add(fixture_path(descriptor["fixture"], ".py"))
+    server = ROOT / "tests/traceability/magicpig_server_suite.json"
+    if server.exists():
+        descriptor = json.loads(server.read_text())
+        if descriptor["name"] != "real_cpu_server" or descriptor["driver"] != "tools/check_magicpig_server_cpu.py":
+            raise ValueError("invalid external server suite registration")
+        enrolled.add(fixture_path(descriptor["fixture"], ".py"))
     mapped: set[Path] = set()
     for record in experiments:
         if record["paper"] == "magicpig-2024" and record["id"].endswith("-CPU"):

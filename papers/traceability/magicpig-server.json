@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-SERVER-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Sections4.3-4.4; archived v0.2 main attention-server control",
+      "mechanism": "Complete maintained CPU orchestrator: constructor/buffer allocation, prompt partition/hash chunk loop, per-request/layer sort/table build, two-step dense/sampled/K0baseline decode, native offload plus actual Torch resident merge, clear/refill.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/magicpig_cpu/orchestration.py",
+        "symbol": "CPUAttentionServer"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_server_cpu.py",
+        "id": "MAGICPIG-SERVER-CPU"
+      },
+      "conditions": {
+        "execution": "actual maintained full CPU orchestrator with real Torch and actual maintained native extension callees; not archived wholeclass execution",
+        "cases": "192 independent union head checks;3layers,2requests,GQA4,2steps,4clear/refillcycles",
+        "native": "#117 actual maintained sparse-wrapper/full-attention/LSH sorted-fill/retrieval; fatal UBSan on extension, wheel unsanitized",
+        "oracle": "FP64 single softmax over independently partitioned/centered quantized union, collision threshold>=2 candidate sets; existing native output .008/base2 LSE .03 budgets",
+        "hash": "real BF16 projection, strictzero false, exact K1..11 packing, FP64 sign-margin reference",
+        "helpers": "fixed tiny mask direction/broadcast,GQA repeat,rotate-half/RoPE position/sign,RMS scalar formulas; real Torch math",
+        "ownership": "owned cloned projection and caches, input copies, no GPU/pinned/async aliases",
+        "typing": "3 annotated maintained Python files enrolled strict mypy and disallow-any-explicit",
+        "original_identity": "descriptor pins immutable attnserver.py/utils.py; runner emits complete original method/function AST hashes and source line locators",
+        "gpu_execution": "unverified #62"
+      },
+      "note": "Backend-independent maintained shared server explicitly adapts LSHSparseAttnServer/AttnServer; per-layer/request state repairs shared hash/length aliasing. CPU resident attention/merge replaces actual FlashInfer; top-p,LLM/LLMLayer,generation andCLI excluded because no selected server API requires them."
+    }
+  ]
+}

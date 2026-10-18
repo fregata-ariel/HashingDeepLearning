@@ -33,6 +33,8 @@ on:
       - "tools/check_scatterbrain_sbsmyrf_sources.py"
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
+      - "tools/check_magicpig_extension_cpu.py"
+      - "tools/check_magicpig_server_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
       - "tools/audit_python_annotations.py"
@@ -91,6 +93,8 @@ on:
       - "tools/check_scatterbrain_sbsmyrf_sources.py"
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
+      - "tools/check_magicpig_extension_cpu.py"
+      - "tools/check_magicpig_server_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
       - "tools/audit_python_annotations.py"
@@ -297,6 +301,13 @@ jobs:
           OMP_THREAD_LIMIT: "4"
         run: |
           python tools/check_magicpig_extension_cpu.py --cxx g++-14 \
+            --build-dir scatterbrain-cpu-artifact/magicpig-extension
+
+      - name: Complete MagicPIG CPU server orchestration and tiny helpers
+        env:
+          OMP_THREAD_LIMIT: "4"
+        run: |
+          python tools/check_magicpig_server_cpu.py --cxx g++-14 \
             --build-dir scatterbrain-cpu-artifact/magicpig-extension
 
       - name: Verify initial and native dependency source identities

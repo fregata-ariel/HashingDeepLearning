@@ -43,18 +43,16 @@ Future runs on unsupported hardware report their own explicit skips.
 ## Deliberate maintained Python inventory
 
 `tools/maintained_python_inventory.json` records exact `.py` and `.pyi` paths
-and each group's mypy search roots. At this checkpoint it contains 31 maintained
-Python sources and one maintained MONGOOSE stub. The `magicpig` group explicitly
-contains zero maintained Python sources/stubs. Archived orchestration under
-`third_party/magicpig/` and selected-AST fixtures under `tests/traceability/` are
-not a maintained production Python port and are not a MagicPIG strict-typing
-pass. CI reports `PYTHON_TYPING_EMPTY group=magicpig maintained_sources=0`.
+and each group's mypy search roots. The inventory now enrolls 50 maintained
+Python sources and six stubs across projects, including three MagicPIG CPU
+orchestrator/helper files. Archived orchestration under `third_party/magicpig/`
+and selected-AST fixtures remain separate from that maintained scope.
 
 The annotation audit compares actual maintained files with the exact inventory;
 new sources, stubs, removals, same-count replacements or undeclared maintained
 roots fail until deliberately enrolled. Every nonempty group is then checked
 with the same `--strict` mypy flag and its isolated search roots. MagicPIG
-additionally uses `--disallow-any-explicit` for future native/runtime APIs;
+additionally uses `--disallow-any-explicit` for its native/runtime APIs;
 the existing projects retain their NumPy aliases (NumPy uses an `Any` array
 shape internally). This replaces the former hard-coded 23/4/4 source lists, without
 changing their strict checks or the separate Reformer attention audit.
@@ -63,8 +61,7 @@ When a maintained MagicPIG Python port is added, enroll its exact paths in the
 `magicpig` group; annotate every function and supply dtype, shape/layout,
 mutation, ownership, capacity and paper/test relation docstrings. Add narrowly
 scoped Torch/native/FlashInfer stubs for the interfaces actually imported and
-retain missing-import diagnostics. No placeholder production port or broad
-`Any`/`ignore_missing_imports` stub is justified by the current zero-file scope.
+retain missing-import diagnostics. No broad `Any`/`ignore_missing_imports` stub is used for this CPU port.
 The inventory runner automatically checks enrolled future sources and stubs.
 
 ## Existing workflow gates
@@ -149,3 +146,5 @@ Unrestricted extension inputs, FlashInfer execution, asynchronous transfer or
 stream safety, production Llama generation, accuracy or throughput.
 
 Real Tensor/native dispatch validation (#117): [boundary contract](EXTENSION_CPU_CONTRACT.md), `MAGICPIG-TORCH-CPU`, `tools/check_magicpig_extension_cpu.py`. It supplements selected-body evidence and does not validate CUDA/FlashInfer (#62).
+
+Complete maintained server control (#118): [server contract](SERVER_CPU_CONTRACT.md), `MAGICPIG-SERVER-CPU`, `tools/check_magicpig_server_cpu.py`; real native callees and CPU Torch resident math, with no FlashInfer execution claim.

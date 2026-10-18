@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Execute two original CUDA bodies serially to characterize translated fixes.
-No parallel CUDA claim: one thread/block, barriers and atomics are serial.
+No parallel CUDA claim: ordinary CPU threads execute the original hash body
+with a 32-item barrier and atomic_ref; the dense index body executes serially.
 """
 import argparse
 import hashlib
@@ -29,14 +30,20 @@ def run(build):
 #include <cmath>
 #include <algorithm>
 #include <iostream>
+#include <thread>
+#include <vector>
+#include <barrier>
+#include <atomic>
 #define __global__
 #define __shared__
 struct Dim { int x; };
-Dim threadIdx{0}, blockIdx{0},blockDim{1};
+thread_local Dim threadIdx{0};
+Dim blockIdx{0},blockDim{1};
 struct CscActNodes { int* d_nodes; int* d_offsets; };
 int smem[4096];
-void __syncthreads(){assert(blockDim.x==1);}
-int atomicAdd(int* p,int x){int old=*p;*p+=x;return old;}
+std::barrier syncpoint(32);
+void __syncthreads(){assert(blockDim.x==32);syncpoint.arrive_and_wait();}
+int atomicAdd(int* p,int x){return std::atomic_ref<int>(*p).fetch_add(x);}
 using std::min;
 #define FOR_IDX_ASYNC(i,b,e) for(int i=(b)+threadIdx.x;i<(e);i+=blockDim.x)
 '''+'\n'.join(bodies)+r'''
@@ -44,23 +51,29 @@ int main(){
  int ids[2]={-1,-1}, offsets[3]={-71,-71,-71};
  for(int i=0;i<2;++i){blockIdx.x=i;get_dense_acts_knl({ids,offsets},1,2);}
  assert(ids[0]==0&&ids[1]==0&&offsets[0]==0&&offsets[1]==1&&offsets[2]==-71);
- int bins[4]={0,1,0,1},buckets[16],sizes[8]={};float weights[4]={2,1,1,2};
- std::fill_n(buckets,16,-1);
- for(int block=0;block<2;++block){blockIdx.x=block;init_hash_knl(bins,weights,2,2,4,2,1,2,2,1,4,2,buckets,sizes);}
- // Expected node 0 in address 0 for each table, node 1 in address 1.
- // Original lane/node staging inserts node 0 twice; node 1 is never inserted.
- assert(sizes[0]==1&&buckets[0]==0&&sizes[5]==1&&buckets[10]==0);
- bool node1=false;for(int i=0;i<16;++i)node1|=buckets[i]==1;assert(!node1);
- std::cout<<"ORIGINAL_SERIAL_REGRESSIONS dense_terminal=-71 expected=2 alternate_node1_absent=true\n";
+ int bins[4]={0,1,0,1},buckets[512],sizes[8]={};float weights[128];
+ for(int n=0;n<64;++n){weights[2*n]=n%2?1:2;weights[2*n+1]=n%2?2:1;}
+ std::fill_n(buckets,512,-1);blockDim.x=32;
+ for(int block=0;block<2;++block){blockIdx.x=block;std::vector<std::thread> threads;
+  for(int lane=0;lane<32;++lane)threads.emplace_back([&,lane]{threadIdx.x=lane;init_hash_knl(bins,weights,2,64,4,2,1,2,2,1,4,64,buckets,sizes);});
+  for(auto& thread:threads)thread.join();
+ }
+ // Independent expected counts: 64 nodes per table, 32 at each address0/1.
+ // Original emits 32 nodes/table, all at address0/table0 or address1/table1;
+ // every node32..63 is absent despite a legal original-dispatch block size.
+ assert(sizes[0]==32&&sizes[5]==32&&sizes[1]==0&&sizes[4]==0);
+ for(int i=0;i<32;++i){assert(buckets[i]>=0&&buckets[i]<32);assert(buckets[5*64+i]>=0&&buckets[5*64+i]<32);}
+ for(int i=0;i<512;++i)assert(buckets[i]<32);
+ std::cout<<"ORIGINAL_CPU_REGRESSIONS dense_terminal=-71 expected=2 block32_nodes64_lanes2_each_table_count=32 expected=64 nodes32to63_absent=true gpu=false\n";
 }
 ''')
     exe=build/'original'
-    command=['g++','-std=c++17','-O0','-g',str(unit),'-o',str(exe)]
+    command=['g++','-std=c++20','-O0','-g','-pthread','-fno-strict-aliasing',str(unit),'-o',str(exe)]
     subprocess.run(command,check=True)
     output=subprocess.check_output([str(exe)],text=True)
     print(output,end='')
     evidence.write_text(json.dumps(dict(definitions=identities,command=command,
-        original_cuda_bodies_serial=True,gpu_validated=False,output=output),indent=2)+'\n')
+        original_cuda_bodies_cpu_compatible=True,hash_work_items=32,hash_grid_blocks=2,gpu_validated=False,output=output),indent=2)+'\n')
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--build-dir',type=Path,required=True)

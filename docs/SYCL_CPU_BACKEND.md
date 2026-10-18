@@ -43,7 +43,7 @@ On Debian 13 amd64, provide the signed distribution prerequisites used by CI:
 
 ```sh
 apt-get update
-apt-get install -y --no-install-recommends ca-certificates curl git python3 python3-venv g++ libc6-dev libedit2 libffi8 libxml2 libz3-4 libpfm4 libtinfo6 zlib1g libzstd1 time util-linux xz-utils
+apt-get install -y --no-install-recommends ca-certificates curl git python3 python3-venv g++ make libc6-dev libedit2 libffi8 libxml2 libz3-4 libpfm4 libtinfo6 zlib1g libzstd1 time util-linux xz-utils
 ```
 
 From the checkout:

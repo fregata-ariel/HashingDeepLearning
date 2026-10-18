@@ -32,7 +32,7 @@
           "production controller replay with reset disabled changes hidden deltas and actual parameters",
           "stale index changes connected queried active set"
         ],
-        "execution": "public shared-control SYCL Network::train on actual CPU device; native CUDA adapter not executed",
+        "execution": "public shared-control SYCL Network::train on actual CPU device; native CUDA runtime not executed; separate exact host body tested with mocked operations",
         "gpu_validated": false,
         "native_cuda_train_executed": false
       },

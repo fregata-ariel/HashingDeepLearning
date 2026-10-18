@@ -6,6 +6,8 @@
 #include <limits>
 #include <stdexcept>
 
+// TRACE_TEST_ID: GSLIDE-SYCL-DEVICE-115
+// Support: translated shared kernels, not execution of the original CUDA bodies.
 // Shared CPU/GPU SYCL implementation; all pointers are USM in q's context.
 // Calls complete before returning, including asynchronous failures. Shapes and
 // capacities are host-validated; inputs must be finite and IDs in range.

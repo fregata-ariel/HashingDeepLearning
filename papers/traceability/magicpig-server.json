@@ -17,7 +17,7 @@
       },
       "conditions": {
         "execution": "actual maintained full CPU orchestrator with real Torch and actual maintained native extension callees; not archived wholeclass execution",
-        "cases": "192 independent union head checks;3layers,2requests,GQA4,2steps,4clear/refillcycles",
+        "cases": "192 main union checks plus64 two-KV/GQA4 union checks;4 finite-input overflow/precommit regressions;3layers,2requests,2steps,4clear/refillcycles",
         "native": "#117 actual maintained sparse-wrapper/full-attention/LSH sorted-fill/retrieval; fatal UBSan on extension, wheel unsanitized",
         "oracle": "FP64 single softmax over independently partitioned/centered quantized union, collision threshold>=2 candidate sets; existing native output .008/base2 LSE .03 budgets",
         "hash": "real BF16 projection, strictzero false, exact K1..11 packing, FP64 sign-margin reference",

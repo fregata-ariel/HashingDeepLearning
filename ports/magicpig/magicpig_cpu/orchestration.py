@@ -123,7 +123,10 @@ class CPUAttentionServer:
     def _hash(self, operand: Tensor) -> Tensor:
         """Actual Torch BF16 projection, strict >0 ties and exact K1..11 packing."""
         assert self.projection is not None
-        signs = (operand @ self.projection).gt(0).reshape(*operand.shape[:-1], self.tables, self.k)
+        projected = operand @ self.projection
+        if not bool(torch.isfinite(projected).all()):
+            raise ValueError("nonfinite hash projection products")
+        signs = projected.gt(0).reshape(*operand.shape[:-1], self.tables, self.k)
         packing = torch.tensor([2 ** i for i in range(self.k)], dtype=torch.float16)
         return (signs.to(torch.float16) * packing).sum(-1).to(torch.int16)
 
@@ -151,10 +154,12 @@ class CPUAttentionServer:
             average = offkey.mean(1, keepdim=True)
             offkey = (offkey - average).contiguous()
             norms = offkey.float().norm(dim=-1)
-            if not bool((norms > 0).all()):
-                raise ValueError("zero-norm centered offload unsupported")
+            if not bool(torch.isfinite(average).all()) or not bool(torch.isfinite(offkey).all()) or not bool(torch.isfinite(norms).all()) or not bool((norms > 0).all()):
+                raise ValueError("nonfinite or zero-norm centered offload unsupported")
             resident_key = torch.cat((key[:c.sink], key[end:]), dim=0).transpose(0, 1) - average
             resident_value = torch.cat((value[:c.sink], value[end:]), dim=0).transpose(0, 1)
+            if not bool(torch.isfinite(resident_key).all()):
+                raise ValueError("nonfinite centered resident keys")
             ranges: list[tuple[int, int]] = []
             hashes = torch.empty((c.kvheads, self.tables, end-c.sink), dtype=torch.int16)
             if self.k:
@@ -210,6 +215,8 @@ class CPUAttentionServer:
             keys = cache[request, 0, heads, :n].float()
             values = cache[request, 1, heads, :n].float()
             logits = torch.einsum("hd,hnd->hn", query[request].float(), keys) / math.sqrt(c.dim)
+            if not bool(torch.isfinite(logits).all()):
+                raise ValueError("nonfinite resident logits")
             outputs.append(torch.einsum("hn,hnd->hd", logits.softmax(-1), values))
             lses.append(logits.logsumexp(-1) / math.log(2))
         return torch.stack(outputs), torch.stack(lses)
@@ -223,8 +230,9 @@ class CPUAttentionServer:
         cpu_bf16(query, (c.batch, c.heads, 1, c.dim))
         cpu_bf16(key, (c.batch, c.kvheads, 1, c.dim)); cpu_bf16(value, (c.batch, c.kvheads, 1, c.dim))
         flat = query.reshape(c.batch*c.heads, c.dim)
-        if not bool((flat.float().norm(dim=-1) > 0).all()):
-            raise ValueError("zero query norm unsupported")
+        query_norms = flat.float().norm(dim=-1)
+        if not bool(torch.isfinite(query_norms).all()) or not bool((query_norms > 0).all()):
+            raise ValueError("nonfinite or zero query norm unsupported")
         dense = layer in c.dense_layers
         if not dense:
             if self.k:
@@ -240,6 +248,10 @@ class CPUAttentionServer:
                 self.last_branch = "baseline_full"
         else:
             self.last_branch = "dense"
+        if not dense:
+            nonempty = self.nnz > 0
+            if not bool(torch.isfinite(self.output).all()) or not bool(torch.isfinite(self.metadata[:, nonempty]).all()) or not bool(torch.isneginf(self.metadata[:, ~nonempty]).all()):
+                raise ValueError("invalid native attention output/LSE")
         # Prepare append separately; native rejection cannot mutate resident cache.
         cache = self.resident[layer].clone()
         for request in range(c.batch):
@@ -258,6 +270,8 @@ class CPUAttentionServer:
             total = torch.logaddexp(resident_lse * math.log(2), offload_lse * math.log(2)) / math.log(2)
             result = resident * torch.exp2(resident_lse-total).unsqueeze(-1) + self.output.reshape(c.batch, c.heads, c.dim).float() * torch.exp2(offload_lse-total).unsqueeze(-1)
             self.last_offload_lse = offload_lse.clone()
+        if not bool(torch.isfinite(resident_lse).all()) or not bool(torch.isfinite(result).all()):
+            raise ValueError("nonfinite derived attention/merge state")
         self.resident[layer].copy_(cache)
         self.lengths[layer] = [length+1 for length in self.lengths[layer]]
         self.pending.remove(layer)

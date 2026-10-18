@@ -55,13 +55,20 @@ calls, in-place caller mutation during calls, or external mutation of its
 inspection attributes are supported. Native backends are synchronously called
 through annotated narrow protocols; no broad stubs or `Any` APIs are added.
 
+Nonfinite derived centering/norms or hash projection products reject before native fill. Nonfinite query
+norms, resident logits/LSE, native nonempty LSE/output or merged output reject
+before resident commit, even for finite input tensors whose arithmetic overflows.
+Empty native heads retain zero output/negative-infinity metadata.
+
 User shape/dtype/device/config/phase errors reject before resident cache/length
 changes. A failed native primitive can update retrieval scratch buffers but
 cannot append resident tokens or consume the pending layer. `clear` resets all
 owned CPU state and both native owners for refill. Mathematical errors remain
 exceptions; no fallback to a generic dense result conceals failure.
 
-Tests use two requests with different prompt/offload lengths, three layers,
+Tests include 192 main union checks plus 64 two-KV/GQA4 routing checks,
+and four finite-input overflow rejection/precommit regressions. They use
+two requests with different prompt/offload lengths, three layers,
 GQA4, interleaved fill/build, two appends, and clear/refill for sampled and K0
 baseline independently. Expected token partitions/centering/hash payloads and
 state transitions are computed independently. A single FP64 softmax enumerates

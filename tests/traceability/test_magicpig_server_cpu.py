@@ -103,6 +103,98 @@ def helper_oracles() -> int:
     return 5
 
 
+def overflow_rejections(sparse: ModuleType, lsh: ModuleType) -> int:
+    """Finite BF16 overflow must not commit fill/native/cache/phase state."""
+    config = ServerConfig(layers=1, heads=1, kvheads=1, dim=128, batch=1, capacity=5, dense_layers=(0,))
+    native = sparse.SparseAttentionServer()
+    server = CPUAttentionServer(config, native)
+    prompt = torch.ones((2, 1, 128), dtype=torch.bfloat16)
+    server.fill(0, 0, prompt, prompt)
+    server.plan()
+    snapshot = server.resident[0].clone()
+    lengths = [row[:] for row in server.lengths]
+    pending = set(server.pending)
+    huge = torch.full((1, 1, 1, 128), 1e30, dtype=torch.bfloat16)
+    moderate = torch.full_like(huge, 1e10)
+    for query in [huge, moderate]:
+        rejected(lambda: server.decode(query, huge, huge, 0))
+        assert torch.equal(server.resident[0], snapshot)
+        assert server.lengths == lengths and server.pending == pending
+    # Sparse derived norms overflow although every input element remains finite.
+    sparse_config = ServerConfig(layers=1, heads=1, kvheads=1, dim=128, batch=1, capacity=6, dense_layers=())
+    backend = sparse.SparseAttentionServer()
+    sparse_server = CPUAttentionServer(sparse_config, backend)
+    keys = torch.ones((4, 1, 128), dtype=torch.bfloat16)
+    keys[1].fill_(1e30); keys[2].fill_(-1e30)
+    rejected(lambda: sparse_server.fill(0, 0, keys, keys))
+    assert not sparse_server.filled and sparse_server.lengths == [[0]]
+    assert not sparse_server.resident[0].count_nonzero()
+    assert not backend.get_key_cache(0).count_nonzero()
+    hash_backend = sparse.SparseAttentionServer()
+    hash_server = CPUAttentionServer(sparse_config, hash_backend, lsh.LSH(), k=3, projection=torch.full((128, 12), 1e30, dtype=torch.bfloat16))
+    keys[1].fill_(1e10); keys[2].fill_(-1e10)
+    rejected(lambda: hash_server.fill(0, 0, keys, keys))
+    assert not hash_server.filled and hash_server.lengths == [[0]]
+    assert not hash_server.resident[0].count_nonzero()
+    assert not hash_backend.get_key_cache(0).count_nonzero()
+    return 4
+
+
+def kv_group_oracles(sparse: ModuleType, lsh: ModuleType) -> int:
+    """Distinct two-KV/GQA4 values expose resident, retrieval and native mapping."""
+    c = ServerConfig(layers=2, heads=8, kvheads=2, dim=128, batch=2, capacity=10)
+    projection = torch.zeros((128, 12), dtype=torch.bfloat16)
+    for col in range(12):
+        projection[(col * 7) % 128, col] = 1 if col % 2 else -1
+    checks = 0
+    for k in [0, 3]:
+        server = CPUAttentionServer(c, sparse.SparseAttentionServer(), lsh.LSH() if k else None, k=k, projection=projection if k else None)
+        parts: dict[tuple[int, int, int], tuple[list[list[float]], list[list[float]], list[list[float]], list[list[float]], list[float]]] = {}
+        for layer in range(2):
+            for request in range(2):
+                length = 7 + request
+                base = torch.arange(length * 2 * 128).reshape(length, 2, 128)
+                key = (((base * 7 + layer * 11 + request * 3) % 41 - 20).float() / 32).bfloat16()
+                value = (((base * 11 + layer * 3 + request) % 37 - 18).float() / 32).bfloat16()
+                server.fill(layer, request, key, value)
+                server.build_table(layer, request)
+                for kv in range(2):
+                    parts[layer, request, kv] = partition(key[:, kv:kv+1], value[:, kv:kv+1]) if layer else ([], [], key[:, kv].double().tolist(), value[:, kv].double().tolist(), [])
+        server.plan()
+        for layer in [1, 0]:
+            qbase = torch.arange(2 * 8 * 128).reshape(2, 8, 1, 128)
+            query = (((qbase * 13 + layer) % 43 - 21).float() / 32).bfloat16()
+            newbase = torch.arange(2 * 2 * 128).reshape(2, 2, 1, 128)
+            newkey = (((newbase * 3 + layer * 7) % 31 - 15).float() / 32).bfloat16()
+            newvalue = (((newbase * 5 + layer) % 29 - 14).float() / 32).bfloat16()
+            actual = server.decode(query, newkey, newvalue, layer).reshape(2, 8, 128)
+            for request in range(2):
+                for kv in range(2):
+                    offkey, offvalue, resident_key, resident_value, average = parts[layer, request, kv]
+                    row = newkey[request, kv, 0].double().tolist()
+                    resident_key.append([quantize(x-average[d]) for d, x in enumerate(row)] if layer else row)
+                    resident_value.append(newvalue[request, kv, 0].double().tolist())
+                    assert server.resident[layer][request, 0, kv, :len(resident_key)].double().tolist() == resident_key
+                for head in range(8):
+                    offkey, offvalue, resident_key, resident_value, _ = parts[layer, request, head // 4]
+                    q = query[request, head, 0].double().tolist()
+                    selected: list[int] = []
+                    if layer:
+                        if k:
+                            denominator = quantize(math.sqrt(sum(x*x for x in q)))
+                            code = hash_row([quantize(x / denominator) for x in q], projection, k)
+                            selected = [i for i, row in enumerate(offkey) if sum(a == b for a, b in zip(hash_row(row, projection, k), code)) >= 2]
+                            flat = request * 8 + head
+                            assert int(server.nnz[flat]) == len(selected)
+                            assert set(server.results[flat, :len(selected)].tolist()) == set(selected)
+                        else:
+                            selected = list(range(len(offkey)))
+                    expected, _ = union_oracle(q, [offkey[i] for i in selected]+resident_key, [offvalue[i] for i in selected]+resident_value, len(selected) if k else 0)
+                    assert max(abs(float(actual[request, head, d])-expected[d]) for d in range(128)) <= .008
+                    checks += 1
+    return checks
+
+
 def exercise_server(sparse: ModuleType, lsh: ModuleType) -> dict[str, object]:
     """Actual complete two-step dense/sampled/baseline/native connection and reset."""
     config=ServerConfig(layers=3,heads=4,kvheads=1,dim=128,batch=2,capacity=12)
@@ -227,4 +319,4 @@ def exercise_server(sparse: ModuleType, lsh: ModuleType) -> dict[str, object]:
         operand[0,:k*4]=torch.tensor([0 if i%3==0 else 1 if i%3==1 else -1 for i in range(k*4)])
         actual=server._hash(operand)
         for row in range(2): assert actual[row].tolist()==hash_row(operand[row].double().tolist(),proj,k)
-    return {"status":"pass","head_union_checks":total_heads,"full_orchestrator":True,"callee_boundary":"actual maintained native CPU plus actual Torch resident attention/CPU merge; FlashInfer uncalled","branches":sorted(set(routes)),"reuses":4,"steps":2,"helper_oracles":helper_oracles(),"packing_K":list(range(1,12)),"sampled_nnz_values":sorted(retrieval_counts),"gpu_verified":False}
+    return {"status":"pass","head_union_checks":total_heads,"full_orchestrator":True,"callee_boundary":"actual maintained native CPU plus actual Torch resident attention/CPU merge; FlashInfer uncalled","branches":sorted(set(routes)),"reuses":4,"steps":2,"helper_oracles":helper_oracles(),"packing_K":list(range(1,12)),"sampled_nnz_values":sorted(retrieval_counts),"gpu_verified":False,"overflow_rejections":overflow_rejections(sparse,lsh),"two_KV_GQA4_union_checks":kv_group_oracles(sparse,lsh)}

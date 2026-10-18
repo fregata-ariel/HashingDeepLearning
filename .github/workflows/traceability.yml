@@ -61,6 +61,7 @@ on:
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
       - ".github/workflows/traceability.yml"
+      - ".github/workflows/python-typing.yml"
   pull_request:
     branches: [research/lsh-lineage-vendor]
     paths:
@@ -121,6 +122,7 @@ on:
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
       - ".github/workflows/traceability.yml"
+      - ".github/workflows/python-typing.yml"
   workflow_dispatch:
 
 jobs:

@@ -72,6 +72,15 @@ and resource evidence. See [the reproducible CPU backend contract](SYCL_CPU_BACK
 Paper algorithm acceptance is enrolled separately from the backend feature
 contract, and actual GPU validation remains pending.
 
+The same required CPU job explicitly executes G-SLIDE shared kernels/production
+training and source regressions, MONGOOSE production LSH packing plus its separate
+Torch fallback/original CUDA compile probe, and Scatterbrain's shared C ABI local
+kernels, maintained Torch hybrid and foreign-thread regression. The bounded
+`tools/run_sycl_paper_cpu.sh` runner records command exits and fresh evidence;
+missing targets fail. CPU Torch dependencies are installed in an isolated venv,
+and Scatterbrain's CMake configuration pins that interpreter explicitly. These
+checks add no permanent workflow or GPU job.
+
 G-SLIDE uses routine CPU serial emulation in the existing traceability gate.
 No GPU service or GPU workflow is required. Actual CUDA build, parallelism,
 device memory/synchronization and production training remain pending until an

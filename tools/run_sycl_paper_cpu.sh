@@ -38,6 +38,7 @@ export "GIT_CONFIG_VALUE_${git_config_count}=$repo"
 export GIT_CONFIG_COUNT=$((git_config_count + 1))
 export ACPP_VISIBILITY_MASK=omp OMP_NUM_THREADS=${OMP_NUM_THREADS:-4} OMP_THREAD_LIMIT=${OMP_THREAD_LIMIT:-4}
 export ACPP_APPDB_DIR="$run/appdb"
+export PYTHONPYCACHEPREFIX="$run/bytecode"
 mkdir -p "$ACPP_APPDB_DIR"
 
 annotate_failure() {
@@ -82,5 +83,7 @@ run_step mongoose-paths 120 "$python" ports/mongoose/sycl/tests/validate.py --bi
 # Scatterbrain: shared C ABI library, four local kernels, maintained Torch hybrid
 # forward/backward and a distinct cold-cache foreign-thread regression.
 run_step scatterbrain 300 tools/check_sycl_cpu.sh --source-dir ports/scatterbrain/sycl --build-dir "$run/scatterbrain" --cmake-arg "-DPython3_EXECUTABLE=$python"
+# Bind generated source adapters and the shared C ABI object to this run too.
+find "$run/gslide" "$run/gslide-source-regressions" -type f \( -name '*.cpp' -o -executable \) -print0 | sort -z | xargs -0 -r sha256sum > "$run/generated-and-binary-sha256.txt"
 status=PASS
 printf 'SYCL_CPU_PAPER_ACCEPTANCE_PASS evidence=%s\n' "$run"

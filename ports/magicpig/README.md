@@ -10,9 +10,9 @@ tests/examples and selected dependency inputs remain in `third_party/magicpig/`.
 Issue #54 adds a dependency-free selected-body CPU driver and independent FP64
 oracles. Portable software lanes always run; native AVX-512/FMA and BF16 bodies
 run only after parent-process CPU/OS/compiler capability checks. Native-source
-changes now include reviewed arithmetic/domain/ownership repairs and Doxygen contracts. Full Torch/FBGEMM
-extension linkage, ABI, unrestricted scheduling and CPU-only Llama generation remain
-unverified. See [the CPU validation contract](CPU_VALIDATION.md).
+changes now include reviewed arithmetic/domain/ownership repairs and Doxygen contracts. The bounded real Torch/FBGEMM CPU linkage and ABI now execute under
+[the extension contract](EXTENSION_CPU_CONTRACT.md). Unrestricted scheduling,
+FlashInfer/CUDA execution and CPU-only Llama generation remain unverified. See [the CPU validation contract](CPU_VALIDATION.md).
 
 Archived `install.sh` installs historical CUDA/FlashInfer packages and must not
 be used as the routine CPU setup. Python originals remain archival until their

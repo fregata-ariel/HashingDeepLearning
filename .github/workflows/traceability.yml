@@ -272,8 +272,16 @@ jobs:
           sudo apt-get install -y g++-14
           g++-14 --version
           python -m pip install -r tools/scatterbrain-cpu-requirements.txt
+          python -m pip install ninja==1.13.0
           python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
           python -m pip check
+
+      - name: Actual MagicPIG Torch FBGEMM CPU boundary
+        env:
+          OMP_THREAD_LIMIT: "4"
+        run: |
+          python tools/check_magicpig_extension_cpu.py --cxx g++-14 \
+            --build-dir scatterbrain-cpu-artifact/magicpig-extension
 
       - name: Verify initial and native dependency source identities
         run: |

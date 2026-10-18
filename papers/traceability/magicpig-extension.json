@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MAGICPIG-TORCH-CPU",
+      "paper": "magicpig-2024",
+      "paper_location": "Sections4.3-4.4; maintained CPU dispatch/Tensor boundary",
+      "mechanism": "Actual maintained wrapper/scheduled/static/dynamic BF16 and FP32 entries with realTorch/FBGEMM and independent FP64 samequantized-input subset oracle.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/magicpig/library/sparse_attention/sparse_attention.cc",
+        "symbol": "SparseAttentionServer::attention_wrapper"
+      },
+      "test": {
+        "file": "tests/traceability/test_magicpig_extension_cpu.py",
+        "id": "MAGICPIG-TORCH-CPU"
+      },
+      "conditions": {
+        "execution": "actual CPU Torch C++ extension; capability skips separate per build",
+        "dispatch": "32/d128 scheduled;32/d32 static;64/d32 static;72/d32 dynamic; BF16 enabled/disabled builds",
+        "oracle": "samequantized QKV FP64 binomial>=2 K3L4, independent normalization/WV/base2 LSE",
+        "budgets": "existing native probability .002, WV .008, metadata .03",
+        "ownership": "real from_blob aliases/clear/refill, direct getter keep_alive; no expired-view dereference",
+        "fbgemm": "real wheel libtorch_cpu exported conversion/dispatch; pinned archived declarations; half-up bits and Torch tie contrast recorded",
+        "threading": "actual OpenMP4 workers; no64thread/NUMA performance claim",
+        "sanitizer": "existing selected native ASan/UBSan retained; unsanitized wheel boundary excluded",
+        "gpu_execution": "unverified #62"
+      },
+      "note": "See EXTENSION_CPU_CONTRACT.md; unused WV variants and LSH::copy excluded. Full Python orchestration belongs to#118."
+    }
+  ]
+}

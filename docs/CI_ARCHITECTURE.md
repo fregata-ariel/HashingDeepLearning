@@ -249,3 +249,10 @@ When a paper/implementation integration milestone closes:
 - [ ] sanitizer coverage exists for native ownership-sensitive code;
 - [ ] temporary diagnostics have documented successors;
 - [ ] temporary diagnostic workflow files are removed.
+
+Issue #117 adds the actual MagicPIG Torch/FBGEMM CPU boundary to the existing
+Torch CPU job in this workflow. It builds BF16-enabled/disabled native modules
+using the wheel ABI, emits separate capability skips, observes four OpenMP
+workers and uploads source hashes/dispatch traces with the existing artifact.
+The pre-existing selected-body sanitizer gate remains separate from the
+unsanitized Torch wheel. See `ports/magicpig/EXTENSION_CPU_CONTRACT.md`.

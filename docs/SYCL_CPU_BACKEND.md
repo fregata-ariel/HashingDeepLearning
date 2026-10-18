@@ -60,7 +60,12 @@ that absolute prefix; rebuilding is required after relocation. The installer
 extracts verified dependency packages locally and builds the pinned compiler.
 It does not replace system packages. It uses two build workers by default
 (`SYCL_BUILD_JOBS` overrides this). Existing caches must pass the pinned source
-identity and installed compiler/runtime checksum checks.
+identity and installed compiler/runtime checksum checks. The cached Python build
+helpers also require their bootstrap virtual environment because pip entry
+points contain an absolute interpreter path. CI caches that environment; cache
+hits recreate a missing interpreter and validate actual CMake `4.2.3` and Ninja
+`1.13.0` execution before returning. Broken helpers are reinstalled at those
+pinned versions with the local virtual environment's pip.
 
 The activation file supplies `SYCL_TOOLCHAIN_PREFIX` and `ACPP_INSTALL_DIR`
 (the final `install` directory), `SYCL_CXX`, required library paths and

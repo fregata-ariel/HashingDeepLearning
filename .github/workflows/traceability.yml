@@ -384,6 +384,7 @@ jobs:
             /workspace/.sycl-toolchain/install
             /workspace/.sycl-toolchain/debian-root
             /workspace/.sycl-toolchain/python-tools
+            /workspace/.sycl-toolchain/bootstrap-venv
             /workspace/.sycl-toolchain/env.sh
           key: sycl-debian13-amd64-llvm19-${{ hashFiles('tools/bootstrap_sycl_cpu.sh', 'tools/sycl-cpu-packages.tsv') }}
       - name: Install or verify pinned real CPU backend

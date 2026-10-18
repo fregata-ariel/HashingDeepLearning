@@ -12,3 +12,8 @@ add_sycl_to_target(TARGET scatterbrain_sycl SOURCES adapter.cpp)
 find_package(Python3 COMPONENTS Interpreter REQUIRED)
 enable_testing()
 add_test(NAME scatterbrain_sycl_cpu COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/validate.py --library $<TARGET_FILE:scatterbrain_sycl> --evidence ${CMAKE_CURRENT_BINARY_DIR}/evidence.json)
+add_test(NAME scatterbrain_sycl_threads COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/tests/threads.py --library $<TARGET_FILE:scatterbrain_sycl>)
+
+# Keep the foreign-thread cache independent so first invocation exercises cold JIT.
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/threads-appdb")
+set_tests_properties(scatterbrain_sycl_threads PROPERTIES ENVIRONMENT "ACPP_APPDB_DIR=${CMAKE_CURRENT_BINARY_DIR}/threads-appdb")

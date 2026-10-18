@@ -21,7 +21,8 @@
           9
         ],
         "oracle": "Unchanged independent dense/gather primitive oracle plus extra scalar FP64 all4-operation oracle and detached FP64 gradient leaves; finite actual/reference errors bounded2e-6..5e-6",
-        "license": "MIT selected Idiap source f22c13716fc748bb21a7b226ada7f7b5f87f867f; full notice retained"
+        "license": "MIT selected Idiap source f22c13716fc748bb21a7b226ada7f7b5f87f867f; full notice retained",
+        "foreign_thread_regression": "4threads x3calls all4operations and Q/K/V gradients vs independent detached FP64; invalid prefix perworker; idempotent reload3x+gc; separate cold-appdb plus warm successful process exit. C ABI and Python loading/calls serialize host runtime use; work-items remain parallel."
       },
       "id": "SCATTERBRAIN-LOCAL-PRODUCT-SYCL-CPU",
       "relation": "support",
@@ -67,7 +68,7 @@
           "mismatched_normalizer": 10
         },
         "oracle": "Independent raw unstabilized FP64 cosh projection, dense exact local support replacement, H/HV/H1 and detached-leaf gradients; finite error bounds3e-6..4e-6",
-        "rejected": "causal/dropout/eps/arbitrary attention masks/non-CPU/non-FP32; no causal dependency added",
+        "rejected": "causal/dropout/eps/arbitrary attention masks/non-CPU/non-FP32; no causal dependency added; zero/all-masked hybrid prefix explicitly rejected before body",
         "license": "Maintained Apache-2.0 Torch composition plus MIT SYCL local boundary; notices preserved"
       },
       "id": "SCATTERBRAIN-LOCAL-HYBRID-SYCL-CPU",

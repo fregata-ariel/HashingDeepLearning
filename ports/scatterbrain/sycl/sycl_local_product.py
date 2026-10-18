@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: MIT
+# Idiap local-product interface rewrite; full notice ../notices/idiap-fast-transformers-LICENSE.
 """Actual synchronous SYCL CPU local products for the bounded SBLocal port.
 
 No Torch arithmetic fallback: every numeric operation calls the shared library.
@@ -5,6 +7,7 @@ FP32 CPU tensors, contiguous copies at the ABI; first-order autograd only.
 """
 from __future__ import annotations
 import ctypes
+import threading
 from pathlib import Path
 import torch
 import numpy as np
@@ -18,17 +21,26 @@ class _Context(FunctionCtx):
     saved_tensors: tuple[torch.Tensor, ...]
 
 _library: ctypes.CDLL | None = None
+_library_path: Path | None = None
+_library_lock = threading.RLock()
 
 
 def load_library(path: Path) -> None:
-    global _library
-    _library = ctypes.CDLL(str(path.resolve()))
-    _library.sb_run.argtypes = [ctypes.c_int] + [ctypes.c_void_p] * 8
-    _library.sb_run.restype = ctypes.c_int
-    _library.sb_last_error.restype = ctypes.c_char_p
-    _library.sb_describe.restype = ctypes.c_int
-    if _library.sb_describe():
-        raise RuntimeError(_library.sb_last_error().decode())
+    global _library, _library_path
+    with _library_lock:
+        selected = path.resolve()
+        if _library is not None:
+            if selected != _library_path:
+                raise ValueError("reloading a different SYCL library is unsupported")
+            return
+        library = ctypes.CDLL(str(selected))
+        library.sb_run.argtypes = [ctypes.c_int] + [ctypes.c_void_p] * 8
+        library.sb_run.restype = ctypes.c_int
+        library.sb_last_error.restype = ctypes.c_char_p
+        library.sb_describe.restype = ctypes.c_int
+        if library.sb_describe():
+            raise RuntimeError(library.sb_last_error().decode())
+        _library, _library_path = library, selected
 
 
 def require_library() -> None:
@@ -55,8 +67,9 @@ def _run(operation: int, dims: tuple[int, ...], a: Array, b: Array,
     out2 = None if second is None else np.empty(second, dtype=np.float32)
     arrays = [shape, a, b, grad, mask, lengths, out1, out2]
     pointers = [None if x is None else ctypes.c_void_p(x.ctypes.data) for x in arrays]
-    if _library.sb_run(operation, *pointers):
-        raise ValueError(_library.sb_last_error().decode())
+    with _library_lock:
+        if _library.sb_run(operation, *pointers):
+            raise ValueError(_library.sb_last_error().decode())
     return torch.from_numpy(out1), None if out2 is None else torch.from_numpy(out2)
 
 

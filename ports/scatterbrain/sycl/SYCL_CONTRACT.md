@@ -28,8 +28,11 @@ allocations and borrow host vectors only within a synchronous operation.
 no pointer escapes. The C adapter uses a call-scoped queue, avoiding a static
 queue whose destruction can outlive runtime state at Python process shutdown.
 The Python ctypes boundary owns contiguous NumPy arrays for the call and checks
-CPU/FP32/rank/shape/dtype, including int64 lengths, before entering C. C ABI
-callers must supply buffers of the documented sizes. Exceptions return an error
+CPU/FP32/rank/shape/dtype, including int64 lengths, before entering C. C ABI host calls are serialized by a mutex, including queue/context lifetime;
+Python loading and calls additionally share a lock. This bounds foreign-thread
+runtime use without serializing kernel work-items or substituting arithmetic.
+Loading the same library is idempotent; replacing a live library is rejected.
+C ABI callers must supply buffers of the documented sizes. Exceptions return an error
 and no fallback runs. The Python autograd wrapper supports first derivatives;
 `once_differentiable` rejects higher derivative use.
 
@@ -44,9 +47,9 @@ hybrid composition. Its low-rank/features/normalization remain maintained Torch
 CPU code, while both local forward operations and their backward operations
 run these production SYCL kernels. This is not a claim of an all-SYCL hybrid.
 It rejects causal, stochastic dropout, feature eps, arbitrary attention masks,
-non-CPU host tensors and non-FP32 input. Hybrid fixtures select moderate finite
-inputs, positive key lengths and finite positive row mass; zero prefix is
-validated only for local dot. Unsupported extreme/all-masked hybrid behavior,
+non-CPU host tensors and non-FP32 input. The hybrid wrapper explicitly rejects zero/invalid prefixes. Hybrid fixtures
+select moderate finite inputs, positive key lengths and finite positive row
+mass; zero prefix is validated only for local dot. Unsupported extreme/all-masked hybrid behavior,
 feature sampling laws, CUDA/half/Apex, later SBSmyrf, full models/optimizer
 checkpoints and performance remain outside this API. No silent causal fallback
 or new causal dependency is introduced.
@@ -89,3 +92,13 @@ Source/binary/import identity and existing CPU/C++ fixture passes are distinct
 from these new SYCL execution IDs. GPU/CUDA, memory sanitizers and statistical
 or paper accuracy/performance claims remain unvalidated. CI and central
 traceability enrollment are integrated separately by the shared owner.
+
+The `scatterbrain_sycl_threads` CTest is a process-lifetime regression: four
+foreign Python threads each execute three local-dot/weighted-average/autograd
+calls and invalid-prefix rejections, comparing output and all Q/K/V gradients
+with detached FP64 expectations. It then repeats same-library selection and
+garbage collection three times; the process must exit successfully. Its
+separate appdb directory exercises cold JIT on a fresh build and warm repeats.
+Initial unrestricted foreign-thread calls intermittently crashed, so the host
+adapter deliberately serializes submissions and lifetime. No backend-wide
+thread-safety claim or root-cause claim is inferred from this bounded repair.

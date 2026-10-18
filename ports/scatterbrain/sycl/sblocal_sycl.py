@@ -45,6 +45,14 @@ class SBLocalSYCLAttention(SBLocalAttention):
                 raise ValueError("SYCL SBLocal requires finite rank4 CPU FP32 Q/K/V")
         if key.shape[:3] != value.shape[:3] or query.shape[0] != key.shape[0] or query.shape[2:] != key.shape[2:]:
             raise ValueError("incompatible Q/K/V shapes")
+        if any(d <= 0 for tensor in (query, key, value) for d in tensor.shape):
+            raise ValueError("positive hybrid dimensions required")
+        if key_padding_mask is not None:
+            lengths = key_padding_mask.lengths
+            if (lengths.device.type != "cpu" or lengths.dtype != torch.int64 or
+                lengths.shape != (key.shape[0],) or
+                not bool(((lengths > 0) & (lengths <= key.shape[1])).all())):
+                raise ValueError("hybrid prefix lengths must be positive and within physical keys")
         result = super().forward(query, key, value, None, key_padding_mask, need_weights, return_attn_unnormalized)
         if not bool(torch.isfinite(result[0]).all()):
             raise ValueError("unsupported nonfinite hybrid row mass/output")

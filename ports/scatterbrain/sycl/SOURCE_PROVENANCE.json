@@ -16,7 +16,8 @@
     "Four queue-accepting SYCL local product operations with output-owned gather backwards",
     "Synchronous checked ctypes/autograd boundary; no CPU arithmetic fallback",
     "Explicit noncausal FP32 prefix-mask hybrid wrapper; existing maintained Torch composition and projection/state preserved",
-    "Independent existing FP64 oracles execute through actual SYCL boundary; extra scalar shape cases"
+    "Independent existing FP64 oracles execute through actual SYCL boundary; extra scalar shape cases",
+    "Serialize foreign-thread adapter submission/context lifetime and prevent live-library replacement; scoped queues avoid teardown order dependence; explicit all-masked hybrid rejection"
   ],
   "not_executed": [
     "original CUDA bodies",

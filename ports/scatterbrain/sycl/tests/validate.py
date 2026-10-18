@@ -113,6 +113,7 @@ def main() -> None:
     q = torch.ones(1,1,1,3)
     actions: tuple[Callable[[], object], ...] = (lambda: bounded(3,3)(q,q,q,attn_mask=object()),
                    lambda: native.local_dot_product(q,q,torch.zeros(1,1),torch.tensor([2]),3),
+                   lambda: bounded(3,3)(q,q,q,key_padding_mask=oracle.LengthMask(torch.tensor([0]),max_len=1),need_weights=True),
                    lambda: native.local_dot_product(q.double(),q,torch.zeros(1,1),torch.tensor([1]),3))
     for action in actions:
         try:

@@ -103,6 +103,7 @@
         "src/models/modules/masking.py",
         "sycl/sblocal_sycl.py",
         "sycl/sycl_local_product.py",
+        "sycl/tests/threads.py",
         "sycl/tests/validate.py"
       ],
       "stub_files": [

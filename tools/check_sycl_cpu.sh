@@ -4,11 +4,20 @@ set -euo pipefail
 repo=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 source_dir="$repo/tests/sycl_cpu_backend"
 evidence="$repo/sycl-cpu-evidence"
+cmake_args=()
+usage() { echo "usage: $0 [--source-dir CMAKE_SUITE] [--build-dir EVIDENCE_DIR] [--cmake-arg VALUE]..."; }
 while (($#)); do
   case "$1" in
-    --source-dir) source_dir=$2; shift 2 ;;
-    --build-dir) evidence=$2; shift 2 ;;
-    *) echo "usage: $0 [--source-dir CMAKE_SUITE] [--build-dir EVIDENCE_DIR]" >&2; exit 2 ;;
+    --source-dir|--build-dir|--cmake-arg)
+      (($# >= 2)) && [[ -n "$2" ]] || { usage >&2; exit 2; }
+      case "$1" in
+        --source-dir) source_dir=$2 ;;
+        --build-dir) evidence=$2 ;;
+        --cmake-arg) cmake_args+=("$2") ;;
+      esac
+      shift 2 ;;
+    --help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
   esac
 done
 source_dir=$(realpath "$source_dir")
@@ -116,7 +125,7 @@ stage_log="$evidence/configure.log"
 "$time_bin" -v -o "$evidence/configure-time.txt" cmake -S "$source_dir" -B "$build" \
   -DCMAKE_PREFIX_PATH="$SYCL_TOOLCHAIN_PREFIX;${CMAKE_PREFIX_PATH:-}" -DCMAKE_CXX_COMPILER="$SYCL_CXX" \
   -DACPP_TARGETS="$ACPP_TARGETS" -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON 2>&1 | tee "$evidence/configure.log"
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON "${cmake_args[@]}" 2>&1 | tee "$evidence/configure.log"
 stage=clean-build
 stage_log="$evidence/clean-build.log"
 "$time_bin" -v -o "$evidence/clean-build-time.txt" cmake --build "$build" -j "$SYCL_BUILD_JOBS" 2>&1 | tee "$evidence/clean-build.log"

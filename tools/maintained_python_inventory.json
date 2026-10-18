@@ -27,7 +27,9 @@
         "mongoose_slide/slide_lib/lsh_softmax.py",
         "mongoose_slide/slide_lib/network.py",
         "mongoose_slide/slide_lib/simHash.py",
-        "mongoose_slide/slide_lib/triplet_network.py"
+        "mongoose_slide/slide_lib/triplet_network.py",
+        "sycl/tests/fallback.py",
+        "sycl/tests/validate.py"
       ],
       "stub_files": [
         "lsh_lib/clsh.pyi"
@@ -70,7 +72,11 @@
     {
       "name": "magicpig",
       "root": "ports/magicpig",
-      "python_files": [],
+      "python_files": [
+        "magicpig_cpu/__init__.py",
+        "magicpig_cpu/helpers.py",
+        "magicpig_cpu/orchestration.py"
+      ],
       "stub_files": [],
       "mypy_path": [
         "ports/magicpig",
@@ -98,7 +104,11 @@
         "src/models/modules/attention/projection_utils.py",
         "src/models/modules/attention/sblocal_attention.py",
         "src/models/modules/attention/scatterbrain_utils.py",
-        "src/models/modules/masking.py"
+        "src/models/modules/masking.py",
+        "sycl/sblocal_sycl.py",
+        "sycl/sycl_local_product.py",
+        "sycl/tests/threads.py",
+        "sycl/tests/validate.py"
       ],
       "stub_files": [
         "typings/apex/__init__.pyi",
@@ -108,6 +118,7 @@
         "typings/fast_transformers/local_product.pyi"
       ],
       "mypy_path": [
+        "ports/scatterbrain/sycl",
         "ports/scatterbrain",
         "ports/scatterbrain/typings",
         "typings"

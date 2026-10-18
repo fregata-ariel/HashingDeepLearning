@@ -160,3 +160,34 @@ Modern toolkit compatibility is unverified.
 Save the milestone's logs, fixture, seed, expected values and exact commit so
 the next session can continue without depending on another GPU allocation.
 Large-dataset accuracy/performance reproduction is a later separate milestone.
+
+## Shared SYCL CPU device execution (#115)
+
+The additional `ports/g-slide/sycl` implementation executes translated kernels
+on an actual SYCL CPU device. Its independent test covers the thirteen formerly
+unexecuted reduction/index/RNG/alternate-hash/random-padding/wrapper contracts.
+It keeps source identities and original CUDA body execution separate. See
+[the shared contract](sycl/README.md), including two explicitly characterized
+original source defects that the translated implementation corrects. The five
+original extraction suites and archive remain unchanged. CPU evidence does not
+close GPU scheduling/ownership/performance acceptance in #34 or native #43.
+
+After activating the shared toolchain:
+
+```bash
+python3 tools/check_gslide_sycl.py --build-dir /tmp/gslide-sycl
+python3 tools/check_gslide_source_regressions.py --build-dir /tmp/gslide-source-regressions
+```
+
+
+## Shared production caller control (#116)
+
+`Network::train` now delegates its operation ordering to `TrainingControl.h`;
+that exact controller also runs through the SYCL numerical backend. The new
+[production contract](sycl/production.md) describes the public caller, actual
+CPU allocation/copy/scan/filter/sort/dense products, connected updates, active
+sets and rebuild checks. The actual caller clears full hidden-delta capacity
+before backward; stale reset and stale index runs remain explicit negative
+fixtures. This is CPU execution of shared production control, not native CUDA
+`Network::train` or all original host bodies. The native reset source repair
+still requires #43 GPU acceptance, and #34 remains open.

@@ -21,7 +21,7 @@ remains unchanged. Native Doxygen contracts are checked by
 | `MAGICPIG-PROBABILITY-CPU`, `MAGICPIG-PROBABILITY-DOMAIN-CPU`, `MAGICPIG-PROBABILITY-STABILITY-CPU` | [Correction](PROBABILITY_VALIDATION.md): finite accepted scores, positive norms/scaling, K>=1/L>=2 and tolerance-limited cosine clamping. Stable log inclusion probability retains the explicit +1e-4 variant. Server QK/correction is staged before worker dispatch or exposed output writes. |
 | `MAGICPIG-ATTENTION-CPU`, `MAGICPIG-ATTENTION-BOUNDARIES-CPU` | [Attention](ATTENTION_CPU_CONTRACT.md): BF16 caches, FP32 query/score/normalizer and int32 IDs/counts. Logical nnz controls QK accesses. Full nnz is rank-one [batch*query_heads], including differing grouped-head lengths; KV ownership uses query_head/groups. Empty output is zero with -Inf maximum/LSE. Explicit dimension/group checks precede output writes. |
 | `MAGICPIG-BASELINE-CPU`, `MAGICPIG-SOFTMAX-BOUNDARY-CPU`, `MAGICPIG-SOFTMAX-EMPTY-CPU`, `MAGICPIG-SOFTMAX-EXTREME-CPU`, `MAGICPIG-EXP-NATIVE-CPU` | [Softmax](SOFTMAX_CPU_CONTRACT.md): exact logical allocations, moderate finite-logit normalization and base-2 maximum/LSE; empty rows touch no scores and emit -Inf metadata. Full/optimized Softmax preserve every score beyond logical nnz. Finite base-two metadata requires FP32 representability. The #74 candidate bounds native exponent construction and adds a 2821-case direct regression; reviewed #86/#74 integration passes Hosted native plain/sanitized checks and is included in the final base. |
-| `MAGICPIG-BF16-MODEL-CPU`, `MAGICPIG-BF16-BOUNDARY-CPU`, `MAGICPIG-BF16-SELECTED-CPU` | [BF16](BF16_CPU_CONTRACT.md): conversion model is distinct from native dot execution. Native QK requires supported multiple-of-32 dimensions and logical nnz; capability-based skips do not verify native execution. Real conversion linkage/dispatch remains unexecuted. |
+| `MAGICPIG-BF16-MODEL-CPU`, `MAGICPIG-BF16-BOUNDARY-CPU`, `MAGICPIG-BF16-SELECTED-CPU` | [BF16](BF16_CPU_CONTRACT.md): conversion model is distinct from native dot execution. Native QK requires supported multiple-of-32 dimensions and logical nnz; capability-based skips do not verify native execution. These selected-body suites do not execute conversion linkage/dispatch; the separate #117 real-extension suite now checks wheel FBGEMM linkage/dispatch. |
 | `MAGICPIG-CACHE-MERGE-CPU` | [Cache/merge](CACHE_MERGE_CPU_CONTRACT.md): shaped FP64 host copies, padded prefill, disjoint tokens, heterogeneous probabilities, base-2 host merge, capacity negatives and clear/refill. Host guards/append do not establish native FlashInfer capacity or stream safety. |
 | `MAGICPIG-COMPOSITION-BRIDGE-CPU`, `MAGICPIG-CPU-COMPOSITION-CPU` | [Connected composition](CPU_COMPOSITION_CONTRACT.md): actual retrieved IDs feed maintained correction/attention, then selected cache/merge across24 decode steps/12 reuse cycles; independent FP64 union and actual executed stale/correction mutations. Bridge executable/fixture/source/descriptor identities are checked. |
 
@@ -43,18 +43,16 @@ Future runs on unsupported hardware report their own explicit skips.
 ## Deliberate maintained Python inventory
 
 `tools/maintained_python_inventory.json` records exact `.py` and `.pyi` paths
-and each group's mypy search roots. At this checkpoint it contains 31 maintained
-Python sources and one maintained MONGOOSE stub. The `magicpig` group explicitly
-contains zero maintained Python sources/stubs. Archived orchestration under
-`third_party/magicpig/` and selected-AST fixtures under `tests/traceability/` are
-not a maintained production Python port and are not a MagicPIG strict-typing
-pass. CI reports `PYTHON_TYPING_EMPTY group=magicpig maintained_sources=0`.
+and each group's mypy search roots. The inventory now enrolls 50 maintained
+Python sources and six stubs across projects, including three MagicPIG CPU
+orchestrator/helper files. Archived orchestration under `third_party/magicpig/`
+and selected-AST fixtures remain separate from that maintained scope.
 
 The annotation audit compares actual maintained files with the exact inventory;
 new sources, stubs, removals, same-count replacements or undeclared maintained
 roots fail until deliberately enrolled. Every nonempty group is then checked
 with the same `--strict` mypy flag and its isolated search roots. MagicPIG
-additionally uses `--disallow-any-explicit` for future native/runtime APIs;
+additionally uses `--disallow-any-explicit` for its native/runtime APIs;
 the existing projects retain their NumPy aliases (NumPy uses an `Any` array
 shape internally). This replaces the former hard-coded 23/4/4 source lists, without
 changing their strict checks or the separate Reformer attention audit.
@@ -63,8 +61,7 @@ When a maintained MagicPIG Python port is added, enroll its exact paths in the
 `magicpig` group; annotate every function and supply dtype, shape/layout,
 mutation, ownership, capacity and paper/test relation docstrings. Add narrowly
 scoped Torch/native/FlashInfer stubs for the interfaces actually imported and
-retain missing-import diagnostics. No placeholder production port or broad
-`Any`/`ignore_missing_imports` stub is justified by the current zero-file scope.
+retain missing-import diagnostics. No broad `Any`/`ignore_missing_imports` stub is used for this CPU port.
 The inventory runner automatically checks enrolled future sources and stubs.
 
 ## Existing workflow gates
@@ -145,5 +142,9 @@ notices. The temporary diagnostic workflow is excluded from integration. Its ret
 status is recorded in the linked final publication checkpoint.
 
 Postponed #62 requires a separate native GPU restart. No CPU result here claims
-Torch/FBGEMM extension linkage, FlashInfer execution, asynchronous transfer or
+Unrestricted extension inputs, FlashInfer execution, asynchronous transfer or
 stream safety, production Llama generation, accuracy or throughput.
+
+Real Tensor/native dispatch validation (#117): [boundary contract](EXTENSION_CPU_CONTRACT.md), `MAGICPIG-TORCH-CPU`, `tools/check_magicpig_extension_cpu.py`. It supplements selected-body evidence and does not validate CUDA/FlashInfer (#62).
+
+Complete maintained server control (#118): [server contract](SERVER_CPU_CONTRACT.md), `MAGICPIG-SERVER-CPU`, `tools/check_magicpig_server_cpu.py`; real native callees and CPU Torch resident math, with no FlashInfer execution claim.

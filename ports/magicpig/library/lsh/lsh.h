@@ -1,4 +1,8 @@
 #pragma once
+// Real builds enforce Tensor contracts; selected-body adapters replace this header.
+#ifndef MAGICPIG_REAL_TORCH
+#define MAGICPIG_REAL_TORCH 1
+#endif
 #include<cstdint>
 #include<cstdio>
 #include<cstring>

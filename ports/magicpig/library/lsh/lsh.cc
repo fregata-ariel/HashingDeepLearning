@@ -1,4 +1,7 @@
 #include "lsh.h"
+#ifdef MAGICPIG_REAL_TORCH
+#include "../sparse_attention/tensor_contract.h"
+#endif
 
 static inline void fast_memcpy_avx512(int* dest, const int* src, size_t count) {
     const size_t avx512_width = 16; // Number of 32-bit integers in 512 bits
@@ -61,6 +64,10 @@ int num_key_value_heads,
 int batch_size,
 int max_length)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(!this->allocated && num_layers > 0 && num_attention_heads > 0 && num_key_value_heads > 0 && num_attention_heads % num_key_value_heads == 0 && batch_size > 0 && max_length > 0 && L >= 2, "invalid LSH allocation");
+#endif
+
     TORCH_CHECK(K >= 1 && K <= 11, "LSH K must be in [1,11] for exact FP16 hash packing");
     this->K = K;
     this->L = L;
@@ -188,6 +195,27 @@ torch::Tensor sorted_hash_code_pt,
 torch::Tensor sorted_indices_pt
 )
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated && layer_id >= 0 && layer_id < this->num_layers && request_id >= 0 && request_id < this->batch_size, "invalid LSH fill state/layer/request");
+    magicpig_tensor(sorted_hash_code_pt, torch::kInt16); magicpig_tensor(sorted_indices_pt, torch::kInt32);
+    TORCH_CHECK(sorted_hash_code_pt.dim() == 3 && sorted_hash_code_pt.size(0) == this->num_key_value_heads && sorted_hash_code_pt.size(1) == this->L && sorted_hash_code_pt.size(2) <= this->max_length && sorted_indices_pt.sizes() == sorted_hash_code_pt.sizes(), "invalid sorted fill shape");
+    const auto length = sorted_hash_code_pt.size(2);
+    const auto codes = sorted_hash_code_pt.data_ptr<int16_t>(); const auto ids = sorted_indices_pt.data_ptr<int>();
+    for (int row = 0; row < this->num_key_value_heads * this->L; ++row) {
+        std::vector<bool> seen(length, false);
+        for (int j = 0; j < length; ++j) {
+            const auto offset = row * length + j;
+            TORCH_CHECK(codes[offset] >= 0 && codes[offset] < this->num_buckets && (j == 0 || codes[offset-1] <= codes[offset]), "invalid sorted hash codes");
+            TORCH_CHECK(ids[offset] >= 0 && ids[offset] < length && !seen[ids[offset]], "sorted payload must be a permutation");
+            seen[ids[offset]] = true;
+        }
+    }
+    // Replacement, including buckets absent in the new payload.
+    const auto bucket_offset = request_id * this->num_key_value_heads * this->L * this->num_buckets;
+    std::fill_n(this->table_start[layer_id] + bucket_offset, this->num_key_value_heads * this->L * this->num_buckets, 0);
+    std::fill_n(this->table_end[layer_id] + bucket_offset, this->num_key_value_heads * this->L * this->num_buckets, 0);
+#endif
+
 
 assert(layer_id >= 0);
 assert(layer_id < this->num_layers);
@@ -265,6 +293,15 @@ torch::Tensor query_pt,
 torch::Tensor results_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated && layer_id >= 0 && layer_id < this->num_layers, "invalid retrieval state/layer");
+    magicpig_tensor(query_pt, torch::kInt32); magicpig_tensor(results_pt, torch::kInt32); magicpig_tensor(nnz_pt, torch::kInt32);
+    const int heads = this->batch_size * this->num_attention_heads;
+    TORCH_CHECK(query_pt.dim() == 2 && query_pt.size(0) == heads && query_pt.size(1) == this->L && results_pt.dim() == 2 && results_pt.size(0) == heads && results_pt.size(1) == this->max_length && nnz_pt.dim() == 1 && nnz_pt.size(0) == heads, "invalid retrieval shapes");
+    const auto input = query_pt.data_ptr<int>();
+    for (int i = 0; i < heads * this->L; ++i) TORCH_CHECK(input[i] >= 0 && input[i] < this->num_buckets, "invalid query code");
+#endif
+
     
 int * query = static_cast<int *>(query_pt.data_ptr());
 
@@ -356,6 +393,10 @@ int* __restrict results)
 
 void LSH::clear()
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated, "clear requires allocated owner");
+#endif
+
 #pragma omp parallel for schedule(static,1) num_threads(LSH_THREADS)
 for (int i = 0; i < this->num_layers; ++i){
 
@@ -377,14 +418,18 @@ for (int i = 0; i < this->num_layers; ++i){
  */
 torch::Tensor LSH::get_mask()
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated, "getter requires allocated owner");
+#endif
+
 
 auto options = torch::TensorOptions().dtype(torch::kInt8);
 torch::Tensor tensor = torch::from_blob(this->mask, {this->batch_size, this->num_attention_heads, this->max_length}, options);
 return tensor;
 }
 
-PYBIND11_MODULE(lsh, m) {
-    py::class_<LSH>(m, "LSH")
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    py::class_<LSH>(m, "LSH", py::module_local())
         .def(py::init<>())
         .def("alloc", &LSH::alloc)
         .def("fill", &LSH::fill)
@@ -392,5 +437,5 @@ PYBIND11_MODULE(lsh, m) {
         .def("copy", &LSH::copy)
         .def("fastfill", &LSH::fastfill)
         .def("batch_retrieve", &LSH::batch_retrieve)
-        .def("get_mask", &LSH::get_mask);
+        .def("get_mask", &LSH::get_mask, py::keep_alive<0, 1>());
 }

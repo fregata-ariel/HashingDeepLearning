@@ -1,6 +1,11 @@
+// TRACE_TEST_ID: MAGICPIG-TORCH-CPU
+// Actual maintained dispatch/Tensor ABI: see EXTENSION_CPU_CONTRACT.md.
 #include "sparse_attention.h"
 #include <limits>
 #include <stdexcept>
+#ifdef MAGICPIG_REAL_TORCH
+#include "tensor_contract.h"
+#endif
 
 const __m512 LOG2E_VEC = _mm512_set1_ps(1.44269504089f); // log2(e)
 const __m512 MAGIC_FLOAT_BIAS = _mm512_set1_ps(12582912.0f); // Bias for integer part
@@ -865,6 +870,10 @@ int max_length)
 
 void SparseAttentionServer::clear()
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated, "operation requires allocated attention owner");
+#endif
+
 
     #pragma omp parallel for schedule(static,1) num_threads(ATTENTION_THREADS)
     for(int i = 0; i < this->num_layers; ++i){
@@ -885,6 +894,13 @@ torch::Tensor k,
 torch::Tensor v, 
 torch::Tensor kn)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated && layer_id >= 0 && layer_id < this->num_layers && request_id >= 0 && request_id < this->batch_size, "invalid fill layer/request/state");
+    magicpig_tensor(k, torch::kBFloat16); magicpig_tensor(v, torch::kBFloat16); magicpig_tensor(kn, torch::kFloat32);
+    TORCH_CHECK(k.dim() == 3 && k.size(0) == this->num_key_value_heads && k.size(1) <= this->max_length && k.size(2) == this->head_dim && v.sizes() == k.sizes(), "invalid fill key/value shape");
+    TORCH_CHECK(kn.dim() == 2 && kn.size(0) == k.size(0) && kn.size(1) == k.size(1), "invalid fill norm shape");
+#endif
+
     int stride = this->num_key_value_heads * this->max_length * this->head_dim;
     bfloat16 * key = this->key_cache[layer_id] + request_id * stride;
     bfloat16 * value = this->value_cache[layer_id] + request_id * stride;
@@ -917,6 +933,14 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated, "operation requires allocated attention owner");
+#endif
+
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("attention_wrapper");
+#endif
+
 
 #ifdef __AVX512BF16__
 this->attention_wrapper_bf16(
@@ -982,6 +1006,14 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated, "operation requires allocated attention owner");
+#endif
+
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("attention_wrapper_bf16");
+#endif
+
 
 if (this->batch_size * this->num_attention_heads == 32 && this->head_dim == 128 && ATTENTION_THREADS == 64)
 {
@@ -1036,6 +1068,20 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("dynamic_attention");
+#endif
+
+#ifdef MAGICPIG_REAL_TORCH
+    magicpig_tensor(output_pt, torch::kBFloat16);
+    magicpig_tensor(max_value_expsum_pt, torch::kFloat32);
+    magicpig_tensor(query_pt, query_pt.scalar_type());
+    TORCH_CHECK(query_pt.scalar_type() == torch::kFloat32 || query_pt.scalar_type() == torch::kBFloat16, "query must be FP32 or BF16");
+    magicpig_tensor(nnz_pt, torch::kInt32);
+    magicpig_tensor(query_norm_pt, torch::kFloat32);
+    magicpig_tensor(ind_pt, torch::kInt32);
+#endif
+
     if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
     const int heads = this->batch_size * this->num_attention_heads;
     if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
@@ -1103,6 +1149,19 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("dynamic_attention_bf16");
+#endif
+
+#ifdef MAGICPIG_REAL_TORCH
+    magicpig_tensor(output_pt, torch::kBFloat16);
+    magicpig_tensor(max_value_expsum_pt, torch::kFloat32);
+    magicpig_tensor(query_pt, torch::kBFloat16);
+    magicpig_tensor(nnz_pt, torch::kInt32);
+    magicpig_tensor(query_norm_pt, torch::kFloat32);
+    magicpig_tensor(ind_pt, torch::kInt32);
+#endif
+
     if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
     const int heads = this->batch_size * this->num_attention_heads;
     if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
@@ -1186,6 +1245,20 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("attention");
+#endif
+
+#ifdef MAGICPIG_REAL_TORCH
+    magicpig_tensor(output_pt, torch::kBFloat16);
+    magicpig_tensor(max_value_expsum_pt, torch::kFloat32);
+    magicpig_tensor(query_pt, query_pt.scalar_type());
+    TORCH_CHECK(query_pt.scalar_type() == torch::kFloat32 || query_pt.scalar_type() == torch::kBFloat16, "query must be FP32 or BF16");
+    magicpig_tensor(nnz_pt, torch::kInt32);
+    magicpig_tensor(query_norm_pt, torch::kFloat32);
+    magicpig_tensor(ind_pt, torch::kInt32);
+#endif
+
     if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
     const int heads = this->batch_size * this->num_attention_heads;
     if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
@@ -1254,6 +1327,19 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("attention_bf16");
+#endif
+
+#ifdef MAGICPIG_REAL_TORCH
+    magicpig_tensor(output_pt, torch::kBFloat16);
+    magicpig_tensor(max_value_expsum_pt, torch::kFloat32);
+    magicpig_tensor(query_pt, torch::kBFloat16);
+    magicpig_tensor(nnz_pt, torch::kInt32);
+    magicpig_tensor(query_norm_pt, torch::kFloat32);
+    magicpig_tensor(ind_pt, torch::kInt32);
+#endif
+
     if (!this->allocated || layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid attention layer/state");
     const int heads = this->batch_size * this->num_attention_heads;
     if (nnz_pt.dim() != 1 || nnz_pt.size(0) != heads ||
@@ -1319,6 +1405,14 @@ torch::Tensor max_value_expsum_pt,
 torch::Tensor query_pt,
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    magicpig_tensor(output_pt, torch::kBFloat16);
+    magicpig_tensor(max_value_expsum_pt, torch::kFloat32);
+    magicpig_tensor(query_pt, query_pt.scalar_type());
+    TORCH_CHECK(query_pt.scalar_type() == torch::kFloat32 || query_pt.scalar_type() == torch::kBFloat16, "query must be FP32 or BF16");
+    magicpig_tensor(nnz_pt, torch::kInt32);
+#endif
+
     if (!this->allocated || this->head_dim != 128 || (this->num_attention_groups != 1 && this->num_attention_groups != 4 && this->num_attention_groups != 8)) throw std::invalid_argument("full_attention requires dim128 and query groups 1, 4 or 8");
 
     if (layer_id < 0 || layer_id >= this->num_layers) throw std::invalid_argument("invalid full_attention layer");
@@ -1386,6 +1480,10 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("scheduled_attention");
+#endif
+
     if (!this->allocated || this->head_dim != 128 || this->batch_size * this->num_attention_heads != 32)
         throw std::invalid_argument("scheduled_attention requires dim128 and32 flattened query heads");
     this->attention(layer_id, K, L, output_pt, max_value_expsum_pt, query_pt, query_norm_pt, ind_pt, nnz_pt);
@@ -1402,6 +1500,10 @@ torch::Tensor query_norm_pt,
 torch::Tensor ind_pt, 
 torch::Tensor nnz_pt)
 {
+#ifdef MAGICPIG_TRACE_DISPATCH
+    this->dispatch_trace.push_back("scheduled_attention_bf16");
+#endif
+
     if (!this->allocated || this->head_dim != 128 || this->batch_size * this->num_attention_heads != 32)
         throw std::invalid_argument("scheduled_attention requires dim128 and32 flattened query heads");
     this->attention_bf16(layer_id, K, L, output_pt, max_value_expsum_pt, query_pt, query_norm_pt, ind_pt, nnz_pt);
@@ -1409,6 +1511,10 @@ torch::Tensor nnz_pt)
 #endif
 torch::Tensor SparseAttentionServer::get_key_cache(int layer_id)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated && layer_id >= 0 && layer_id < this->num_layers, "invalid getter state/layer");
+#endif
+
 auto options = torch::TensorOptions().dtype(torch::kBFloat16);
 //auto options = torch::TensorOptions().dtype(torch::kFloat32);
 torch::Tensor tensor = torch::from_blob(this->key_cache[layer_id], {this->batch_size, this->num_key_value_heads, this->max_length, this->head_dim}, options);
@@ -1417,6 +1523,10 @@ return tensor;
 
 torch::Tensor SparseAttentionServer::get_value_cache(int layer_id)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated && layer_id >= 0 && layer_id < this->num_layers, "invalid getter state/layer");
+#endif
+
 auto options = torch::TensorOptions().dtype(torch::kBFloat16);
 //auto options = torch::TensorOptions().dtype(torch::kFloat32);
 torch::Tensor tensor = torch::from_blob(this->value_cache[layer_id], {this->batch_size, this->num_key_value_heads, this->max_length, this->head_dim}, options);
@@ -1425,6 +1535,10 @@ return tensor;
 
 torch::Tensor SparseAttentionServer::get_key_norm(int layer_id)
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated && layer_id >= 0 && layer_id < this->num_layers, "invalid getter state/layer");
+#endif
+
 auto options = torch::TensorOptions().dtype(torch::kFloat32);
 torch::Tensor tensor = torch::from_blob(this->key_norm[layer_id], {this->batch_size, this->num_key_value_heads, this->max_length}, options);
 return tensor;
@@ -1432,13 +1546,33 @@ return tensor;
 
 torch::Tensor SparseAttentionServer::get_score()
 {
+#ifdef MAGICPIG_REAL_TORCH
+    TORCH_CHECK(this->allocated, "operation requires allocated attention owner");
+#endif
+
 auto options = torch::TensorOptions().dtype(torch::kFloat32);
 torch::Tensor tensor = torch::from_blob(this->attention_score, {this->batch_size, this->num_attention_heads, this->max_length}, options);
 return tensor;
 }
 
-PYBIND11_MODULE(sparse_attention_cpu, m) {
-    py::class_<SparseAttentionServer>(m, "SparseAttentionServer")
+PYBIND11_MODULE(TORCH_EXTENSION_NAME, m) {
+    m.def("openmp_threads", []() {
+        int observed = 0;
+        #pragma omp parallel num_threads(4)
+        {
+            #pragma omp atomic update
+            observed += 1;
+        }
+        return observed;
+    });
+    // Actual wheel-linked FBGEMM runtime dispatch; no bit-model substitute.
+    m.def("fbgemm_convert", [](torch::Tensor input) {
+        magicpig_tensor(input, torch::kFloat32);
+        auto result = torch::empty_like(input, input.options().dtype(torch::kBFloat16));
+        FloatToBfloat16_simd(input.data_ptr<float>(), reinterpret_cast<bfloat16*>(result.data_ptr()), input.numel());
+        return result;
+    });
+    py::class_<SparseAttentionServer>(m, "SparseAttentionServer", py::module_local())
         .def(py::init<>())
         .def("alloc", &SparseAttentionServer::alloc)
         .def("fill", &SparseAttentionServer::fill)
@@ -1446,15 +1580,23 @@ PYBIND11_MODULE(sparse_attention_cpu, m) {
         #ifdef __AVX512BF16__
         .def("attention_bf16", &SparseAttentionServer::attention_bf16)
         #endif
+        #ifdef MAGICPIG_TRACE_DISPATCH
+        .def_readwrite("dispatch_trace", &SparseAttentionServer::dispatch_trace)
+        #endif
+        .def("dynamic_attention", &SparseAttentionServer::dynamic_attention)
+        #ifdef __AVX512BF16__
+        .def("dynamic_attention_bf16", &SparseAttentionServer::dynamic_attention_bf16)
+        .def("scheduled_attention_bf16", &SparseAttentionServer::scheduled_attention_bf16)
+        #endif
         .def("full_attention", &SparseAttentionServer::full_attention)
         .def("scheduled_attention", &SparseAttentionServer::scheduled_attention)
         .def("attention_wrapper", &SparseAttentionServer::attention_wrapper)
         #ifdef __AVX512BF16__
         .def("attention_wrapper_bf16", &SparseAttentionServer::attention_wrapper_bf16)
         #endif
-        .def("get_key_cache", &SparseAttentionServer::get_key_cache)
-        .def("get_value_cache", &SparseAttentionServer::get_value_cache)
-        .def("get_key_norm", &SparseAttentionServer::get_key_norm)
-        .def("get_score", &SparseAttentionServer::get_score)
+        .def("get_key_cache", &SparseAttentionServer::get_key_cache, py::keep_alive<0, 1>())
+        .def("get_value_cache", &SparseAttentionServer::get_value_cache, py::keep_alive<0, 1>())
+        .def("get_key_norm", &SparseAttentionServer::get_key_norm, py::keep_alive<0, 1>())
+        .def("get_score", &SparseAttentionServer::get_score, py::keep_alive<0, 1>())
         .def("clear", &SparseAttentionServer::clear);
 }

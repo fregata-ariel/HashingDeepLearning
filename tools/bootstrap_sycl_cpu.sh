@@ -9,17 +9,38 @@ revision=31db2e83903c1db9f50b03b620eb0a09224cd0eb
 [[ ${ID:-} == debian && ${VERSION_ID:-} == 13 ]] || { echo 'requires Debian13 amd64' >&2; exit 1; }
 mkdir -p "$root/setup" "$root/apt/packages" "$root/debian-root"
 root=$(realpath "$root")
+# Pip's --target entry points use this venv's absolute Python shebang. Validate
+# and repair it even when the separately verified compiler cache is complete.
+helpers_ready() {
+  PYTHONPATH="$root/python-tools${PYTHONPATH:+:$PYTHONPATH}" \
+    "$root/python-tools/bin/cmake" --version > "$root/setup/cmake-version.txt" 2>&1 &&
+    grep -qx 'cmake version 4.2.3' "$root/setup/cmake-version.txt" &&
+    PYTHONPATH="$root/python-tools${PYTHONPATH:+:$PYTHONPATH}" \
+    "$root/python-tools/bin/ninja" --version > "$root/setup/ninja-version.txt" 2>&1 &&
+    grep -Eq '^1[.]13[.]0([.+-].*)?$' "$root/setup/ninja-version.txt"
+}
+ensure_build_helpers() {
+  if [[ ! -x "$root/bootstrap-venv/bin/python" ]] ||
+      ! "$root/bootstrap-venv/bin/python" --version > "$root/setup/bootstrap-python-version.txt" 2>&1; then
+    python3 -m venv "$root/bootstrap-venv"
+  fi
+  "$root/bootstrap-venv/bin/python" --version > "$root/setup/bootstrap-python-version.txt" 2>&1
+  if ! helpers_ready; then
+    "$root/bootstrap-venv/bin/python" -m pip install --disable-pip-version-check \
+      --upgrade --target "$root/python-tools" cmake==4.2.3 ninja==1.13.0 > "$root/setup/python-tools.log" 2>&1
+  fi
+  helpers_ready
+}
 # Existing verified caches still run all numerical suites; only installation is reused.
 if [[ -f "$root/install/toolchain-manifest.txt" && -f "$root/install/runtime-sha256.txt" ]]; then
   grep -qx "AdaptiveCpp_commit=$revision" "$root/install/toolchain-manifest.txt"
   (cd "$root/install" && sha256sum --check --quiet runtime-sha256.txt)
+  ensure_build_helpers
   echo "SYCL_TOOLCHAIN_CACHE_VERIFIED $root"
   exit 0
 fi
 # Tool versions are pinned; they do not supply the SYCL compiler or runtime.
-python3 -m venv "$root/bootstrap-venv"
-"$root/bootstrap-venv/bin/python" -m pip install --disable-pip-version-check \
-  --target "$root/python-tools" cmake==4.2.3 ninja==1.13.0 > "$root/setup/python-tools.log" 2>&1
+ensure_build_helpers
 # These exact hashes were derived from Debian's signed trixie package metadata.
 # Extraction needs no root and does not modify the distribution installation.
 while IFS=$'\t' read -r digest url filename; do

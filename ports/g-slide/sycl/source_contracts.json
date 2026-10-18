@@ -1,0 +1,96 @@
+{
+  "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",
+  "definitions": [
+    {
+      "file": "ports/g-slide/src/kernel.cu",
+      "line": 21,
+      "signature": "__forceinline__ __device__ float warp_reduce(float val)",
+      "body_sha256": "5bfb2d4224122f5b97f3f716cd934590e84724d017913605eb7471a8394c2f85",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/kernel.cu",
+      "line": 27,
+      "signature": "__forceinline__ __device__ float block_reduce(float val)",
+      "body_sha256": "3542d7156a068411c8d5b0fa9f6b4840d33a4b1b97e233f8128ea9abfa5ae040",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/kernel.cu",
+      "line": 49,
+      "signature": "__forceinline__ __device__ float warp_max(float val)",
+      "body_sha256": "6595f72ef09fcc29a0e57d8abb6f486a594bc92443027ee08bb0cd45bc96ec5a",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/kernel.cu",
+      "line": 55,
+      "signature": "__forceinline__ __device__ float block_max(float val)",
+      "body_sha256": "b57cb2b1f3b20bf1a704d2ec56c167d46920e493c7944748dbd5485a00d2a175",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/kernel.cu",
+      "line": 77,
+      "signature": "__global__ void get_dense_acts_knl(CscActNodes csc_acts, const int node_num,\n                                   const int batch_size)",
+      "body_sha256": "2c322cb2d1a0d0c57afdc84c71126580139b697d0658140ed0232a9ba14e9c32",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/lshKnl.cu",
+      "line": 18,
+      "signature": "__global__ void gen_rand_keys_knl(unsigned int *d_rand_keys, const int seed,\n                                  const int prev_node_num,\n                                  const int tot_elem_num)",
+      "body_sha256": "1afc2f5e01e3a5970a47a23245cd0f2b2813dc0e1d08d0ea1d4e5295197e3715",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/lshKnl.cu",
+      "line": 34,
+      "signature": "__global__ void gen_rand_keys_knl(int *d_rand_keys, const int seed,\n                                  const int node_num)",
+      "body_sha256": "0b9d4283d1c02a12fbd4f89693344a95232cbe27ee1d32f2f45f3f0f34d03cc9",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/lshKnl.cu",
+      "line": 47,
+      "signature": "__global__ void init_hash_tt_knl(\n    const int *d_bins, const float *d_weights_rowmajor, const int prev_node_num,\n    const int node_num, const int tot_elem_num, const int L, const int K,\n    const int bin_size, const int tbl_num_per_tile,\n    const int bucket_num_per_tbl, const int bucket_capacity, int *d_buckets,\n    int *d_bucket_sizes)",
+      "body_sha256": "e00e8b7f2712a0d328e8a3f25fd77ff3c5c9e6fdbb9b265599487ba7ce126d31",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/lshKnl.cu",
+      "line": 114,
+      "signature": "__global__ void init_hash_knl(\n    const int *d_bins, const float *d_weights_rowmajor, const int prev_node_num,\n    const int node_num, const int tot_elem_num, const int L, const int K,\n    const int bin_size, const int tbl_num_per_tile,\n    const int tbl_num_per_thread, const int bucket_num_per_tbl,\n    const int bucket_capacity, int *d_buckets, int *d_bucket_sizes)",
+      "body_sha256": "70c8b02dc858b79de82a13f5ab0a30e058a89c41349020c2ebefb9581dac32ff",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/GPUMultiLinkedHashTable.cu",
+      "line": 178,
+      "signature": "__device__ void GPUMultiLinkedHashTable::d_activate_labels_seq(\n    const int *d_labels, const int *d_rand_nodes, const int label_begin,\n    const int label_end, const int tbl_id, const int min_act_num,\n    const int node_num, const int seed)",
+      "body_sha256": "5fa61f3a35d80e785b439505bccdaefa65fef0ad333c0abb606b4f19ba69fac8",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/GPUMultiLinkedHashTable.cu",
+      "line": 290,
+      "signature": "__global__ void block_reduce_cnt_knl(\n    const CscActNodes cmprs_gathered, const int L,\n    GPUMultiLinkedHashTable multi_linked_htables)",
+      "body_sha256": "1414c867b54eacad10a0e4b0c5b5a5a5165f8469cfcc6ba6b9a7410946d90e5e",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/GPUMultiLinkedHashTable.cu",
+      "line": 301,
+      "signature": "__global__ void activate_labels_seq_knl(\n    const CscActNodes cmprs_labels, const int batch_size,\n    GPUMultiLinkedHashTable multi_linked_htables)",
+      "body_sha256": "eb17c2603191ed569b53ccb76a04f6320e675a2b50243d78002eb446c2a84799",
+      "execution": "translated SYCL; original body not executed by this target"
+    },
+    {
+      "file": "ports/g-slide/src/GPUMultiLinkedHashTable.cu",
+      "line": 313,
+      "signature": "__global__ void activate_labels_seq_knl(\n    const CscActNodes cmprs_labels, const int *d_rand_nodes,\n    const int batch_size, const int min_act_num, const int node_num,\n    const int seed, GPUMultiLinkedHashTable multi_linked_htables)",
+      "body_sha256": "d808bf630c2fca862f3e8d71595e573fdfc7b5d109f25f7044eff62924d275e3",
+      "execution": "translated SYCL; original body not executed by this target"
+    }
+  ]
+}

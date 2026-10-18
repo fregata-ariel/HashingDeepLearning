@@ -10,14 +10,15 @@ tests/examples and selected dependency inputs remain in `third_party/magicpig/`.
 Issue #54 adds a dependency-free selected-body CPU driver and independent FP64
 oracles. Portable software lanes always run; native AVX-512/FMA and BF16 bodies
 run only after parent-process CPU/OS/compiler capability checks. Native-source
-changes now include reviewed arithmetic/domain/ownership repairs and Doxygen contracts. Full Torch/FBGEMM
-extension linkage, ABI, unrestricted scheduling and CPU-only Llama generation remain
-unverified. See [the CPU validation contract](CPU_VALIDATION.md).
+changes now include reviewed arithmetic/domain/ownership repairs and Doxygen contracts. The bounded real Torch/FBGEMM CPU linkage and ABI now execute under
+[the extension contract](EXTENSION_CPU_CONTRACT.md). Unrestricted scheduling,
+FlashInfer/CUDA execution and CPU-only Llama generation remain unverified. See [the CPU validation contract](CPU_VALIDATION.md).
 
 Archived `install.sh` installs historical CUDA/FlashInfer packages and must not
 be used as the routine CPU setup. Python originals remain archival until their
 maintained scope, runtime substitutions and strict typing are deliberately
-enrolled. The existing 31-file maintained Python inventory is unchanged here.
+enrolled. Three maintained CPU orchestrator/helper Python files are now explicitly enrolled
+in strict typing; see [the server contract](SERVER_CPU_CONTRACT.md).
 The explicit zero-file MagicPIG inventory, future-source enrollment guards,
 native contract index and existing CI gates are described in
 [CONTRACTS_AND_CI.md](CONTRACTS_AND_CI.md).

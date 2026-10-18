@@ -1,0 +1,29 @@
+{
+  "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",
+  "local_product_upstream": "idiap/fast-transformers@f22c13716fc748bb21a7b226ada7f7b5f87f867f",
+  "hybrid_upstream": "HazyResearch/scatterbrain@eeb689c00b9f322f33f6b6f85eaaac0a1d6a5eab plus maintained feature lifecycle repair",
+  "source_sha256": {
+    "third_party/scatterbrain-fast-transformers/fast_transformers/local_product/local_product_cpu.cpp": "70dedc4ab7b367eaea622eb80a53d5caeb3399604d144dcf036cd5bed223c313",
+    "ports/scatterbrain/src/models/modules/attention/sblocal_attention.py": "744ed388dd78c85bb2940fced0b522e9d737ec5ab73e25a681099e99265950f4",
+    "ports/scatterbrain/src/models/modules/attention/feature_maps_sb.py": "d3018356010ca54d57c58ae72991253fa53df2e2eb3ee458cf92b60c9de6ef48",
+    "tests/traceability/test_scatterbrain_initial_cpu.py": "0cabc23ca913c426137dd3cae835424f29fb96ce0b444ef806027a77513955b4"
+  },
+  "licenses": {
+    "local_kernels_and_ctypes_adapter": "MIT; ports/scatterbrain/notices/idiap-fast-transformers-LICENSE",
+    "maintained_hybrid_composition": "Apache-2.0; ports/scatterbrain/LICENSE"
+  },
+  "changes": [
+    "Four queue-accepting SYCL local product operations with output-owned gather backwards",
+    "Synchronous checked ctypes/autograd boundary; no CPU arithmetic fallback",
+    "Explicit noncausal FP32 prefix-mask hybrid wrapper; existing maintained Torch composition and projection/state preserved",
+    "Independent existing FP64 oracles execute through actual SYCL boundary; extra scalar shape cases",
+    "Serialize foreign-thread adapter submission/context lifetime and prevent live-library replacement; scoped queues avoid teardown order dependence; explicit all-masked hybrid rejection"
+  ],
+  "not_executed": [
+    "original CUDA bodies",
+    "native GPU",
+    "causal dependency",
+    "memory sanitizers",
+    "full model training or performance"
+  ]
+}

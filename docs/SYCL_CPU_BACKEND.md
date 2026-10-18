@@ -60,7 +60,12 @@ that absolute prefix; rebuilding is required after relocation. The installer
 extracts verified dependency packages locally and builds the pinned compiler.
 It does not replace system packages. It uses two build workers by default
 (`SYCL_BUILD_JOBS` overrides this). Existing caches must pass the pinned source
-identity and installed compiler/runtime checksum checks.
+identity and installed compiler/runtime checksum checks. The cached Python build
+helpers also require their bootstrap virtual environment because pip entry
+points contain an absolute interpreter path. CI caches that environment; cache
+hits recreate a missing interpreter and validate actual CMake `4.2.3` and Ninja
+`1.13.0` execution before returning. Broken helpers are reinstalled at those
+pinned versions with the local virtual environment's pip.
 
 The activation file supplies `SYCL_TOOLCHAIN_PREFIX` and `ACPP_INSTALL_DIR`
 (the final `install` directory), `SYCL_CXX`, required library paths and
@@ -143,3 +148,31 @@ and evidence upload even after failure. Existing workflow count remains seven.
 GPU/native CUDA/PCUDA validation is unrun and remains separate from this CPU
 success. Additional paper suites are enrolled by explicit steps in this same
 job as their acceptance work lands.
+
+## Required paper acceptance in the same CPU job
+
+The permanent `sycl-cpu` job explicitly runs every enrolled paper target through
+`tools/run_sycl_paper_cpu.sh`. After activating the pinned toolchain and installing
+the workflow's pinned CPU Torch, NumPy, einops and tqdm dependencies, reproduce it
+with the chosen Python environment:
+
+```bash
+tools/run_sycl_paper_cpu.sh --python /path/to/cpu-venv/bin/python --build-dir /tmp/sycl-paper-evidence
+```
+
+G-SLIDE executes its real CPU kernels and production training fixture, the exact
+native host training caller with mocked runtime/layers, and separate C++20/threaded
+source regressions. MONGOOSE builds the production LSH fixture and separately
+executes its maintained Torch fallback and unchanged original CUDA compile-only
+probe. A failed original CUDA compilation is recorded as a compatibility result;
+it never means original CUDA executed. Scatterbrain builds its shared C ABI
+library and runs both the maintained Torch hybrid forward/backward validation
+and the distinct foreign-thread cold-cache regression. Its CMake interpreter is
+explicitly pinned with the driver's repeatable `--cmake-arg` option.
+
+Missing suites, dependencies and failed required commands stop acceptance. Each
+invocation creates a fresh evidence directory with bounded command timeouts,
+per-command exit statuses, logs, source/generated-adapter and binary hashes, and
+the paper reports alongside the shared driver's compiler/device/resource evidence.
+Failures emit a bounded escaped CI annotation containing the command and recent
+build/test output. CPU success still leaves native GPU execution unvalidated.

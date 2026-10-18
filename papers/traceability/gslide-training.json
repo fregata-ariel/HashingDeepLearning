@@ -54,11 +54,11 @@
         "oracle": "fresh dense scalar backward plus retained previous delta for positive ReLU activations; zero for closed gates",
         "absolute_tolerance": 0.000003,
         "required_stale_discrepancy": 0.001,
-        "source_review": ["Layer::Layer initializes d_cmprs_bp_deltas once", "ReluLayer::forward and Network::train contain no per-step hidden-delta reset", "bp_rowmajor_knl adds existing previous deltas for positive activations"],
+        "source_review": ["At baseline 097b795, Layer::Layer initializes d_cmprs_bp_deltas once", "At baseline 097b795, ReluLayer::forward and Network::train contain no per-step hidden-delta reset", "bp_rowmajor_knl adds existing previous deltas for positive activations"],
         "execution": "actual extracted body, serial block size 1; production Network::train unexecuted",
         "gpu_validated": false
       },
-      "note": "This entry records an observed state-lifetime gap and is not evidence of paper-required accumulation or a production fix. The two-step fixture observes stale-delta discrepancy 0.201329470 and independently verifies that it equals the retained prior buffer. The main composition resets hidden deltas explicitly on the host. A focused production follow-up must confirm native behavior and choose/reset the intended per-step lifetime."
+      "note": "This entry records an observed state-lifetime gap and is not evidence of paper-required accumulation or a production fix. The two-step fixture observes stale-delta discrepancy 0.201329470 and independently verifies that it equals the retained prior buffer. The main composition resets hidden deltas explicitly on the host. Follow-up #116 wires full-capacity reset into the maintained shared train_step controller and native adapter; its real SYCL CPU backend is recorded separately as GSLIDE-SYCL-PRODUCTION-116. Native CUDA execution/reset confirmation remains #43."
     }
   ]
 }

@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "MONGOOSE-PACKING-SYCL-CPU",
+      "paper": "mongoose-2021",
+      "paper_location": "Released MONGOOSE-SLIDE SimHash sign packing and native LSH support; no new paper theorem",
+      "mechanism": "Execute shared SYCL projection and int32 packed sign codes on a real CPU device, then pass actual codes into the maintained native LSH table.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/mongoose/sycl/include/mongoose/simhash.hpp",
+        "symbol": "pack"
+      },
+      "test": {
+        "file": "ports/mongoose/sycl/tests/packing.cpp",
+        "id": "MONGOOSE-PACKING-SYCL-CPU"
+      },
+      "conditions": {
+        "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",
+        "execution": "Actual AdaptiveCpp generic/OpenMP SYCL CPU selector; multiple work-items; no serial C++ fallback",
+        "domain": "contiguous finite FP32 data[N,d], weights[d,kL]; positive N/d/L; k1..32; int32 bits with zero false and optional transpose",
+        "oracle": "Literal9/6/0/15 codes, independent FP64 scalar projection and power-of-two packing, actual maintained LSH.cpp with independent bucket union expectations",
+        "k_cases": [
+          1,
+          2,
+          7,
+          31,
+          32
+        ],
+        "maintained_fallback": "Separate tests/fallback.py checks existing Torch CPU implementation, not original CUDA",
+        "original_cuda": "Exact unchanged body plus standard pcuda.hpp compile probe fails at __shfl_down_sync; original body never executed",
+        "legacy": "Unused production matrix_simhash helper int64 API explicitly excluded; no legacy execution claim",
+        "identity": "validate.py captures candidate/source/fixture/binary hashes and device/runtime log; shared toolchain records compiler",
+        "native_gpu": "unexecuted"
+      },
+      "note": "New SYCL rewrite evidence only. Existing CPU fallback/native/Cython IDs retain their original meanings. CuPy/PyNVRTC/current-stream/shuffle semantics remain outside this CPU result; see ports/mongoose/sycl/SYCL_CONTRACT.md and Issue121."
+    }
+  ]
+}

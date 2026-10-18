@@ -1,0 +1,24 @@
+{
+  "name": "real_torch_extension",
+  "issue": 117,
+  "driver": "tools/check_magicpig_extension_cpu.py",
+  "fixture": "tests/traceability/test_magicpig_extension_cpu.py",
+  "entries": [
+    "attention_wrapper",
+    "attention_wrapper_bf16",
+    "attention_bf16",
+    "dynamic_attention_bf16",
+    "scheduled_attention",
+    "scheduled_attention_bf16"
+  ],
+  "modes": [
+    "BF16-disabled",
+    "BF16-enabled"
+  ],
+  "oracle": "MAGICPIG-ATTENTION-CPU independent samequantized FP64; probability .002/output .008/base2 metadata .03",
+  "exclusions": [
+    "unused WV variants",
+    "LSH::copy",
+    "CUDA/FlashInfer #62"
+  ]
+}

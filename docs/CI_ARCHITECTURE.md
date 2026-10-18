@@ -72,6 +72,15 @@ and resource evidence. See [the reproducible CPU backend contract](SYCL_CPU_BACK
 Paper algorithm acceptance is enrolled separately from the backend feature
 contract, and actual GPU validation remains pending.
 
+The same required CPU job explicitly executes G-SLIDE shared kernels/production
+training and source regressions, MONGOOSE production LSH packing plus its separate
+Torch fallback/original CUDA compile probe, and Scatterbrain's shared C ABI local
+kernels, maintained Torch hybrid and foreign-thread regression. The bounded
+`tools/run_sycl_paper_cpu.sh` runner records command exits and fresh evidence;
+missing targets fail. CPU Torch dependencies are installed in an isolated venv,
+and Scatterbrain's CMake configuration pins that interpreter explicitly. These
+checks add no permanent workflow or GPU job.
+
 G-SLIDE uses routine CPU serial emulation in the existing traceability gate.
 No GPU service or GPU workflow is required. Actual CUDA build, parallelism,
 device memory/synchronization and production training remain pending until an
@@ -249,3 +258,24 @@ When a paper/implementation integration milestone closes:
 - [ ] sanitizer coverage exists for native ownership-sensitive code;
 - [ ] temporary diagnostics have documented successors;
 - [ ] temporary diagnostic workflow files are removed.
+
+Issue #117 adds the actual MagicPIG Torch/FBGEMM CPU boundary to the existing
+Torch CPU job in this workflow. It builds BF16-enabled/disabled native modules
+using the wheel ABI, emits separate capability skips, observes four OpenMP
+workers and uploads source hashes/dispatch traces with the existing artifact.
+The pre-existing selected-body sanitizer gate remains separate from the
+unsanitized Torch wheel. See `ports/magicpig/EXTENSION_CPU_CONTRACT.md`.
+
+Issue #118 adds complete maintained MagicPIG CPU server control to the same
+Torch job, reusing native builds from #117. Its evidence distinguishes actual
+Torch/native callees, maintained source adaptation and CPU resident/merge math
+from uncalled FlashInfer/CUDA. Three maintained Python files enroll in the
+existing strict typing inventory; no new permanent workflow is introduced.
+
+MagicPIG Hosted acceptance additionally requires explicitly labeled SIMDe
+compatibility execution for both source branches and the full CPU server.
+Optional native probes preserve hardware-based skips in a separate build root;
+compatibility success never changes native skip status. The exact upstream
+archive/license, verified cached include tree, adapter and no-AVX binary audit
+are recorded with existing artifacts. This extends the same Torch CPU job to
+25 minutes for its extra compilations; no new workflow is introduced.

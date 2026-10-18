@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-SYCL-DEVICE-115",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.3-4.4: WTA candidate selection and sparse neural computation",
+      "mechanism": "Execute translated reduction, dense index, key generation, tiled WTA hash and candidate wrapper contracts on a real SYCL CPU device.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/sycl/kernels.hpp",
+        "symbol": "reductions"
+      },
+      "test": {
+        "file": "tests/gslide_sycl/test_kernels.cpp",
+        "id": "GSLIDE-SYCL-DEVICE-115"
+      },
+      "conditions": {
+        "suite": "gslide_sycl",
+        "execution": "shared SYCL kernels submitted to required actual CPU device",
+        "source_contracts": "ports/g-slide/sycl/source_contracts.json",
+        "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",
+        "functions": 13,
+        "extents": [
+          1,
+          31,
+          33,
+          65,
+          129
+        ],
+        "local_sizes": [
+          32,
+          64,
+          128
+        ],
+        "subgroup_policy": "query actual subgroup/work-group IDs; never assume width or contiguous lane mapping",
+        "oracle": "independent integer/scalar FP64 sums, maxima, dense IDs, minstd sequence, WTA buckets, frequencies and cyclic padding",
+        "absolute_tolerance": 1e-05,
+        "gpu_validated": false,
+        "original_cuda_executed": false
+      },
+      "note": "Support adaptation: actual subgroup collectives, local-memory block trees and concurrent atomics; direct-address frequencies replace native linked pool. Preserves natural-log WTA and released packed RNG precedence variant. Source identities and distinct original source-defect reproductions are retained. Does not execute original CUDA reductions/hash wrappers or native ownership, lock progress, stream ordering or GPU scheduling. #34/#43 remain open."
+    }
+  ]
+}

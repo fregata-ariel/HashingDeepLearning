@@ -10,6 +10,14 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_gslide_sycl.py"
+      - "tools/check_gslide_source_regressions.py"
+      - "tools/check_gslide_train_adapter.py"
+      - "tools/run_sycl_paper_cpu.sh"
+      - "tests/gslide_sycl/**"
+      - "ports/mongoose/sycl/**"
+      - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
+      - "ports/mongoose/lsh_lib/*.h"
       - "tools/check_sycl_cpu.sh"
       - "tools/bootstrap_sycl_cpu.sh"
       - "tools/sycl-cpu-packages.tsv"
@@ -25,6 +33,9 @@ on:
       - "tools/check_scatterbrain_sbsmyrf_sources.py"
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
+      - "tools/check_magicpig_extension_cpu.py"
+      - "tools/magicpig_simde.py"
+      - "tools/check_magicpig_server_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
       - "tools/audit_python_annotations.py"
@@ -51,6 +62,7 @@ on:
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
       - ".github/workflows/traceability.yml"
+      - ".github/workflows/python-typing.yml"
   pull_request:
     branches: [research/lsh-lineage-vendor]
     paths:
@@ -60,6 +72,14 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_gslide_sycl.py"
+      - "tools/check_gslide_source_regressions.py"
+      - "tools/check_gslide_train_adapter.py"
+      - "tools/run_sycl_paper_cpu.sh"
+      - "tests/gslide_sycl/**"
+      - "ports/mongoose/sycl/**"
+      - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
+      - "ports/mongoose/lsh_lib/*.h"
       - "tools/check_sycl_cpu.sh"
       - "tools/bootstrap_sycl_cpu.sh"
       - "tools/sycl-cpu-packages.tsv"
@@ -75,6 +95,9 @@ on:
       - "tools/check_scatterbrain_sbsmyrf_sources.py"
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
+      - "tools/check_magicpig_extension_cpu.py"
+      - "tools/magicpig_simde.py"
+      - "tools/check_magicpig_server_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
       - "tools/audit_python_annotations.py"
@@ -101,6 +124,7 @@ on:
       - "ports/mongoose/lsh_lib/clsh.pyi"
       - "ports/mongoose/mongoose_reformer/reformer_lib/scheduler.py"
       - ".github/workflows/traceability.yml"
+      - ".github/workflows/python-typing.yml"
   workflow_dispatch:
 
 jobs:
@@ -160,6 +184,7 @@ jobs:
           python3 tests/traceability/test_magicpig_cpu_contracts.py
           python3 tests/traceability/test_magicpig_boundary_contracts.py
           python3 tests/traceability/test_magicpig_ci_reporting.py
+          python3 tests/traceability/test_magicpig_simde_contracts.py
           python3 tests/traceability/test_python_typing_inventory.py
           python3 tools/generate_magicpig_probability_reference.py --check
           mkdir -p traceability-artifact/magicpig-cpu/plain traceability-artifact/magicpig-cpu/sanitized
@@ -251,7 +276,7 @@ jobs:
 
   scatterbrain-cpu:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       PYTHONPYCACHEPREFIX: /tmp/scatterbrain-bytecode
       OMP_THREAD_LIMIT: "2"
@@ -272,8 +297,32 @@ jobs:
           sudo apt-get install -y g++-14
           g++-14 --version
           python -m pip install -r tools/scatterbrain-cpu-requirements.txt
+          python -m pip install ninja==1.13.0
           python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
           python -m pip check
+
+      - name: Capability-gated MagicPIG native SIMD boundary
+        env:
+          OMP_THREAD_LIMIT: "4"
+        run: |
+          python tools/check_magicpig_extension_cpu.py --cxx g++-14 \
+            --build-dir scatterbrain-cpu-artifact/magicpig-extension
+
+      - name: Required MagicPIG emulated intrinsic bodies with real Torch FBGEMM
+        env:
+          OMP_THREAD_LIMIT: "4"
+        run: |
+          python tools/check_magicpig_extension_cpu.py --cxx g++-14 \
+            --execution-mode simde --require-execution \
+            --build-dir scatterbrain-cpu-artifact/magicpig-emulated
+
+      - name: Required MagicPIG server with emulated intrinsic bodies
+        env:
+          OMP_THREAD_LIMIT: "4"
+        run: |
+          python tools/check_magicpig_server_cpu.py --cxx g++-14 \
+            --execution-mode simde --require-execution \
+            --build-dir scatterbrain-cpu-artifact/magicpig-emulated
 
       - name: Verify initial and native dependency source identities
         run: |
@@ -335,6 +384,7 @@ jobs:
             /workspace/.sycl-toolchain/install
             /workspace/.sycl-toolchain/debian-root
             /workspace/.sycl-toolchain/python-tools
+            /workspace/.sycl-toolchain/bootstrap-venv
             /workspace/.sycl-toolchain/env.sh
           key: sycl-debian13-amd64-llvm19-${{ hashFiles('tools/bootstrap_sycl_cpu.sh', 'tools/sycl-cpu-packages.tsv') }}
       - name: Install or verify pinned real CPU backend
@@ -345,6 +395,18 @@ jobs:
         run: |
           source /workspace/.sycl-toolchain/env.sh
           tools/check_sycl_cpu.sh --build-dir sycl-cpu-evidence/backend
+      - name: Install pinned paper acceptance CPU Python dependencies
+        shell: bash
+        run: |
+          python3 -m venv /workspace/.sycl-cpu-venv
+          /workspace/.sycl-cpu-venv/bin/python -m pip install numpy==2.3.5 einops==0.8.1 tqdm==4.67.1
+          /workspace/.sycl-cpu-venv/bin/python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          /workspace/.sycl-cpu-venv/bin/python -m pip check
+      - name: Execute all required paper CPU acceptance and source regressions
+        shell: bash
+        run: |
+          source /workspace/.sycl-toolchain/env.sh
+          tools/run_sycl_paper_cpu.sh --python /workspace/.sycl-cpu-venv/bin/python --build-dir sycl-cpu-evidence/papers
       - name: Upload source, binary, device and resource evidence
         if: always()
         uses: actions/upload-artifact@v4

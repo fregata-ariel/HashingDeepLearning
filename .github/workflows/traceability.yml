@@ -10,6 +10,14 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_gslide_sycl.py"
+      - "tools/check_gslide_source_regressions.py"
+      - "tools/check_gslide_train_adapter.py"
+      - "tools/run_sycl_paper_cpu.sh"
+      - "tests/gslide_sycl/**"
+      - "ports/mongoose/sycl/**"
+      - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
+      - "ports/mongoose/lsh_lib/*.h"
       - "tools/check_sycl_cpu.sh"
       - "tools/bootstrap_sycl_cpu.sh"
       - "tools/sycl-cpu-packages.tsv"
@@ -60,6 +68,14 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_gslide_sycl.py"
+      - "tools/check_gslide_source_regressions.py"
+      - "tools/check_gslide_train_adapter.py"
+      - "tools/run_sycl_paper_cpu.sh"
+      - "tests/gslide_sycl/**"
+      - "ports/mongoose/sycl/**"
+      - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
+      - "ports/mongoose/lsh_lib/*.h"
       - "tools/check_sycl_cpu.sh"
       - "tools/bootstrap_sycl_cpu.sh"
       - "tools/sycl-cpu-packages.tsv"
@@ -353,6 +369,18 @@ jobs:
         run: |
           source /workspace/.sycl-toolchain/env.sh
           tools/check_sycl_cpu.sh --build-dir sycl-cpu-evidence/backend
+      - name: Install pinned paper acceptance CPU Python dependencies
+        shell: bash
+        run: |
+          python3 -m venv /workspace/.sycl-cpu-venv
+          /workspace/.sycl-cpu-venv/bin/python -m pip install numpy==2.3.5 einops==0.8.1 tqdm==4.67.1
+          /workspace/.sycl-cpu-venv/bin/python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
+          /workspace/.sycl-cpu-venv/bin/python -m pip check
+      - name: Execute all required paper CPU acceptance and source regressions
+        shell: bash
+        run: |
+          source /workspace/.sycl-toolchain/env.sh
+          tools/run_sycl_paper_cpu.sh --python /workspace/.sycl-cpu-venv/bin/python --build-dir sycl-cpu-evidence/papers
       - name: Upload source, binary, device and resource evidence
         if: always()
         uses: actions/upload-artifact@v4

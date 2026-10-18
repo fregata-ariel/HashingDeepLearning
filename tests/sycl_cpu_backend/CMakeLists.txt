@@ -7,3 +7,8 @@ target_link_libraries(sycl_cpu_backend_test PRIVATE hashing_sycl::common)
 add_sycl_to_target(TARGET sycl_cpu_backend_test SOURCES backend_contract.cpp)
 enable_testing()
 add_test(NAME sycl_cpu_backend_contract COMMAND sycl_cpu_backend_test "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/boundaries.txt")
+
+add_test(NAME reject_zero_only_fixture COMMAND sycl_cpu_backend_test "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/zero-only-invalid.txt")
+set_tests_properties(reject_zero_only_fixture PROPERTIES WILL_FAIL TRUE)
+add_test(NAME reject_malformed_fixture COMMAND sycl_cpu_backend_test "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/malformed-invalid.txt")
+set_tests_properties(reject_malformed_fixture PROPERTIES WILL_FAIL TRUE)

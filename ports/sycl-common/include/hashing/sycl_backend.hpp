@@ -14,13 +14,16 @@ inline sycl::queue make_queue(device_kind kind = device_kind::automatic) {
   const auto errors = [](sycl::exception_list exceptions) {
     for (const auto& error : exceptions) std::rethrow_exception(error);
   };
-  const sycl::property_list properties{sycl::property::queue::in_order{},
-                                       sycl::property::queue::enable_profiling{}};
-  if (kind == device_kind::cpu)
-    return sycl::queue{sycl::cpu_selector_v, errors, properties};
-  if (kind == device_kind::gpu)
-    return sycl::queue{sycl::gpu_selector_v, errors, properties};
-  return sycl::queue{sycl::default_selector_v, errors, properties};
+  sycl::device device = kind == device_kind::cpu ? sycl::device{sycl::cpu_selector_v}
+                      : kind == device_kind::gpu ? sycl::device{sycl::gpu_selector_v}
+                                                 : sycl::device{sycl::default_selector_v};
+  // Validation queues are ordered; collect profiling only when supported.
+  // Kernels also accept caller-created queues for other execution policies.
+  if (device.has(sycl::aspect::queue_profiling))
+    return sycl::queue{device, errors, sycl::property_list{
+      sycl::property::queue::in_order{}, sycl::property::queue::enable_profiling{}}};
+  return sycl::queue{device, errors,
+                     sycl::property_list{sycl::property::queue::in_order{}}};
 }
 
 inline void require_cpu(const sycl::queue& queue) {
@@ -33,7 +36,7 @@ inline void describe_queue(std::ostream& out, const sycl::queue& queue) {
   const auto platform = device.get_platform();
   out << "platform=" << platform.get_info<sycl::info::platform::name>()
       << "\nplatform_version=" << platform.get_info<sycl::info::platform::version>()
-      << "\nbackend_enum=" << static_cast<int>(queue.get_backend())
+      << "\nbackend_enum=" << static_cast<int>(platform.get_backend())
       << "\ndevice=" << device.get_info<sycl::info::device::name>()
       << "\ndevice_vendor=" << device.get_info<sycl::info::device::vendor>()
       << "\ndriver=" << device.get_info<sycl::info::device::driver_version>()

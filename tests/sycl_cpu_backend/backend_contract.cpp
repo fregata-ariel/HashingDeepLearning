@@ -1,4 +1,5 @@
 #include <hashing/sycl_backend.hpp>
+#include <array>
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -110,13 +111,14 @@ int main(int argc, char** argv) {
       std::chrono::steady_clock::now() - start).count() << '\n';
     std::ifstream fixtures(argv[1]);
     require(fixtures.good(), "missing fixture");
+    constexpr std::array<std::size_t, 9> required{0, 1, 31, 32, 33, 127, 128, 129, 1025};
     std::size_t n = 0, cases = 0;
     while (fixtures >> n) {
-      require(n <= 1025, "fixture exceeds bounded contract");
+      require(cases < required.size() && n == required[cases], "required boundary fixture changed");
       check_case(queue, n);
       ++cases;
     }
-    require(fixtures.eof() && cases == 9, "malformed/incomplete fixture");
+    require(fixtures.eof() && cases == required.size(), "malformed/incomplete fixture");
     std::cout << "SYCL_CPU_BACKEND_PASS cases=" << cases << '\n';
   } catch (const std::exception& error) {
     std::cerr << "SYCL_CPU_BACKEND_FAIL " << error.what() << '\n';

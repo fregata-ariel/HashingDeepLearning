@@ -122,7 +122,12 @@ binaries are never used to stand in for a failed new build. Git reads trust only
 the explicit checkout path through per-command configuration, covering container
 checkout ownership differences without changing global trust or `HOME`. Git
 failures retain full stderr in `git-stderr.log` and emit a bounded, escaped CI
-error annotation. Checkout identity failures stop before compilation.
+error annotation. Checkout identity failures stop before compilation. Other
+failures also emit a bounded, escaped error annotation identifying the first
+failed stage and original exit code, with the tail of its configure/build/test
+log and retained stderr. Full stderr remains in `driver-stderr.log`; the bounded
+plain-text excerpt is saved in `failure-summary.txt`. `result.txt` includes the
+stage and exit code even when metadata collection fails.
 
 A local initial backend run on 2026-10-18 measured clean build 7.22 s / 303004 KiB,
 cached build 0.14 s / 16932 KiB, cold tests 0.94 s / 68996 KiB, warm tests

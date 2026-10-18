@@ -27,7 +27,9 @@
         "mongoose_slide/slide_lib/lsh_softmax.py",
         "mongoose_slide/slide_lib/network.py",
         "mongoose_slide/slide_lib/simHash.py",
-        "mongoose_slide/slide_lib/triplet_network.py"
+        "mongoose_slide/slide_lib/triplet_network.py",
+        "sycl/tests/fallback.py",
+        "sycl/tests/validate.py"
       ],
       "stub_files": [
         "lsh_lib/clsh.pyi"

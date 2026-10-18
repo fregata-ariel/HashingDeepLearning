@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: MIT
+// TRACE_TEST_ID: MONGOOSE-PACKING-SYCL-CPU
+// Relation: support for released sign-packing/native-LSH infrastructure.
 // Derived from HazyResearch MONGOOSE sign packing; see ../SYCL_CONTRACT.md.
 #pragma once
 #include <sycl/sycl.hpp>

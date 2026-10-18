@@ -29,20 +29,40 @@ export LD_LIBRARY_PATH="$SYCL_TOOLCHAIN_PREFIX/lib:${LD_LIBRARY_PATH:-}"
 build=$(mktemp -d "$evidence/build.XXXXXX")
 status=FAIL
 trap 'printf "status=%s\nbuild=%s\n" "$status" "$build" > "$evidence/result.txt"' EXIT
+# Container checkout ownership can differ from the shell user. Trust only the
+# explicit checkout for each read; do not alter HOME or global Git configuration.
+git_repo() {
+  local command_status diagnostic
+  if git -c safe.directory="$repo" -C "$repo" "$@" 2> "$evidence/git-command-stderr.tmp"; then
+    cat "$evidence/git-command-stderr.tmp" >> "$evidence/git-stderr.log"
+  else
+    command_status=$?
+    cat "$evidence/git-command-stderr.tmp" >> "$evidence/git-stderr.log"
+    diagnostic="git $*: exit=$command_status; $(head -c 2048 "$evidence/git-command-stderr.tmp")"
+    diagnostic=${diagnostic//'%'/'%25'}
+    diagnostic=${diagnostic//$'\r'/'%0D'}
+    diagnostic=${diagnostic//$'\n'/'%0A'}
+    printf '::error title=SYCL CPU Git evidence failed::%s\n' "$diagnostic" >&2
+    return "$command_status"
+  fi
+}
+# Assign separately: printf would hide a failing command substitution's status.
+checkout=$(git_repo rev-parse HEAD)
+tree=$(git_repo rev-parse 'HEAD^{tree}')
 {
-  printf 'checkout=%s\ntree=%s\nsuite=%s\n' "$(git -C "$repo" rev-parse HEAD)" "$(git -C "$repo" rev-parse 'HEAD^{tree}')" "$source_dir"
+  printf 'checkout=%s\ntree=%s\nsuite=%s\n' "$checkout" "$tree" "$source_dir"
   printf 'compiler=%s\ntargets=%s\nvisibility=%s\nOMP_NUM_THREADS=%s\nOMP_THREAD_LIMIT=%s\n' "$SYCL_CXX" "$ACPP_TARGETS" "$ACPP_VISIBILITY_MASK" "$OMP_NUM_THREADS" "$OMP_THREAD_LIMIT"
-  git -C "$repo" status --short
+  git_repo status --short
   sha256sum "$SYCL_CXX" "$time_bin"
   "$SYCL_CXX" --version
   cmake --version
   uname -a
   lscpu
 } > "$evidence/environment.txt"
-git -C "$repo" diff --binary HEAD > "$evidence/checkout.patch"
+git_repo diff --binary HEAD > "$evidence/checkout.patch"
 (
   cd "$repo"
-  git ls-files -z -- ports "$source_dir" tools/check_sycl_cpu.sh tools/bootstrap_sycl_cpu.sh |
+  git_repo ls-files -z -- ports "$source_dir" tools/check_sycl_cpu.sh tools/bootstrap_sycl_cpu.sh |
     sort -z | xargs -0 -r sha256sum
 ) > "$evidence/source-sha256.txt"
 if [[ -f "$SYCL_TOOLCHAIN_PREFIX/toolchain-manifest.txt" ]]; then

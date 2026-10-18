@@ -1,0 +1,8 @@
+{
+  "upstream_ref": "official upstream master snapshot, 2026-10-15",
+  "commit": "2e5224981e9123b8fe89a9833a978556d636a565",
+  "archive_url": "https://codeload.github.com/simd-everywhere/simde/tar.gz/2e5224981e9123b8fe89a9833a978556d636a565",
+  "archive_sha256": "8bc6273b9ad2d44f1f3b4d00a440a76a2e1143b3be2133fb036208b9ea3aec4a",
+  "license": "MIT",
+  "license_sha256": "75ce0a8c5a7bff42fbd6f8f3b469b518132132c4f4948fb8d02b1ccb5d0df9d8"
+}

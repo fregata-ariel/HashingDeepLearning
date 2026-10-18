@@ -271,3 +271,11 @@ Torch job, reusing native builds from #117. Its evidence distinguishes actual
 Torch/native callees, maintained source adaptation and CPU resident/merge math
 from uncalled FlashInfer/CUDA. Three maintained Python files enroll in the
 existing strict typing inventory; no new permanent workflow is introduced.
+
+MagicPIG Hosted acceptance additionally requires explicitly labeled SIMDe
+compatibility execution for both source branches and the full CPU server.
+Optional native probes preserve hardware-based skips in a separate build root;
+compatibility success never changes native skip status. The exact upstream
+archive/license, verified cached include tree, adapter and no-AVX binary audit
+are recorded with existing artifacts. This extends the same Torch CPU job to
+25 minutes for its extra compilations; no new workflow is introduced.

@@ -24,7 +24,11 @@
         "fbgemm": "real wheel libtorch_cpu exported conversion/dispatch; pinned archived declarations; half-up bits and Torch tie contrast recorded",
         "threading": "actual OpenMP4 workers; no64thread/NUMA performance claim",
         "sanitizer": "existing selected native ASan/UBSan retained; unsanitized wheel boundary excluded",
-        "gpu_execution": "unverified #62"
+        "gpu_execution": "unverified #62",
+        "execution_modes": {
+          "native": "Capability-gated actual AVX512/BF16 machine instructions; native skips remain unverified. Optional --require-native rejects any required native skip.",
+          "simde": "Required Hosted compatibility mode: same maintained bodies/unchanged fixture via pinned SIMDe 2e5224981e9123b8fe89a9833a978556d636a565 with native features disabled; explicitly EMULATED_PASS, native_simd_verified=false. Actual wheel FBGEMM runtime conversion dispatch replaces unconditional *_avx512 calls; no arbitrary BF16 ISA special-value equivalence claim."
+        }
       },
       "note": "See EXTENSION_CPU_CONTRACT.md; unused WV variants and LSH::copy excluded. Full Python orchestration belongs to#118."
     }

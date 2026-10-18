@@ -60,3 +60,42 @@ Each completed build mode emits a bounded, percent/CR/LF-escaped Actions notice
 with the tested commit and `EXECUTED_PASS` metrics or `SKIPPED` missing flags.
 These log notices remain inspectable when the full evidence artifact cannot
 be retrieved. They do not change the numerical or GPU scope.
+
+## Required compatibility execution on CPUs without AVX512
+
+`--execution-mode simde --require-execution` runs the same actual maintained
+translation units and unchanged numerical fixture for both BF16 source branches.
+This is **emulated intrinsic execution**, labeled `EMULATED_PASS`; it never
+satisfies `--require-native` (the conflicting arguments reject). The default
+`native` mode retains CPU/OS capability gating and native `EXECUTED_PASS`/`SKIPPED`
+notices. Hosted native skips remain skips alongside required compatibility
+execution; neither result establishes GPU behavior.
+
+The forced-include [adapter](compat/simde_cpu.h) loads real Torch, immintrin and
+archived FBGEMM declarations before enabling only AVX512-family SIMDe aliases.
+It sets the existing BF16 source selector only after all dependency headers.
+Compiler flags force baseline x86-64 with AVX/FMA disabled and `SIMDE_NO_NATIVE`.
+The extension binary audit rejects AVX instructions, YMM/ZMM/mask registers and
+unconditional FBGEMM AVX512 imports. Torch/FBGEMM shared libraries retain their
+own safe runtime CPU dispatch; the audit does not describe their entire binaries.
+
+The adapter explicitly redirects the maintained `*_avx512` converter callsites
+to actual wheel FBGEMM `*_simd` runtime dispatch. This is an adapted callee
+boundary, not execution of unconditional AVX512 converter machine code on a
+weaker CPU. Actual Tensor ABI/conversion/aliasing/lifetime tests remain unchanged.
+The same already-quantized operand FP64 oracles and budgets run in both modes.
+SIMDe fallback BF16 results on these ordinary finite fixtures do not establish
+arbitrary native BF16 DAZ/FTZ/special-value or performance equivalence. Inherited
+constructor text naming AVX512 denotes the selected source branch, not hardware
+execution; the explicit mode and notices are the execution evidence.
+
+`compat/simde-source.json` pins official upstream snapshot
+`2e5224981e9123b8fe89a9833a978556d636a565`, archive SHA256
+`8bc6273b9ad2d44f1f3b4d00a440a76a2e1143b3be2133fb036208b9ea3aec4a`,
+and MIT [license](compat/SIMDE_LICENSE). This snapshot includes reduce_add_ps;
+no local arithmetic replacement or edited third-party header is used.
+`tools/magicpig_simde.py` downloads that exact HTTPS archive, verifies its digest,
+and validates every cached header against it before compiling. Modified/extra
+cache files reject. Evidence records the actual include directory, archive/pin,
+complete header-tree and avx512.h hashes, adapter/bootstrap and binary hashes.
+Native and emulated evidence use separate build roots to preserve both results.

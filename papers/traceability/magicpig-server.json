@@ -25,7 +25,11 @@
         "ownership": "owned cloned projection and caches, input copies, no GPU/pinned/async aliases",
         "typing": "3 annotated maintained Python files enrolled strict mypy and disallow-any-explicit",
         "original_identity": "descriptor pins immutable attnserver.py/utils.py; runner emits complete original method/function AST hashes and source line locators",
-        "gpu_execution": "unverified #62"
+        "gpu_execution": "unverified #62",
+        "execution_modes": {
+          "native": "Capability-gated actual AVX512/BF16 machine instructions; native skips remain unverified. Optional --require-native rejects any required native skip.",
+          "simde": "Required Hosted compatibility mode: same maintained bodies/unchanged fixture via pinned SIMDe 2e5224981e9123b8fe89a9833a978556d636a565 with native features disabled; explicitly EMULATED_PASS, native_simd_verified=false. Actual wheel FBGEMM runtime conversion dispatch replaces unconditional *_avx512 calls; no arbitrary BF16 ISA special-value equivalence claim."
+        }
       },
       "note": "Backend-independent maintained shared server explicitly adapts LSHSparseAttnServer/AttnServer; per-layer/request state repairs shared hash/length aliasing. CPU resident attention/merge replaces actual FlashInfer; top-p,LLM/LLMLayer,generation andCLI excluded because no selected server API requires them."
     }

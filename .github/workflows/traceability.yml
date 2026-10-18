@@ -34,6 +34,7 @@ on:
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
       - "tools/check_magicpig_extension_cpu.py"
+      - "tools/magicpig_simde.py"
       - "tools/check_magicpig_server_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
@@ -95,6 +96,7 @@ on:
       - "tools/scatterbrain-cpu-requirements.txt"
       - "tools/check_magicpig_cpu.py"
       - "tools/check_magicpig_extension_cpu.py"
+      - "tools/magicpig_simde.py"
       - "tools/check_magicpig_server_cpu.py"
       - "tools/report_magicpig_cpu.py"
       - "tools/generate_magicpig_probability_reference.py"
@@ -182,6 +184,7 @@ jobs:
           python3 tests/traceability/test_magicpig_cpu_contracts.py
           python3 tests/traceability/test_magicpig_boundary_contracts.py
           python3 tests/traceability/test_magicpig_ci_reporting.py
+          python3 tests/traceability/test_magicpig_simde_contracts.py
           python3 tests/traceability/test_python_typing_inventory.py
           python3 tools/generate_magicpig_probability_reference.py --check
           mkdir -p traceability-artifact/magicpig-cpu/plain traceability-artifact/magicpig-cpu/sanitized
@@ -273,7 +276,7 @@ jobs:
 
   scatterbrain-cpu:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       PYTHONPYCACHEPREFIX: /tmp/scatterbrain-bytecode
       OMP_THREAD_LIMIT: "2"
@@ -298,19 +301,28 @@ jobs:
           python -m pip install 'torch==2.14.1+cpu' --index-url https://download.pytorch.org/whl/cpu
           python -m pip check
 
-      - name: Actual MagicPIG Torch FBGEMM CPU boundary
+      - name: Capability-gated MagicPIG native SIMD boundary
         env:
           OMP_THREAD_LIMIT: "4"
         run: |
           python tools/check_magicpig_extension_cpu.py --cxx g++-14 \
             --build-dir scatterbrain-cpu-artifact/magicpig-extension
 
-      - name: Complete MagicPIG CPU server orchestration and tiny helpers
+      - name: Required MagicPIG emulated intrinsic bodies with real Torch FBGEMM
+        env:
+          OMP_THREAD_LIMIT: "4"
+        run: |
+          python tools/check_magicpig_extension_cpu.py --cxx g++-14 \
+            --execution-mode simde --require-execution \
+            --build-dir scatterbrain-cpu-artifact/magicpig-emulated
+
+      - name: Required MagicPIG server with emulated intrinsic bodies
         env:
           OMP_THREAD_LIMIT: "4"
         run: |
           python tools/check_magicpig_server_cpu.py --cxx g++-14 \
-            --build-dir scatterbrain-cpu-artifact/magicpig-extension
+            --execution-mode simde --require-execution \
+            --build-dir scatterbrain-cpu-artifact/magicpig-emulated
 
       - name: Verify initial and native dependency source identities
         run: |

@@ -95,3 +95,14 @@ native orchestrator after writing evidence and a bounded escaped Actions notice.
 The server requires the BF16-disabled native CPU mode, without requiring the
 AVX512 BF16 ISA; #117 separately requires both native build modes. Default
 exploratory skip behavior and imported `build_extensions` calls are unchanged.
+
+Required Hosted acceptance uses `--execution-mode simde --require-execution`:
+the unchanged 256-head union/overflow/helper fixture invokes actual maintained
+C++ server/retrieval bodies through the pinned intrinsic compatibility adapter,
+with real Torch and FBGEMM runtime conversion dispatch. Resident attention and
+merge remain real CPU Torch math. Its notice is `EMULATED_PASS`, with
+`native_simd_verified=false` in evidence. It requires only the BF16-disabled
+source build; #117 separately executes both source builds. This does not turn
+an unsupported native CPU into a native SIMD pass. `--require-native` rejects
+combination with SIMDe mode. See the [extension boundary](EXTENSION_CPU_CONTRACT.md)
+for source pin, header/binary audits, adapted converter calls and ISA limits.

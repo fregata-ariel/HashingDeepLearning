@@ -1,11 +1,13 @@
-Issue #115 review evidence (draft; not posted)
+Issue #115 source regression evidence
 
 The shared SYCL implementation corrects two maintained CUDA source hazards.
-The maintained CUDA files and immutable `third_party/g-slide` archive remain
-unchanged; neither correction closes native GPU acceptance (#34/#43).
+At the #115 checkpoint both the maintained CUDA files and immutable archive
+were unchanged. The 2026-10-22 native checkpoint repairs maintained CUDA and
+keeps the exact pre-repair bodies in the immutable archive as negative controls.
+See [native acceptance](../../../docs/NVIDIA_GPU_CHECKPOINT.md).
 
 `python3 tools/check_gslide_source_regressions.py --build-dir /tmp/gslide-source-regressions`
-extracts the current exact bodies and compiles with GCC. Dense IDs execute
+extracts exact archived bodies from `third_party/g-slide` (archive-verified) and compiles with GCC. Dense IDs execute
 serially. Hash executes the exact body with 32 ordinary CPU threads per block,
 a real `std::barrier` and `atomic_ref`, using a legal original host-dispatch
 block size32. This is CPU compatibility execution, not CUDA scheduling or GPU
@@ -31,6 +33,7 @@ evidence. Evidence JSON includes exact extracted body hashes.
    local staging; its real SYCL CPU fixture uses local64 with node counts
    1/31/33/65, tile tails and lanes1/2/4.
 
-The native source defects remain known limitations. Native repairs need their
-own CUDA runtime launch verification. These translated corrections are not new
-original-body execution coverage and do not redefine the old Golden results.
+The negative-control results above remain the pre-repair observations. The
+native checkpoint verifies the repaired maintained CUDA and actual callers
+separately; no old failing result is redefined as a correct Golden. The source
+contract retains pre-repair hashes alongside repaired source hashes.

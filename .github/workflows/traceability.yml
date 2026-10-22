@@ -10,6 +10,10 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_nvidia_gpu.py"
+      - "tools/generate_gslide_cuda_original.py"
+      - "tools/bootstrap_nvidia_sanitizer.sh"
+      - ".github/workflows/nvidia-gpu.yml"
       - "tools/check_gslide_sycl.py"
       - "tools/check_gslide_source_regressions.py"
       - "tools/check_gslide_train_adapter.py"
@@ -72,6 +76,10 @@ on:
       - "tools/validate_traceability.py"
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
+      - "tools/check_nvidia_gpu.py"
+      - "tools/generate_gslide_cuda_original.py"
+      - "tools/bootstrap_nvidia_sanitizer.sh"
+      - ".github/workflows/nvidia-gpu.yml"
       - "tools/check_gslide_sycl.py"
       - "tools/check_gslide_source_regressions.py"
       - "tools/check_gslide_train_adapter.py"
@@ -211,6 +219,7 @@ jobs:
       - name: G-SLIDE CPU serial CUDA-body oracles and sanitizers
         run: |
           python3 tests/traceability/test_gslide_suite_contracts.py
+          python3 tests/traceability/test_nvidia_gpu_reporting.py
           python3 tools/check_gslide_cpu.py --build-dir traceability-artifact/gslide-cpu/plain
           python3 tools/check_gslide_cpu.py --sanitize --build-dir traceability-artifact/gslide-cpu/sanitized
 

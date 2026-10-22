@@ -17,7 +17,8 @@ answer has been converted into a maintained regression test.
 
 ## 1. Permanent workflows
 
-The permanent set after cleanup is seven workflows.
+Seven routine CPU workflows are supplemented by one manually dispatched NVIDIA
+checkpoint. The GPU workflow has no push, pull-request or scheduled trigger.
 
 | Workflow | Responsibility | Notes |
 | --- | --- | --- |
@@ -25,6 +26,7 @@ The permanent set after cleanup is seven workflows.
 | `python-typing.yml` | all maintained Python annotation audit, strict mypy, SLIDE Python example contracts, final traceability/doc gate | Auto-discovers all maintained Python files. |
 | `ports-smoke.yml` | Original SLIDE end-to-end maintained smoke; Optimized SLIDE scalar integration; historical Intel AVX/BF16 maintained-port smoke | Real execution/save/teardown. Hardware capability is printed, not assumed. |
 | `ports-sanitizers.yml` | ASan/UBSan on maintained native SLIDE ports | Finds lifetime/indexing issues missed by ordinary smoke. |
+| `nvidia-gpu.yml` | bounded native G-SLIDE CUDA oracles and four required Compute Sanitizer tools | Manual only; explicit self-hosted NVIDIA runner; missing GPU/tools fail. |
 | `hardware-oracles.yml` | lightweight AVX-512/BF16 numerical oracles on GitHub-hosted CPU when flags permit | Capability-gated; unsupported CPU means skip, not pass. |
 | `mongoose-native.yml` | focused C++/Cython native LSH set/buffer contract | Fast native-boundary regression. |
 | `mongoose-reformer-smoke.yml` | MONGOOSE CPU integration from scheduler/mining through one-batch training and parameter updates | Includes maintained native boundary plus Python control-flow integration. |
@@ -82,10 +84,14 @@ and Scatterbrain's CMake configuration pins that interpreter explicitly. These
 checks add no permanent workflow or GPU job.
 
 G-SLIDE uses routine CPU serial emulation in the existing traceability gate.
-No GPU service or GPU workflow is required. Actual CUDA build, parallelism,
-device memory/synchronization and production training remain pending until an
-infrequent user-provided GPU milestone session. See
-[the CPU coverage contract](../ports/g-slide/CPU_VALIDATION.md).
+The manually dispatched `nvidia-gpu.yml` additionally runs native G-SLIDE CUDA
+fixtures on a runner labelled `self-hosted, linux, x64, nvidia-gpu`. It uses the
+same required driver as local execution, with four diagnostics, retained failure
+artifacts and cleanup of downloaded tools. No recurring GPU dependency is added.
+The 2026-10-22 local checkpoint accepts bounded native dense/hash/reset/training
+fixtures; the workflow has not yet run on GitHub. See
+[the native checkpoint](NVIDIA_GPU_CHECKPOINT.md) and
+[the separate CPU coverage contract](../ports/g-slide/CPU_VALIDATION.md).
 
 ## 3. Trigger design
 
@@ -137,7 +143,7 @@ Examples:
 Avoid `push` with no path filter unless the workflow truly protects the entire
 repository.
 
-The current seven workflows use path-filtered pushes and pull requests targeting
+The seven routine CPU workflows use path-filtered pushes and pull requests targeting
 `research/lsh-lineage-vendor`, plus `workflow_dispatch`. Task branches are
 validated through their PRs before integration. SLIDE smoke paths cover only
 the two SLIDE ports, so a G-SLIDE-only change does not launch Intel containers.

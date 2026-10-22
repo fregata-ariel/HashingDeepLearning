@@ -191,3 +191,17 @@ before backward; stale reset and stale index runs remain explicit negative
 fixtures. This is CPU execution of shared production control, not native CUDA
 `Network::train` or all original host bodies. The native reset source repair
 still requires #43 GPU acceptance, and #34 remains open.
+
+
+## Native NVIDIA checkpoint (2026-10-22)
+
+The user resumed native GPU work with a local RTX 2080 Ti. Bounded CUDA tests
+now cover the #124 dense repair, #125 alternate hash repair and #43 production
+reset/two-step training, with all four required device diagnostics. These native
+results supplement this CPU contract. Earlier pending statements describe the
+CPU checkpoint and must not be read as current native execution status.
+See [reproduction, evidence and remaining scope](../../docs/NVIDIA_GPU_CHECKPOINT.md).
+The existing CPU source regression driver now extracts archive-verified original
+bodies from `third_party/g-slide`, preserving both failing negative controls
+while maintained CUDA is repaired. Shared SYCL source contracts record updated
+locations/body hashes and retain pre-repair hashes; the SYCL algorithms are unchanged.

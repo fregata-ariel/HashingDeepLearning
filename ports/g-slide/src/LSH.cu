@@ -1,5 +1,7 @@
 #include <thrust/execution_policy.h>
 #include <thrust/sort.h>
+#include <limits>
+#include <stdexcept>
 
 #include "LSH.h"
 #include "lshKnl.h"
@@ -53,6 +55,8 @@ LSH::LSH(const int node_num, const int prev_node_num, const int max_batch_size,
 LSH::~LSH() {
   CUDA_CHECK(cudaFree(d_rand_keys));
   CUDA_CHECK(cudaFree(d_bins));
+  CUDA_CHECK(cudaFree(d_rand_node_keys));
+  CUDA_CHECK(cudaFree(d_rand_nodes));
 
   CUDA_CHECK(cudaFree(d_buckets));
   CUDA_CHECK(cudaFree(d_bucket_sizes));
@@ -82,6 +86,13 @@ void LSH::shuffle_rand() {
 }
 
 void LSH::build(const float *d_weights_rowmajor, const bool reshuffle) {
+  if (tbl_num_per_thread <= 0 || tbl_num_per_tile <= 0 ||
+      tbl_num_per_tile % tbl_num_per_thread != 0)
+    throw std::invalid_argument("invalid hash tile/lane layout");
+  const int lanes = tbl_num_per_tile / tbl_num_per_thread;
+  if (lanes > 128 || (lanes & (lanes - 1)) != 0 || node_num <= 0 ||
+      node_num > (std::numeric_limits<int>::max() - 128) / lanes)
+    throw std::invalid_argument("invalid hash node/lane extent");
   if (reshuffle) {
     shuffle_bins();
     shuffle_rand();
@@ -93,11 +104,16 @@ void LSH::build(const float *d_weights_rowmajor, const bool reshuffle) {
   int thread_num;
   bool success_flag = false;
   for (thread_num = 128; thread_num >= 32 && !success_flag; thread_num >>= 1) {
-    const int block_num = (node_num + thread_num - 1) / thread_num;
-    const int smem_size =
-        (K * bin_size * tbl_num_per_tile + thread_num * prev_node_num) *
-        sizeof(int);
-    if (is_smem_enough((void *)init_hash_knl, thread_num, smem_size)) {
+    if (thread_num % lanes != 0) continue;
+    const int block_num = (node_num * lanes + thread_num - 1) / thread_num;
+    const size_t smem_size =
+        sizeof(int) * size_t(K) * bin_size * tbl_num_per_tile +
+        sizeof(float) * size_t(thread_num / lanes) * prev_node_num;
+    const void *kernel = tbl_num_per_thread == tbl_num_per_tile
+                             ? (void *)init_hash_tt_knl : (void *)init_hash_knl;
+    if (is_smem_enough(kernel, thread_num, smem_size)) {
+      build_launch = {lanes == 1 ? "init_hash_tt_knl" : "init_hash_knl",
+                      block_num, thread_num, smem_size};
       if (tbl_num_per_thread == tbl_num_per_tile) {
         init_hash_tt_knl<<<block_num, thread_num, smem_size>>>(
             d_bins, d_weights_rowmajor, prev_node_num, node_num, tot_elem_num,
@@ -116,13 +132,15 @@ void LSH::build(const float *d_weights_rowmajor, const bool reshuffle) {
 
   if (!success_flag) {  // TODO
     thread_num = 128;
-    const int block_num = (L + tbl_num_per_tile) / tbl_num_per_tile;
+    const int block_num = (L + tbl_num_per_tile - 1) / tbl_num_per_tile;
     const int smem_size = sizeof(int) * K * bin_size * tbl_num_per_tile;
+    build_launch = {"init_hash_no_sw_knl", block_num, thread_num, size_t(smem_size)};
     init_hash_no_sw_knl<<<block_num, thread_num, smem_size>>>(
         d_bins, d_weights_rowmajor, prev_node_num, node_num, tot_elem_num, L, K,
         bin_size, tbl_num_per_tile, bucket_num_per_tbl, bucket_capacity,
         d_buckets, d_bucket_sizes);
   }
+  CUDA_CHECK(cudaGetLastError());
 }
 
 void LSH::query_act_nodes(const CscActNodes &csc_inputs,

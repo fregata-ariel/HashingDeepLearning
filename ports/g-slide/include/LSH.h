@@ -34,6 +34,13 @@ class LSH {
   GPUMultiLinkedHashTable multi_linked_htables;
 
  public:
+  struct BuildLaunch {
+    const char *kernel = "unrun";
+    int blocks = 0, threads = 0;
+    size_t shared_bytes = 0;
+  };
+  BuildLaunch build_launch;
+
   LSH(const int node_num, const int prev_node_num, const int max_batch_size,
       const int K, const int L, const int bin_size,
       const int bucket_num_per_tbl, const int bucket_capacity,

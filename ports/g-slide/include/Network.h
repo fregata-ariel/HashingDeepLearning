@@ -46,6 +46,12 @@ class Network {
            const std::vector<int> &h_cmprs_label_offsets, const int batch_size,
            const int thread_num);
 
+  // Parameter initialization and observation for bounded native fixtures.
+  Layer &get_layer(int index) {
+    if (index == static_cast<int>(relu_layers.size())) return *softmax_layer;
+    return *relu_layers.at(index);
+  }
+
   void test_get_act_nodes(const int layer_idx,
                           const std::vector<int> &h_cmprs_act_nodes,
                           const std::vector<int> &h_cmprs_act_offsets) {

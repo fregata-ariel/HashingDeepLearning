@@ -111,6 +111,18 @@ __global__ void init_hash_tt_knl(
 }
 
 // Assumption: prev_node_num is small while node_num is large
+/**
+ * @brief Stage a shared row per node group and distribute tables across lanes.
+ * @par Relation Variant of Section 4.3 preserving released natural-log packing.
+ * @par Preconditions Positive node/bin/bucket capacities; lanes=tile/per_thread
+ * is a power of two dividing the block. LSH::build validates lane extent and
+ * launches ceil(nodes*lanes/threads) blocks. Shared bytes include tile bins
+ * plus (threads/lanes)*previous floats; caller resets bucket counts.
+ * @par Ownership Borrowed memory; synchronize before querying or releasing.
+ * Native tests compare unordered sets/counts for K1/bin2 without ring overflow.
+ * Other packing configurations and overflow retention are separate contracts.
+ * TRACE_TEST_ID: GSLIDE-HASH-CUDA-125
+ */
 __global__ void init_hash_knl(
     const int *d_bins, const float *d_weights_rowmajor, const int prev_node_num,
     const int node_num, const int tot_elem_num, const int L, const int K,
@@ -129,7 +141,7 @@ __global__ void init_hash_knl(
   assert(thread_num_per_tile * tbl_num_per_thread == tbl_num_per_tile);
 
   const int tot_weight_size = node_num * prev_node_num;
-  const int s_weight_size = blockDim.x * prev_node_num;
+  const int s_weight_size = (blockDim.x / thread_num_per_tile) * prev_node_num;
   const int weight_begin = blockIdx.x * s_weight_size;
   FOR_IDX_ASYNC(s_weight_idx, 0, s_weight_size) {
     const int weight_idx = s_weight_idx + weight_begin;
@@ -144,7 +156,7 @@ __global__ void init_hash_knl(
   const int tile_lane_idx = tid - node_idx * thread_num_per_tile;
   const bool exec_flag = node_idx < node_num;
   const float *s_node_weights =
-      s_weights_rowmajor + threadIdx.x * prev_node_num;
+      s_weights_rowmajor + (threadIdx.x / thread_num_per_tile) * prev_node_num;
   for (int tile_tbl_begin = 0; tile_tbl_begin < L;
        tile_tbl_begin += tbl_num_per_tile) {
     const int tile_bin_begin = tile_tbl_begin * K * bin_size;

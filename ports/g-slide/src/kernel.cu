@@ -5,6 +5,9 @@
 #include <cassert>
 #include <cfloat>
 #include <cstdio>
+#include <algorithm>
+#include <limits>
+#include <stdexcept>
 
 #include "kernel.h"
 #include "utils.h"
@@ -74,6 +77,17 @@ __forceinline__ __device__ float block_max(float val) {
   return val;
 }
 
+/**
+ * @brief Emit dense IDs and all batch+1 offsets using independent extents.
+ * @par Relation Support for the sparse network representation (Section 4.4).
+ * @par Preconditions Borrowed buffers; get_dense_acts validates capacities and
+ * padded full-warp blocks. Empty node/batch extents still write zero offsets.
+ * @par Ownership Caller retains allocations and synchronizes before reading,
+ * reusing or freeing them. The wrapper uses the current default CUDA stream.
+ * @par Validation Native integer oracle and production ReLU callers; original
+ * archive remains an intentionally failing negative control. No paper metrics.
+ * TRACE_TEST_ID: GSLIDE-DENSE-CUDA-124
+ */
 __global__ void get_dense_acts_knl(CscActNodes csc_acts, const int node_num,
                                    const int batch_size) {
   const int tid = threadIdx.x + blockIdx.x * blockDim.x;
@@ -81,10 +95,25 @@ __global__ void get_dense_acts_knl(CscActNodes csc_acts, const int node_num,
     const int node_id = tid % node_num;
     csc_acts.d_nodes[tid] = node_id;
 
-    if (tid <= batch_size) {
-      csc_acts.d_offsets[tid] = tid * node_num;
-    }
   }
+  // Offsets have their own extent, including the terminal for zero/one nodes.
+  if (tid <= batch_size) csc_acts.d_offsets[tid] = tid * node_num;
+}
+
+void get_dense_acts(CscActNodes csc_acts, int node_num, int batch_size,
+                    int thread_num) {
+  if (node_num < 0 || batch_size < 0 || csc_acts.node_capacity < 0 ||
+      batch_size > csc_acts.max_batch_size ||
+      thread_num < 32 || thread_num > 1024 || thread_num % 32 != 0)
+    throw std::invalid_argument("invalid dense activation extent/block");
+  const size_t ids = size_t(node_num) * size_t(batch_size);
+  const size_t extent = std::max(ids, size_t(batch_size) + 1);
+  if (ids > size_t(csc_acts.node_capacity) ||
+      extent > size_t(std::numeric_limits<int>::max()) - thread_num)
+    throw std::invalid_argument("dense activation capacity exceeded");
+  const int blocks = (extent + thread_num - 1) / thread_num;
+  get_dense_acts_knl<<<blocks, thread_num>>>(csc_acts, node_num, batch_size);
+  CUDA_CHECK(cudaGetLastError());
 }
 
 /**

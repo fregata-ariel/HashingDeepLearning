@@ -13,6 +13,14 @@
 
 ユーザーは、当該repoでコミット・push・PR作成までをエージェント判断で進める方針を明示した。[AGENTS.md](AGENTS.md)のID付き許可一覧を参照する。以下の未コミット/未PRという記述は、この引き継ぎを最初に記録した時点のsnapshot。再開時はGitとGitHubの実際のbranch/PR状態を確認する。
 
+## 公開checkpoint（2026-10-23追記）
+
+- Draft PR: [#127 — Initialize repository permissions and validate native G-SLIDE CUDA](https://github.com/fregata-ariel/HashingDeepLearning/pull/127)
+- head branch: `feat/nvidia-gpu-validation`、base: `research/lsh-lineage-vendor`。
+- 方針のcommit: `13fdae0`、GPU実装・検証・CIのcommit: `a7d950e8295cbe51f5e5f798be8bb8331cb200c5`。この追記は後続の文書commitへ収録する。
+- 最初のPR CI: [Paper-code traceability run 39813677470](https://github.com/fregata-ariel/HashingDeepLearning/actions/runs/39813677470)。確認時は実行中で、対象headは`a7d950e`。新しいhead/CI状態は再開時に確認する。
+- コミット・push・PR作成まで実施済み。独立レビュー、merge、Issue更新・close、GitHub上の手動GPU job実行は未実施。
+
 ## 作業ツリーと証拠を保全する
 
 作業場所: `/home/fischeri/Projects/DNN/HashingDeepLearning`

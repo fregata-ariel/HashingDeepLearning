@@ -1,0 +1,17 @@
+{
+  "upstream": "https://github.com/idiap/fast-transformers",
+  "commit": "f22c13716fc748bb21a7b226ada7f7b5f87f867f",
+  "original_path": "fast_transformers/local_product/local_product_cuda.cu",
+  "original_git_blob": "4d10eee240a53ae0bda4499e92b5d64115578310",
+  "license": "MIT",
+  "license_git_blob": "2c828d5ff01b3971442ba1a5ea47b1119b52c186",
+  "changes": [
+    "Mask local-dot cotangents outside physical/prefix key support",
+    "Reverse local-dot key-gradient window indexing",
+    "Launch on the Torch current stream",
+    "Reject unsupported dtype/layout/physical sequence extents and invalid prefixes",
+    "Tighten the tile batch bound from greater-than to greater-or-equal"
+  ],
+  "scope": "Maintained CUDA variant; not the immutable original or the shared SYCL implementation",
+  "oracle": "tests/gpu_lineages/scatterbrain.py"
+}

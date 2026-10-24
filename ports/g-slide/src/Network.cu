@@ -1,10 +1,31 @@
 #include <thrust/execution_policy.h>
-#include <thrust/extrema.h>
+#include <thrust/transform_reduce.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/reduce.h>
+#include <limits>
 
 #include "GPUTimer.h"
 #include "Network.h"
 #include "TrainingControl.h"
+
+// CUDA 12.0 Thrust max_element copies a tuple<float, ptrdiff_t> with padding.
+// Use a fully initialized eight-byte reduction value for device diagnostics.
+namespace {
+struct IndexedActivation { float value; int index; };
+static_assert(sizeof(IndexedActivation) == 8, "argmax storage must have no padding");
+struct ReadActivation {
+  const float *values;
+  __host__ __device__ IndexedActivation operator()(int index) const {
+    return {values[index], index};
+  }
+};
+struct ActivationMaximum {
+  __host__ __device__ IndexedActivation operator()(IndexedActivation a,
+                                                  IndexedActivation b) const {
+    return b.value > a.value || (b.value == a.value && b.index < a.index) ? b : a;
+  }
+};
+} // namespace
 
 Network::Network(const std::vector<int> &node_num_per_layer,
                  const std::vector<int> &node_capacity_per_layer,
@@ -74,9 +95,11 @@ int Network::eval(const std::vector<int> &h_cmprs_input_nodes,
   for (int b = 0; b < batch_size; b++) {
     const float *begin =
         softmax_layer->d_dense_activations + b * softmax_layer->node_num;
-    const float *end = begin + softmax_layer->node_num;
-    const int max_node =
-        thrust::max_element(thrust::device, begin, end) - begin;
+    const int max_node = thrust::transform_reduce(
+        thrust::device, thrust::counting_iterator<int>(0),
+        thrust::counting_iterator<int>(softmax_layer->node_num),
+        ReadActivation{begin}, IndexedActivation{-std::numeric_limits<float>::infinity(), 0},
+        ActivationMaximum{}).index;
 
     const int label_begin = h_cmprs_label_offsets[b];
     const int label_end = h_cmprs_label_offsets[b + 1];
@@ -90,6 +113,18 @@ int Network::eval(const std::vector<int> &h_cmprs_input_nodes,
   return correct_cnt;
 }
 
+/**
+ * @brief Run native transfers, selection, reset, backward, Adam and rebuild.
+ * @par Relation Support for Section 4.4; operation ordering is shared with CPU.
+ * @par Preconditions Valid layer/batch/CSC capacities and caller-corrected lr.
+ * Hidden compressed delta capacity is cleared before each backward phase;
+ * legitimate accumulation within the phase is retained. Call completes device
+ * work before returning. Network/layers own their buffers and native handles.
+ * Native acceptance covers a bounded deterministic two-update FP64 oracle,
+ * changed ReLU gates, spare-capacity reset and separate stale compressed IDs.
+ * Checkpoint serialization, sparse training quality and performance are pending.
+ * TRACE_TEST_ID: GSLIDE-TRAINING-CUDA-43
+ */
 void Network::train(const std::vector<int> &h_cmprs_input_nodes,
                     const std::vector<float> &h_cmprs_input_vals,
                     const std::vector<int> &h_cmprs_input_offsets,

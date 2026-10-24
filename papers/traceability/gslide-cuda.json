@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "GSLIDE-DENSE-CUDA-124",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.3–4.4; bounded native CUDA checkpoint",
+      "mechanism": "Independent ID and terminal-offset extents, capacities and both native ReLU callers.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/kernel.cu",
+        "symbol": "get_dense_acts_knl"
+      },
+      "test": {
+        "file": "tests/gslide_cuda/test_native.cu",
+        "id": "GSLIDE-DENSE-CUDA-124"
+      },
+      "conditions": {
+        "execution": "real NVIDIA CUDA device; required manual checkpoint",
+        "nodes": [
+          0,
+          1,
+          3,
+          33
+        ],
+        "batch": [
+          0,
+          1,
+          2,
+          33
+        ],
+        "threads": [
+          32,
+          64,
+          128
+        ],
+        "integer_oracle": "exact; guards and archived failing negative control"
+      },
+      "note": "Executed only by tools/check_nvidia_gpu.py / nvidia-gpu.yml, never inferred from CPU ledger validation. Native build, memcheck including leak check, racecheck, initcheck and synccheck are required. No shared SYCL GPU performance, model save/reload or paper accuracy claim. See docs/NVIDIA_GPU_CHECKPOINT.md."
+    },
+    {
+      "id": "GSLIDE-HASH-CUDA-125",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.3–4.4; bounded native CUDA checkpoint",
+      "mechanism": "Node-group row staging and native launch coverage; exact bucket sets and production alternate build/query.",
+      "relation": "variant",
+      "implementation": {
+        "file": "ports/g-slide/src/lshKnl.cu",
+        "symbol": "init_hash_knl"
+      },
+      "test": {
+        "file": "tests/gslide_cuda/test_native.cu",
+        "id": "GSLIDE-HASH-CUDA-125"
+      },
+      "conditions": {
+        "execution": "real NVIDIA CUDA device; required manual checkpoint",
+        "nodes": [
+          1,
+          31,
+          33,
+          64,
+          65
+        ],
+        "lanes": [
+          1,
+          2,
+          4
+        ],
+        "threads": [
+          32,
+          64,
+          128
+        ],
+        "K": 1,
+        "bin": 2,
+        "table_tiles": "one partial tile",
+        "cases": 135,
+        "rebuilds_per_case": 2,
+        "integer_oracle": "exact unordered membership/counts; positive/negative/tied weights; archived undercoverage negative control"
+      },
+      "note": "Executed only by tools/check_nvidia_gpu.py / nvidia-gpu.yml, never inferred from CPU ledger validation. Native build, memcheck including leak check, racecheck, initcheck and synccheck are required. No shared SYCL GPU performance, model save/reload or paper accuracy claim. See docs/NVIDIA_GPU_CHECKPOINT.md."
+    },
+    {
+      "id": "GSLIDE-TRAINING-CUDA-43",
+      "paper": "g-slide-2022",
+      "paper_location": "Sections 4.3–4.4; bounded native CUDA checkpoint",
+      "mechanism": "Native two-step caller/reset, changed ReLU gates, FP64 activation/probability/Adam oracle; separate compressed-ID stale/reset reproduction.",
+      "relation": "support",
+      "implementation": {
+        "file": "ports/g-slide/src/Network.cu",
+        "symbol": "Network::train"
+      },
+      "test": {
+        "file": "tests/gslide_cuda/test_native.cu",
+        "id": "GSLIDE-TRAINING-CUDA-43"
+      },
+      "conditions": {
+        "execution": "real NVIDIA CUDA device; required manual checkpoint",
+        "input": 2,
+        "hidden": 3,
+        "output": 4,
+        "batch": 2,
+        "steps": 2,
+        "absolute_tolerance": 8e-06,
+        "hidden_capacity": 8,
+        "selection": "full output candidates; changed compressed IDs tested separately in backward fixture",
+        "eval": "native cuBLAS logits, argmax and exact tie; released dense eval omits output biases"
+      },
+      "note": "Executed only by tools/check_nvidia_gpu.py / nvidia-gpu.yml, never inferred from CPU ledger validation. Native build, memcheck including leak check, racecheck, initcheck and synccheck are required. No shared SYCL GPU performance, model save/reload or paper accuracy claim. See docs/NVIDIA_GPU_CHECKPOINT.md."
+    }
+  ]
+}

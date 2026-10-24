@@ -6,8 +6,8 @@ void ReluLayer::forward(const Layer &prev_layer, const int batch_size,
                         const int thread_num, const int max_out_num) {
   assert(prev_layer.node_num == prev_node_num);
 
-  const int block_num = (node_num * batch_size + thread_num - 1) / thread_num;
-  get_dense_acts_knl<<<block_num, thread_num>>>(csc_acts, node_num, batch_size);
+  get_dense_acts(csc_acts, node_num, batch_size, thread_num);
+  if (batch_size == 0) return;
 
   const int smem_size =
       (sizeof(int) + sizeof(float)) * (thread_num + max_out_num);
@@ -18,8 +18,8 @@ void ReluLayer::forward(const Layer &prev_layer, const int batch_size,
 
 void ReluLayer::forward(const CscActNodes &csc_inputs, const int batch_size,
                         const int thread_num, const int max_out_num) {
-  const int block_num = (node_num * batch_size + thread_num - 1) / thread_num;
-  get_dense_acts_knl<<<block_num, thread_num>>>(csc_acts, node_num, batch_size);
+  get_dense_acts(csc_acts, node_num, batch_size, thread_num);
+  if (batch_size == 0) return;
 
   const int smem_size =
       (sizeof(int) + sizeof(float)) * (thread_num + max_out_num);

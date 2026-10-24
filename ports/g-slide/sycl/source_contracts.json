@@ -3,38 +3,39 @@
   "definitions": [
     {
       "file": "ports/g-slide/src/kernel.cu",
-      "line": 21,
+      "line": 24,
       "signature": "__forceinline__ __device__ float warp_reduce(float val)",
       "body_sha256": "5bfb2d4224122f5b97f3f716cd934590e84724d017913605eb7471a8394c2f85",
       "execution": "translated SYCL; original body not executed by this target"
     },
     {
       "file": "ports/g-slide/src/kernel.cu",
-      "line": 27,
+      "line": 30,
       "signature": "__forceinline__ __device__ float block_reduce(float val)",
       "body_sha256": "3542d7156a068411c8d5b0fa9f6b4840d33a4b1b97e233f8128ea9abfa5ae040",
       "execution": "translated SYCL; original body not executed by this target"
     },
     {
       "file": "ports/g-slide/src/kernel.cu",
-      "line": 49,
+      "line": 52,
       "signature": "__forceinline__ __device__ float warp_max(float val)",
       "body_sha256": "6595f72ef09fcc29a0e57d8abb6f486a594bc92443027ee08bb0cd45bc96ec5a",
       "execution": "translated SYCL; original body not executed by this target"
     },
     {
       "file": "ports/g-slide/src/kernel.cu",
-      "line": 55,
+      "line": 58,
       "signature": "__forceinline__ __device__ float block_max(float val)",
       "body_sha256": "b57cb2b1f3b20bf1a704d2ec56c167d46920e493c7944748dbd5485a00d2a175",
       "execution": "translated SYCL; original body not executed by this target"
     },
     {
       "file": "ports/g-slide/src/kernel.cu",
-      "line": 77,
+      "line": 91,
       "signature": "__global__ void get_dense_acts_knl(CscActNodes csc_acts, const int node_num,\n                                   const int batch_size)",
-      "body_sha256": "2c322cb2d1a0d0c57afdc84c71126580139b697d0658140ed0232a9ba14e9c32",
-      "execution": "translated SYCL; original body not executed by this target"
+      "body_sha256": "e5d7175dbae34a652d103426b26c1b525bd1b46700e59b3aeb62271d053ddc3a",
+      "execution": "translated SYCL; original body not executed by this target",
+      "pre_native_repair_body_sha256": "2c322cb2d1a0d0c57afdc84c71126580139b697d0658140ed0232a9ba14e9c32"
     },
     {
       "file": "ports/g-slide/src/lshKnl.cu",
@@ -59,10 +60,11 @@
     },
     {
       "file": "ports/g-slide/src/lshKnl.cu",
-      "line": 114,
+      "line": 126,
       "signature": "__global__ void init_hash_knl(\n    const int *d_bins, const float *d_weights_rowmajor, const int prev_node_num,\n    const int node_num, const int tot_elem_num, const int L, const int K,\n    const int bin_size, const int tbl_num_per_tile,\n    const int tbl_num_per_thread, const int bucket_num_per_tbl,\n    const int bucket_capacity, int *d_buckets, int *d_bucket_sizes)",
-      "body_sha256": "70c8b02dc858b79de82a13f5ab0a30e058a89c41349020c2ebefb9581dac32ff",
-      "execution": "translated SYCL; original body not executed by this target"
+      "body_sha256": "468c975a450f6c1952e0199b5a2ccba8ff4d9e305c9c59bae0c2f8b5afc44250",
+      "execution": "translated SYCL; original body not executed by this target",
+      "pre_native_repair_body_sha256": "70c8b02dc858b79de82a13f5ab0a30e058a89c41349020c2ebefb9581dac32ff"
     },
     {
       "file": "ports/g-slide/src/GPUMultiLinkedHashTable.cu",

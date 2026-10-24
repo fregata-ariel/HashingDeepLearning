@@ -1,0 +1,37 @@
+{
+  "reason": "Superseded by the requested isolated Docker environment; no host package installed",
+  "paths": {
+    "AdaptiveCpp": {
+      "kind": "task-only temporary directory"
+    },
+    "fast-transformers": {
+      "kind": "task-only temporary directory"
+    },
+    "acpp-build": {
+      "kind": "task-only temporary directory"
+    },
+    "venv": {
+      "kind": "task-only temporary directory"
+    },
+    "py312": {
+      "kind": "task-only temporary directory"
+    },
+    "uv-cache": {
+      "kind": "task-only temporary directory"
+    },
+    "sanitizer": {
+      "kind": "task-only temporary directory"
+    },
+    "libclang-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb": {
+      "sha256": "c7575822ec648defe1b04d83a1d6b7779fc26da548c2453acfa120e26d47ed53"
+    },
+    "libomp-18-dev_1%3a18.1.3-1ubuntu1_amd64.deb": {
+      "sha256": "62cd9360bccd2f8134a5d6c5f2e5ab462fc0b5e1288add907e3983b0ad6bc212"
+    },
+    "lld-18_1%3a18.1.3-1ubuntu1_amd64.deb": {
+      "sha256": "c574594d714bf445f4c2323fa99374c05b79be09a3899edbf9d4b7265c9ccc57"
+    }
+  },
+  "preserved": "Host native GPU report/logs committed separately; raw baseline gslide directory retained",
+  "removed": true
+}

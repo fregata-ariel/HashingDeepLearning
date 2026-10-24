@@ -68,9 +68,12 @@ class SBLocalAttention(nn.Module):
 
         Tested support: actual pinned CPU local-product extension and initial
         FP32 noncausal/dropout0/eps0 composition with positive finite row mass.
-        Causal/GPU paths and native memory safety are not validated here.
+        A separate maintained CUDA profile validates FP32 noncausal/dropout0/
+        eps0 self-attention, distinct from the original CUDA negative controls.
+        Causal hybrid and broad native memory safety remain separate boundaries.
         TRACE_TEST_ID: SCATTERBRAIN-LOCAL-PRODUCT-CPU.
         TRACE_TEST_ID: SCATTERBRAIN-LOCAL-HYBRID-CPU.
+        TRACE_TEST_ID: SCATTERBRAIN-LOCAL-HYBRID-CUDA.
 
         Arguments
         ---------

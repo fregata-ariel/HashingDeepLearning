@@ -4,6 +4,7 @@
 #include <exception>
 #include <ostream>
 #include <stdexcept>
+#include <string>
 
 // Shared queue policy only: maintained numerical kernels accept a caller queue,
 // allowing CPU contract tests and separately validated GPU configurations.
@@ -29,6 +30,25 @@ inline sycl::queue make_queue(device_kind kind = device_kind::automatic) {
 inline void require_cpu(const sycl::queue& queue) {
   if (!queue.get_device().is_cpu())
     throw std::runtime_error("required CPU device missing; no host fallback permitted");
+}
+
+// Validation has two explicit build profiles. The existing CPU gate remains
+// the default; the NVIDIA profile cannot silently select an OpenMP device.
+inline sycl::queue make_validation_queue() {
+#ifdef HASHING_SYCL_REQUIRE_NVIDIA
+  auto queue = make_queue(device_kind::gpu);
+  const auto device = queue.get_device();
+  if (!device.is_gpu() ||
+      device.get_info<sycl::info::device::vendor>().find("NVIDIA") == std::string::npos)
+    throw std::runtime_error("required NVIDIA GPU missing; no CPU fallback permitted");
+  if (!device.has(sycl::aspect::usm_shared_allocations))
+    throw std::runtime_error("required NVIDIA shared USM missing");
+  return queue;
+#else
+  auto queue = make_queue(device_kind::cpu);
+  require_cpu(queue);
+  return queue;
+#endif
 }
 
 inline void describe_queue(std::ostream& out, const sycl::queue& queue) {

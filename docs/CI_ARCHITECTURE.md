@@ -26,7 +26,7 @@ checkpoint. The GPU workflow has no push, pull-request or scheduled trigger.
 | `python-typing.yml` | all maintained Python annotation audit, strict mypy, SLIDE Python example contracts, final traceability/doc gate | Auto-discovers all maintained Python files. |
 | `ports-smoke.yml` | Original SLIDE end-to-end maintained smoke; Optimized SLIDE scalar integration; historical Intel AVX/BF16 maintained-port smoke | Real execution/save/teardown. Hardware capability is printed, not assumed. |
 | `ports-sanitizers.yml` | ASan/UBSan on maintained native SLIDE ports | Finds lifetime/indexing issues missed by ordinary smoke. |
-| `nvidia-gpu.yml` | bounded native G-SLIDE CUDA oracles and four required Compute Sanitizer tools | Manual only; explicit self-hosted NVIDIA runner; missing GPU/tools fail. |
+| `nvidia-gpu.yml` | native G-SLIDE checkpoint or Docker CUDA/Torch/FlashInfer/shared-SYCL lineage fixtures | Manual only; explicit self-hosted NVIDIA runner; missing GPU/tools fail; native G-SLIDE requires all four Compute Sanitizer tools. |
 | `hardware-oracles.yml` | lightweight AVX-512/BF16 numerical oracles on GitHub-hosted CPU when flags permit | Capability-gated; unsupported CPU means skip, not pass. |
 | `mongoose-native.yml` | focused C++/Cython native LSH set/buffer contract | Fast native-boundary regression. |
 | `mongoose-reformer-smoke.yml` | MONGOOSE CPU integration from scheduler/mining through one-batch training and parameter updates | Includes maintained native boundary plus Python control-flow integration. |
@@ -82,6 +82,19 @@ kernels, maintained Torch hybrid and foreign-thread regression. The bounded
 missing targets fail. CPU Torch dependencies are installed in an isolated venv,
 and Scatterbrain's CMake configuration pins that interpreter explicitly. These
 checks add no permanent workflow or GPU job.
+
+The manual NVIDIA workflow additionally offers `profile=docker-all`, using
+[the GPU Dockerfile and runner](../docker/gpu/README.md). Its runtime has one GPU,
+bounded CPU/RAM/process resources, a nonroot user, a read-only checkout/root
+filesystem and no network; the named evidence directory is the only writable
+host bind. The image is built separately with network access. Native CUDA,
+Torch GPU fallback, original wrappers and SYCL GPU are enumerated separately;
+`PARTIAL` never claims full research acceptance. The existing CPU build profile
+remains the default. `HASHING_SYCL_REQUIRE_NVIDIA=ON` adds a mandatory NVIDIA
+queue rather than changing that CPU default. The Scatterbrain SYCL ABI still
+accepts host tensors, with local kernels on the GPU and the Torch hybrid on CPU.
+This is different from the original native CUDA hybrid. Runner/driver setup and
+tool permissions remain external prerequisites; the image never grants them.
 
 G-SLIDE uses routine CPU serial emulation in the existing traceability gate.
 The manually dispatched `nvidia-gpu.yml` additionally runs native G-SLIDE CUDA

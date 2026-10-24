@@ -1,5 +1,9 @@
 # Native NVIDIA GPU checkpoint
 
+For the later Docker CUDA 12.6, MONGOOSE/Scatterbrain/MagicPIG component and shared
+SYCL NVIDIA execution, see [the 2026-10-25 lineage checkpoint](GPU_LINEAGE_CHECKPOINT.md).
+The CUDA 12.0 record below remains a distinct preserved profile.
+
 The user resumed real GPU work on 2026-10-22 and selected G-SLIDE and GPU CI.
 The local RTX 2080 Ti checkpoint passes the bounded #124/#125/#43 fixtures,
 including all four required device diagnostics. This is a local execution;

@@ -390,16 +390,15 @@ static void test_control_order() {
 }
 int main() {
   try {
-    auto q = hashing::sycl_backend::make_queue(
-        hashing::sycl_backend::device_kind::cpu);
-    hashing::sycl_backend::require_cpu(q);
+    auto q = hashing::sycl_backend::make_validation_queue();
     hashing::sycl_backend::describe_queue(std::cout, q);
     test_control_order();
     test_library_boundary(q);
     test_connected(q);
     std::cout << "GSLIDE_SYCL_PRODUCTION checks=" << checks
               << " max_abs_error=" << max_error
-              << " gpu_validated=false native_cuda_train_executed=false\n";
+              << " gpu_validated=" << q.get_device().is_gpu()
+              << " native_cuda_train_executed=false\n";
     return 0;
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';

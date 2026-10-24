@@ -6,6 +6,7 @@ TRACE_TEST_ID: SCATTERBRAIN-LOCAL-HYBRID-SYCL-CPU
 """
 from __future__ import annotations
 import argparse
+import ctypes
 import hashlib
 import importlib
 import importlib.util
@@ -22,6 +23,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--library", type=Path, required=True)
     parser.add_argument("--evidence", type=Path, required=True)
+    parser.add_argument("--gpu-backend", action="store_true", help="library compiled to require NVIDIA; ABI and Torch hybrid still use host tensors")
     args = parser.parse_args()
     args.evidence.unlink(missing_ok=True)
     root = Path(__file__).resolve().parents[4]
@@ -33,6 +35,9 @@ def main() -> None:
     assert native.__file__ is not None
     assert Path(native.__file__).resolve().is_relative_to(sycl_root)
     native.load_library(args.library)
+    identity = ctypes.CDLL(str(args.library.resolve()))
+    identity.sb_is_gpu.restype = ctypes.c_int
+    assert identity.sb_is_gpu() == int(args.gpu_backend), "library backend does not match requested profile"
     model = importlib.import_module("src.models.modules.attention.sblocal_attention")
     bounded = boundary.SBLocalSYCLAttention
     assert model.local_dot_product is native.local_dot_product
@@ -125,11 +130,12 @@ def main() -> None:
     sources = list(sycl_root.rglob("*.hpp")) + list(sycl_root.rglob("*.cpp")) + list(sycl_root.rglob("*.py"))
     sources += [root / "tests/traceability/test_scatterbrain_initial_cpu.py", root / "ports/scatterbrain/src/models/modules/attention/sblocal_attention.py", args.library.resolve()]
     result = dict(status="passed", checkout=subprocess.check_output(["git","rev-parse","HEAD"],cwd=root,text=True).strip(),
-                  ids=["SCATTERBRAIN-LOCAL-PRODUCT-SYCL-CPU","SCATTERBRAIN-LOCAL-HYBRID-SYCL-CPU"],
+                  ids=["SCATTERBRAIN-LOCAL-PRODUCT-SYCL-NVIDIA","SCATTERBRAIN-HOST-HYBRID-SYCL-NVIDIA"] if args.gpu_backend else ["SCATTERBRAIN-LOCAL-PRODUCT-SYCL-CPU","SCATTERBRAIN-LOCAL-HYBRID-SYCL-CPU"],
                   native_products=products, composition=composed, feature_lifecycle=lifecycle, extra_cases=extra,
                   rejected_contracts=rejected, actual_sycl_kernels=True, handwritten_cpu_fallback=False,
                   hybrid_composition="maintained Torch hybrid with actual SYCL local4 forward/backward boundary",
-                  original_cuda_executed=False, gpu_executed=False,
+                  original_cuda_executed=False, gpu_executed=args.gpu_backend,
+                  torch_hybrid_device="cpu", sycl_backend="NVIDIA GPU" if args.gpu_backend else "CPU",
                   sha256={str(path):hashlib.sha256(path.read_bytes()).hexdigest() for path in sources})
     args.evidence.parent.mkdir(parents=True,exist_ok=True)
     args.evidence.write_text(json.dumps(result,indent=2)+"\n")

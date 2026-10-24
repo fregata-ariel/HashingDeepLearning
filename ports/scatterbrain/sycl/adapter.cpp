@@ -9,9 +9,8 @@ namespace {
 thread_local std::string last_error;
 // Serialize foreign-thread submissions/context lifetime; kernel work-items are parallel.
 std::mutex api_mutex;
-sycl::queue cpu_queue() {
- auto queue=hashing::sycl_backend::make_queue(hashing::sycl_backend::device_kind::cpu);
- hashing::sycl_backend::require_cpu(queue); return queue;
+sycl::queue validation_queue() {
+ return hashing::sycl_backend::make_validation_queue();
 }
 std::vector<float> copy(const float* p,int n) { if(!p) throw std::invalid_argument("null tensor"); return {p,p+n}; }
 void store(float* p,const std::vector<float>& value) { if(!p) throw std::invalid_argument("null output"); std::copy(value.begin(),value.end(),p); }
@@ -19,9 +18,14 @@ void store(float* p,const std::vector<float>& value) { if(!p) throw std::invalid
 // Narrow synchronous C ABI for the value-owned C++ SYCL API. Caller guarantees
 // buffers have the documented contiguous sizes; Python adapter validates them.
 extern "C" const char* sb_last_error() { return last_error.c_str(); }
+extern "C" int sb_is_gpu() {
+ std::lock_guard<std::mutex> guard(api_mutex);
+ try { return validation_queue().get_device().is_gpu() ? 1 : 0; }
+ catch(const std::exception& e) { last_error=e.what(); return -1; }
+}
 extern "C" int sb_describe() {
  std::lock_guard<std::mutex> guard(api_mutex);
- try { hashing::sycl_backend::describe_queue(std::cerr,cpu_queue()); return 0; }
+ try { hashing::sycl_backend::describe_queue(std::cerr,validation_queue()); return 0; }
  catch(const std::exception& e) { last_error=e.what(); return 1; }
 }
 extern "C" int sb_run(int operation,const int* dims,const float* a,const float* b,
@@ -30,7 +34,7 @@ extern "C" int sb_run(int operation,const int* dims,const float* a,const float* 
  try {
   if(!dims) throw std::invalid_argument("null dimensions");
   hashing::scatterbrain::shape s{dims[0],dims[1],dims[2],dims[3],dims[4],dims[5],dims[6]}; s.validate();
-  auto queue=cpu_queue();
+  auto queue=validation_queue();
   using namespace hashing::scatterbrain;
   if(operation==0||operation==1) {
    if(!lengths) throw std::invalid_argument("null lengths");

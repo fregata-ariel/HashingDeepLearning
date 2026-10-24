@@ -3,6 +3,12 @@ name: NVIDIA GPU checkpoint
 on:
   workflow_dispatch:
     inputs:
+      profile:
+        description: Native checkpoint or the isolated Docker environment for all lineages
+        required: true
+        default: native
+        type: choice
+        options: [native, docker-all]
       cuda_arch:
         description: CUDA architecture supported by the attached GPU and toolkit
         required: true
@@ -19,6 +25,7 @@ concurrency:
 
 jobs:
   gslide-native:
+    if: inputs.profile == 'native'
     runs-on: [self-hosted, linux, x64, nvidia-gpu]
     timeout-minutes: 20
     env:
@@ -74,3 +81,26 @@ jobs:
         if: always()
         shell: bash
         run: rm -rf -- "$SANITIZER_ROOT"
+
+  docker-all:
+    if: inputs.profile == 'docker-all'
+    runs-on: [self-hosted, linux, x64, nvidia-gpu]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set artifact directory
+        shell: bash
+        run: echo "EVIDENCE_DIR=$RUNNER_TEMP/gpu-all-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+      - name: Build fixed CUDA environment and execute bounded profiles
+        shell: bash
+        run: bash tools/run_gpu_container.sh "$EVIDENCE_DIR" sycl
+      - name: Preserve each execution and failure independently
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu-all-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 7

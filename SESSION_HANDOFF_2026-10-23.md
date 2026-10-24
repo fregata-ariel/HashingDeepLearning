@@ -1,5 +1,20 @@
 # 次セッションへの引き継ぎ — 全系統のGPUテスト
 
+## 最新の再開結果（2026-10-25）
+
+以下の2026-10-23本文は履歴。現状は[全系統GPU checkpoint](docs/GPU_LINEAGE_CHECKPOINT.md)と[保存済みJSON](docs/evidence/gpu-lineages-2026-10-25.json)を優先する。
+
+- PR #127のincoming head `f5812af`はCI run `39813806042`の3ジョブすべて成功（実checkoutはmerge candidate `680c7ff`）。
+- ユーザーのDockerfile化依頼を実装。再実行は `bash tools/run_gpu_container.sh /tmp/hashing-gpu-NEW sycl`。GPU1台、非root、read-only、networkなし、resource上限付き。Docker/tool approval自体を不要にするものではない。
+- 全列挙profileで実行成功。G-SLIDE native CUDA、MONGOOSE原典CUDA/実wrapper/Torch GPU fallback/CUDA RNG replay、Scatterbrain maintained CUDA/非causal hybrid/2更新/save-reload、MagicPIG小部品、共有SYCL NVIDIAのG-SLIDE/MONGOOSE/Scatterbrainを確認。
+- G-SLIDEとScatterbrainのmemcheck/racecheck/initcheck/synccheckはすべて検出0。G-SLIDEのみfull leak checkも必須。Scatterbrain診断はsource/fixture/binary hashを照合し、plain実行と同じbinaryを使用。
+- 原典Scatterbrain CUDAのpadding勾配とkey-gradient indexingに数値不一致を発見。負例を保持し、MIT/provenance付き `ports/scatterbrain/cuda/` で修復。非default streamとstrided autograd cotangentも確認。原典とmaintained成功を混ぜない。
+- MagicPIGのnative BF16 server/model、DDP/NCCL、Scatterbrain causal hybrid、G-SLIDEの残るstress/serialization等、同条件CUDA/SYCL比較・性能受入は未完。aggregate `PARTIAL`は全研究受入の成功ではない。
+- branchは `feat/nvidia-gpu-validation`、PR #127/base `research/lsh-lineage-vendor`を継続。公開headと更新後CIはPRのchecks/本文を参照。独立レビュー未了のためDraftを維持し、merge/Issue closeは行わない。
+- 不要になった今回のhost venv/cache/source/sanitizer downloadsは削除済み。Docker imageは再利用するテスト環境として保持。生証拠は `/tmp/hashing-docker-final-20261025`、消えない証拠は上記JSON。
+
+次は独立レビューとPR CI、MagicPIGに適したhardware/API profile、CUDA/SYCL同一入力の比較設計を優先する。性能低下率の閾値は測定前に決める。
+
 ## 依頼と最初に読むもの
 
 ユーザーの次セッションの目的は、今回G-SLIDE優先のため実行しなかった**全系統のGPUを含むテスト**を行うこと。本ファイル作成時点では次のテストを開始していない。

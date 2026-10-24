@@ -25,6 +25,7 @@
 | A09 | 不要な一時物の削除 | 自分が今回作成・取得した不要なarchive、展開物、venv、build/cache等を対象を確認して削除。証拠と再取得情報は残し、他作業の共用物を消さない |
 | A10 | 不要worktreeの整理 | 一覧、状態、未統合commit、lock等を確認。不要と確認したcleanなlinked worktreeの通常removeと、実体のない登録のprune。使用中・未コミット変更・未保全の作業は維持 |
 | A11 | 引き継ぎ・進捗の保存 | branch、commit/PR/CIリンク、実行証拠、未検証項目、次の具体的手順、download cleanup状態を文書へ残す |
+| A12 | GPUテスト用container | ユーザーのDockerfile化依頼に基づき、当該repoの固定CUDA imageをbuildし、GPU 1台・resource上限付きcontainerで検証する。checkoutはread-only、書込bindは明示したtask用証拠dirのみ。host driver・daemon設定・他image/containerを変更しない。tool approvalは別途従う |
 
 ## コマンドパターンの一覧
 
@@ -48,6 +49,7 @@
 | C14 | project用venvへの必要package導入、taskで採用した`uv run ...`等の実行 | A03/A08。依存profileを固定・分離し、既存の共用環境やsystem Pythonを勝手に変更しない |
 | C15 | `git diff --check`、`git -c core.whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol diff --check`、`bash -n <対象script>` | CRLFを保持する既存CUDAファイルにはcr-at-eolを考慮。無関係な改行変換を避ける |
 | C16 | `rm -- <確認済み不要file>`、`rm -rf -- <確認済みtask用dir>`、同等の限定的なunlink/rmtree | A09のみ。広域glob、未確認path、repo全体、他者の環境を対象にしない |
+| C17 | `docker build --target <components/sycl> ... -f docker/gpu/Dockerfile ...`、`bash tools/run_gpu_container.sh <new-absolute-output> <components/sycl>`、対象imageのinspect | A12。networkはimage build時のみ、テストは`--network none`・非root・read-only rootfs・cap-drop・no-new-privileges。privileged、host network、Docker socket/credential bind、system変更を含めない |
 
 ツール側へ再利用可能なapproval prefixを提案する場合は、たとえば`["python3", "tools/check_nvidia_gpu.py"]`や`["python3", "tools/check_gslide_cpu.py"]`のように対象scriptまで限定する。`python3`単独、任意の`bash -c`、破壊的削除の包括prefix等は提案しない。shellのpipe・redirection・環境変数・substitutionがあると既存prefixに一致しない場合があるため、承認回避のために書き換えない。
 
@@ -89,3 +91,4 @@
 | 2026-10-23 | 不要なGit worktreeの整理を依頼。使用中のworktree 1個のみで削除対象なし |
 | 2026-10-23 | 当該repoでコミット・PRまではエージェント判断で進める方針を明示。今回のコマンドを汎化した一覧をAGENTS.mdへ初期化する依頼 |
 | 2026-10-23 | 後の許可追加に備え、許可動作・コマンド・個別指示が必要な操作をID付き一覧で管理する依頼 |
+| 2026-10-24 | テスト環境をDockerfileで定義する依頼。A12/C17へ当該repoの隔離GPU検証を追加。Docker利用はsandbox/tool approvalを不要にするものではない |

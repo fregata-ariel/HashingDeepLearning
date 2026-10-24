@@ -11,6 +11,11 @@ on:
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
       - "tools/check_nvidia_gpu.py"
+      - "tools/check_all_gpu.py"
+      - "tools/check_sycl_gpu.sh"
+      - "tools/run_gpu_container.sh"
+      - "docker/gpu/**"
+      - "tests/gpu_lineages/**"
       - "tools/generate_gslide_cuda_original.py"
       - "tools/bootstrap_nvidia_sanitizer.sh"
       - ".github/workflows/nvidia-gpu.yml"
@@ -77,6 +82,11 @@ on:
       - "tools/audit_traceability_docs.py"
       - "tools/check_gslide_cpu.py"
       - "tools/check_nvidia_gpu.py"
+      - "tools/check_all_gpu.py"
+      - "tools/check_sycl_gpu.sh"
+      - "tools/run_gpu_container.sh"
+      - "docker/gpu/**"
+      - "tests/gpu_lineages/**"
       - "tools/generate_gslide_cuda_original.py"
       - "tools/bootstrap_nvidia_sanitizer.sh"
       - ".github/workflows/nvidia-gpu.yml"
@@ -220,6 +230,7 @@ jobs:
         run: |
           python3 tests/traceability/test_gslide_suite_contracts.py
           python3 tests/traceability/test_nvidia_gpu_reporting.py
+          python3 tests/traceability/test_gpu_lineage_reporting.py
           python3 tools/check_gslide_cpu.py --build-dir traceability-artifact/gslide-cpu/plain
           python3 tools/check_gslide_cpu.py --sanitize --build-dir traceability-artifact/gslide-cpu/sanitized
 

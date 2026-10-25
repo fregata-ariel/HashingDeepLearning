@@ -6,6 +6,19 @@ new CUDA dispatch policy or performance acceptance. The incoming revision is
 `3e8186677b8a7ff439c67017ee1a36de36259480`; its numerical checkpoints remain
 historical evidence, distinct from the new component tests.
 
+## Named API follow-up
+
+The accepted design is now implemented by `configuration.hpp`, `views.hpp`,
+`component_api.hpp` and `storage.hpp`; see [semantic decisions and source
+review](GSLIDE_SEMANTICS.md). Configuration and necessary workspace capacities
+are checked before allocation; typed operations distinguish logical matrix
+shape, layout, used IDs and asserted allocation capacity. Model/optimizer,
+index and workspace ownership are separate groups. Network retains a queue
+copy and composes these operations; the old positional constructor and pointer
+evaluation overload remain compatibility adapters. Four host suites and eleven
+device/integration suites are enrolled. General strides and an asynchronous API
+remain outside the current contract.
+
 ## What “all functionality” had conflated
 
 There was no agreed complete feature inventory behind that phrase. Four
@@ -18,11 +31,11 @@ different questions must be tracked separately:
 | Validation gaps | Broader extents/K/bin combinations, contention/overflow stress, caller queue/stream variants, CUDA/SYCL same-input comparisons, quality and performance. | Unverified conditions, not evidence of an absent feature. Performance is an acceptance measurement, not a model feature. |
 | Possible future product features | Model checkpoint persistence and restore. | No checkpoint API was found in the current native Network/Layer/main interfaces. This is a future feature proposal, not an established missing SYCL counterpart. |
 
-Two semantic differences also need explicit decisions before claiming model
+Two semantic differences were identified before claiming model
 parity: SYCL dense evaluation includes output bias whereas the native cuBLAS
 caller omits it, and the maintained hash code preserves the released natural-log
-packing variant. This refactor preserves both documented behaviors. It does
-not introduce a new Golden silently.
+packing variant. The [primary-source review](GSLIDE_SEMANTICS.md) now records the decisions.
+The API refactor preserves these documented behaviors.
 
 ## Existing decomposition at the incoming revision
 
@@ -57,7 +70,7 @@ several logically independent checks inside the connected test.
 | `optimizer.hpp` | Signed Adam math with caller-corrected rate; consumes/clears accumulators. | Three independent state transitions including zero learning rate. |
 | `network.hpp` | Compatible constructor/state/train/evaluation facade; combines the components and common controller. | Existing independent connected model, changed active/index sets, reset/stale negatives, partial/empty/invalid batches. |
 
-`Network` is now about 222 lines. The goal is the call boundary, not the line
+At the first extraction checkpoint, `Network` was about 222 lines. The goal is the call boundary, not the line
 count: Softmax/backward/Adam and selection can be called and checked without
 constructing the complete model. Model-owned buffers and public diagnostics
 remain compatible. `kernels.hpp` remains an include umbrella. The previous
@@ -81,8 +94,8 @@ reset/accumulation duties and workspace capacities are part of its contract.
 Low-level pointer APIs retain caller preconditions; this is not a claim of
 complete pointer/extent validation for arbitrary external memory. External
 submissions using an allocation must complete before its owner is released.
-`Network` still borrows its caller queue for its own methods; the allocation
-owner's retained queue does not make methods on a destroyed caller queue valid.
+The named API follow-up retains a queue copy in `Network` as well as in allocation
+owners; methods remain valid after the original caller queue object is destroyed.
 
 ## Build and test boundaries
 
@@ -103,7 +116,7 @@ compiler's SYCL integration to their executable. The current tested integration
 uses `find_package(AdaptiveCpp CONFIG REQUIRED)` and `add_sycl_to_target`.
 The library does not claim compatibility with an untested compiler/backend.
 
-Thirteen named tests are enrolled: two host contracts, ten device components
+Fifteen named tests are enrolled: four host contracts, ten device components
 and the connected Network test. `ctest -R gslide.sycl.optimizer`, for example,
 runs only Adam's component test. `suites.json` declares the names, exact binaries
 and completion markers; both CPU and GPU evidence drivers reject missing suites,
@@ -112,7 +125,7 @@ that enrollment/completion contract.
 
 The existing required SYCL CPU gate now executes these named suites and retains
 all source/header/binary identities. A focused Docker profile runs the same
-thirteen tests on required OpenMP CPU and NVIDIA devices without rerunning
+fifteen tests on required OpenMP CPU and NVIDIA devices without rerunning
 MONGOOSE, MagicPIG, Scatterbrain or native CUDA:
 
 ```bash
@@ -121,13 +134,12 @@ bash tools/run_gpu_container.sh /tmp/gslide-components-NEW sycl run gslide-libra
 
 ## Decisions before expanding support
 
-1. Define named model/index/storage configuration and shape/capacity views.
-   Keep the long compatibility constructor and mutable diagnostic pointers out
-   of a promised stable application API until that review is complete.
-2. Specify representation and semantics: dense versus compressed hidden values,
-   output bias in evaluation, label uniqueness/multiplicity, bucket overflow
-   survivors and hash packing. Backend strategy choices should not silently
-   change the mathematical model.
+1. Named model/index/execution configuration, storage limits and shape/capacity
+   views are implemented. Review external payload/aliasing contracts before a
+   stable API promise; mutable diagnostics remain compatibility interfaces.
+2. The [semantic review](GSLIDE_SEMANTICS.md) resolves bias, label-count, overflow,
+   hash packing and rebuild behavior against primary sources. These contracts
+   must stay explicit if later changing representations or algorithms.
 3. Compose additional layers through explicit state/workspace and activation
    boundaries. The common controller already expresses multiple hidden steps;
    a multi-layer numerical contract and independent gradient oracle must come
@@ -143,7 +155,11 @@ bash tools/run_gpu_container.sh /tmp/gslide-components-NEW sycl run gslide-libra
 
 ## Current verification
 
-The [retained evidence](evidence/gslide-library-2026-10-25.json) records all
+The [named API evidence](evidence/gslide-named-api-2026-10-25.json) records 15/15
+CPU and NVIDIA suites plus four SDK-free host suites, explicit context
+provenance and duplicate-label characterization.
+
+The first-extraction [retained evidence](evidence/gslide-library-2026-10-25.json) records all
 thirteen tests passing on required real CPU and NVIDIA GPU profiles, the image,
 compiler commands, every component/header and binary hash, and JUnit output.
 Eleven moved primitive/operator bodies match the incoming implementation after

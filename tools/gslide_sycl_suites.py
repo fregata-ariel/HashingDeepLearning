@@ -6,7 +6,7 @@ import subprocess
 
 ROOT=Path(__file__).resolve().parents[1]
 REGISTRY=ROOT/'tests/gslide_sycl/suites.json'
-REQUIRED={'gslide.host.control','gslide.host.batch','gslide.sycl.network'} | {
+REQUIRED={'gslide.host.control','gslide.host.batch','gslide.host.configuration','gslide.host.views','gslide.sycl.network'} | {
     'gslide.sycl.'+name for name in ('reductions','dense_ids','random','hash','candidates','operators','memory','optimizer','output','selection')}
 
 

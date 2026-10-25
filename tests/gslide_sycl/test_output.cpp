@@ -1,4 +1,4 @@
-#include "output_ops.hpp"
+#include "component_api.hpp"
 #include "test_support.hpp"
 static void test(sycl::queue &queue) {
   constexpr int B = 2, H = 3, O = 4, I = 2;
@@ -29,8 +29,12 @@ static void test(sycl::queue &queue) {
       d[j] = ((ids[j] == labs[b] ? 1. : 0.) - p[j]) / B;
     }
   }
-  selected_softmax(queue, B, H, off.p, ids.p, hv.p, w.p, bias.p, prob.p,
-                   delta.p, labs.p, loff.p);
+  SelectedOutput input{{read_only(hv.view()), B, H, Layout::row_major},
+                       {read_only(w.view()), O, H, Layout::row_major},
+                       {read_only(off.view()), read_only(ids.view()), B, 3}};
+  selected_softmax(queue, input, read_only(bias.view()),
+                   {read_only(loff.view()), read_only(labs.view()), B, 2},
+                   prob.view(), delta.view());
   for (int j = 0; j < 3; ++j) {
     near(prob[j], p[j]);
     near(delta[j], d[j]);
@@ -48,8 +52,10 @@ static void test(sycl::queue &queue) {
             expected_hd[b * H + h] += d[j] * w[ids[j] * H + h];
         }
       }
-    selected_output_backward(queue, B, H, O, off.p, ids.p, hv.p, delta.p, w.p,
-                             hd.p, gw.p, gb.p);
+    accumulate_output_gradients(queue, input, read_only(delta.view()),
+                                {{hd.view(), B, H, Layout::row_major},
+                                 {gw.view(), O, H, Layout::row_major},
+                                 gb.view()});
     for (int i = 0; i < B * H; ++i)
       near(hd[i], expected_hd[i]);
     for (int i = 0; i < O * H; ++i)
@@ -59,7 +65,10 @@ static void test(sycl::queue &queue) {
   }
   memory<float> x(queue, B * I), hgw(queue, I * H), hgb(queue, H);
   x.assign({1, -.5f, 2, .25f});
-  hidden_parameter_gradients(queue, B, I, H, x.p, hd.p, hgw.p, hgb.p);
+  accumulate_hidden_gradients(
+      queue, {read_only(x.view()), B, I, Layout::row_major},
+      {read_only(hd.view()), B, H, Layout::row_major},
+      {hgw.view(), H, I, Layout::column_major}, hgb.view());
   for (int h = 0; h < H; ++h) {
     double expected = 0;
     for (int b = 0; b < B; ++b)
@@ -72,5 +81,21 @@ static void test(sycl::queue &queue) {
       near(hgw[i * H + h], expected);
     }
   }
+  // Characterize the released membership/listed-count rule separately from
+  // the normal distinct-label oracle above. Duplicates are not deduplicated.
+  memory<int> duplicate_labels(queue, 3), duplicate_offsets(queue, 3);
+  duplicate_labels.assign({3, 3, 0});
+  duplicate_offsets.assign({0, 2, 3});
+  memory<float> duplicate_prob(queue, 3), duplicate_delta(queue, 3);
+  selected_softmax(queue, input, read_only(bias.view()),
+                   {read_only(duplicate_offsets.view()),
+                    read_only(duplicate_labels.view()), B, 3},
+                   duplicate_prob.view(), duplicate_delta.view());
+  for (int j = 0; j < 3; ++j) {
+    near(duplicate_prob[j], p[j]);
+    double target = j == 0 ? .5 : j == 2 ? 1. : 0.;
+    near(duplicate_delta[j], (target - p[j]) / B);
+  }
+  near(duplicate_delta[0] + duplicate_delta[1], -.5 / B);
 }
 int main() { return run_device_suite("output", test); }

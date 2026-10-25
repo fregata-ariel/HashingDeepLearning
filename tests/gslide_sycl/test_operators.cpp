@@ -1,4 +1,4 @@
-#include "operators.hpp"
+#include "component_api.hpp"
 #include "test_support.hpp"
 static void test_library_boundary(sycl::queue &q) {
   usm_array<int> lengths(q, 4), offsets(q, 5);
@@ -39,8 +39,14 @@ static void test_library_boundary(sycl::queue &q) {
       row[o * 3 + i] = col[i * 2 + o] = float(i - o) * .4f;
   bias[0] = -.7f;
   bias[1] = .2f;
-  dense_product(q, x.p, row.p, bias.p, yr.p, 2, 3, 2, true, false);
-  dense_product(q, x.p, col.p, bias.p, yc.p, 2, 3, 2, false, false);
+  dense_product(q, {read_only(x.view()), 2, 3, Layout::row_major},
+                {read_only(row.view()), 2, 3, Layout::row_major},
+                read_only(bias.view()), {yr.view(), 2, 2, Layout::row_major},
+                Activation::identity);
+  dense_product(q, {read_only(x.view()), 2, 3, Layout::row_major},
+                {read_only(col.view()), 2, 3, Layout::column_major},
+                read_only(bias.view()), {yc.view(), 2, 2, Layout::row_major},
+                Activation::identity);
   for (int b = 0; b < 2; ++b)
     for (int o = 0; o < 2; ++o) {
       double expected = bias[o];
@@ -49,6 +55,20 @@ static void test_library_boundary(sycl::queue &q) {
       near(yr[b * 2 + o], expected);
       near(yc[b * 2 + o], expected);
     }
-  dense_product(q, x.p, row.p, bias.p, yr.p, 0, 3, 2, true, false);
+  dense_product(q, {read_only(x.view()), 0, 3, Layout::row_major},
+                {read_only(row.view()), 2, 3, Layout::row_major},
+                read_only(bias.view()), {yr.view(), 0, 2, Layout::row_major},
+                Activation::identity);
+  bool rejected = false;
+  const float before = yr[0];
+  try {
+    dense_product(q, {read_only(x.view()), 2, 3, Layout::row_major},
+                  {read_only(row.view()), 2, 3, Layout::row_major},
+                  read_only(bias.view()), {{yr.p, 3}, 2, 2, Layout::row_major},
+                  Activation::identity);
+  } catch (const std::invalid_argument &) {
+    rejected = true;
+  }
+  check(rejected && yr[0] == before, "undersized output rejected before write");
 }
 int main() { return run_device_suite("operators", test_library_boundary); }

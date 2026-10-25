@@ -1,15 +1,77 @@
 [
-  {"name":"gslide.host.control","binary":"host/gslide_host_control","marker":"GSLIDE_HOST_UNIT suite=control"},
-  {"name":"gslide.host.batch","binary":"host/gslide_host_batch","marker":"GSLIDE_HOST_UNIT suite=batch"},
-  {"name":"gslide.sycl.reductions","binary":"gslide_reductions_test","marker":"GSLIDE_SYCL_UNIT suite=reductions"},
-  {"name":"gslide.sycl.dense_ids","binary":"gslide_dense_ids_test","marker":"GSLIDE_SYCL_UNIT suite=dense_ids"},
-  {"name":"gslide.sycl.random","binary":"gslide_random_test","marker":"GSLIDE_SYCL_UNIT suite=random"},
-  {"name":"gslide.sycl.hash","binary":"gslide_hash_test","marker":"GSLIDE_SYCL_UNIT suite=hash"},
-  {"name":"gslide.sycl.candidates","binary":"gslide_candidates_test","marker":"GSLIDE_SYCL_UNIT suite=candidates"},
-  {"name":"gslide.sycl.operators","binary":"gslide_operators_test","marker":"GSLIDE_SYCL_UNIT suite=operators"},
-  {"name":"gslide.sycl.memory","binary":"gslide_memory_test","marker":"GSLIDE_SYCL_UNIT suite=memory"},
-  {"name":"gslide.sycl.optimizer","binary":"gslide_optimizer_test","marker":"GSLIDE_SYCL_UNIT suite=optimizer"},
-  {"name":"gslide.sycl.output","binary":"gslide_output_test","marker":"GSLIDE_SYCL_UNIT suite=output"},
-  {"name":"gslide.sycl.selection","binary":"gslide_selection_test","marker":"GSLIDE_SYCL_UNIT suite=selection"},
-  {"name":"gslide.sycl.network","binary":"gslide_sycl_training_test","marker":"GSLIDE_SYCL_PRODUCTION checks="}
+  {
+    "name": "gslide.host.control",
+    "binary": "host/gslide_host_control",
+    "marker": "GSLIDE_HOST_UNIT suite=control"
+  },
+  {
+    "name": "gslide.host.batch",
+    "binary": "host/gslide_host_batch",
+    "marker": "GSLIDE_HOST_UNIT suite=batch"
+  },
+  {
+    "name": "gslide.sycl.reductions",
+    "binary": "gslide_reductions_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=reductions"
+  },
+  {
+    "name": "gslide.sycl.dense_ids",
+    "binary": "gslide_dense_ids_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=dense_ids"
+  },
+  {
+    "name": "gslide.sycl.random",
+    "binary": "gslide_random_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=random"
+  },
+  {
+    "name": "gslide.sycl.hash",
+    "binary": "gslide_hash_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=hash"
+  },
+  {
+    "name": "gslide.sycl.candidates",
+    "binary": "gslide_candidates_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=candidates"
+  },
+  {
+    "name": "gslide.sycl.operators",
+    "binary": "gslide_operators_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=operators"
+  },
+  {
+    "name": "gslide.sycl.memory",
+    "binary": "gslide_memory_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=memory"
+  },
+  {
+    "name": "gslide.sycl.optimizer",
+    "binary": "gslide_optimizer_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=optimizer"
+  },
+  {
+    "name": "gslide.sycl.output",
+    "binary": "gslide_output_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=output"
+  },
+  {
+    "name": "gslide.sycl.selection",
+    "binary": "gslide_selection_test",
+    "marker": "GSLIDE_SYCL_UNIT suite=selection"
+  },
+  {
+    "name": "gslide.sycl.network",
+    "binary": "gslide_sycl_training_test",
+    "marker": "GSLIDE_SYCL_PRODUCTION checks="
+  },
+  {
+    "name": "gslide.host.configuration",
+    "binary": "host/gslide_host_configuration",
+    "marker": "GSLIDE_HOST_UNIT suite=configuration"
+  },
+  {
+    "name": "gslide.host.views",
+    "binary": "host/gslide_host_views",
+    "marker": "GSLIDE_HOST_UNIT suite=views"
+  }
 ]

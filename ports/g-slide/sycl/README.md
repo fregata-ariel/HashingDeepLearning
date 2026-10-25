@@ -1,9 +1,11 @@
 # G-SLIDE shared SYCL device boundary (#115)
 
 The current component structure and feature/validation scope are documented in
-[the library design](../../../docs/GSLIDE_LIBRARY_DESIGN.md). Individual headers
-are public component boundaries; `kernels.hpp` remains a compatibility umbrella.
-CTest now registers thirteen host/component/integration tests separately.
+[the library design](../../../docs/GSLIDE_LIBRARY_DESIGN.md). The checked component API is in `component_api.hpp`; named configuration and
+SDK-free views are in `configuration.hpp` and `views.hpp`. See the
+[paper/reference semantic review](../../../docs/GSLIDE_SEMANTICS.md). Lower-level
+raw-pointer entries and `kernels.hpp` remain compatibility interfaces.
+CTest now registers fifteen host/component/integration tests separately.
 
 This maintained implementation submits the same C++ kernels to a SYCL queue
 selected by the caller. The routine fixture requires an actual CPU device;

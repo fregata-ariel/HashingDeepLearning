@@ -1,5 +1,6 @@
 #pragma once
 #include "device_policy.hpp"
+#include "views.hpp"
 #include <vector>
 
 // Owns a queue copy/context and USM, not the caller queue object. Library
@@ -8,6 +9,7 @@
 namespace gslide::sycl_port {
 template <class T> class usm_array {
   sycl::queue queue;
+  const sycl::context context;
 
 public:
   T *p;
@@ -16,16 +18,24 @@ public:
     require(n >= 0, "allocation extent");
     return sycl::malloc_shared<T>(std::max(n, 1), q);
   }
-  usm_array(sycl::queue &q, int n) : queue(q), p(allocate(q, n)), size(n) {
+  usm_array(sycl::queue &q, int n)
+      : queue(q), context(q.get_context()), p(allocate(q, n)), size(n) {
     if (!p)
       throw std::bad_alloc();
-    q.fill(p, T{}, std::max(n, 1)).wait_and_throw();
+    try {
+      q.fill(p, T{}, std::max(n, 1)).wait_and_throw();
+    } catch (...) {
+      sycl::free(p, queue);
+      throw;
+    }
   }
   ~usm_array() { sycl::free(p, queue); }
   usm_array(const usm_array &) = delete;
   usm_array &operator=(const usm_array &) = delete;
   T &operator[](int i) { return p[i]; }
   const T &operator[](int i) const { return p[i]; }
+  Span<T> view() { return {p, std::size_t(size), &context}; }
+  Span<const T> view() const { return {p, std::size_t(size), &context}; }
   void assign(const std::vector<T> &v) {
     require(v.size() <= unsigned(size), "transfer capacity");
     if (!v.empty())

@@ -1,3 +1,4 @@
+#include "component_api.hpp"
 #include "memory.hpp"
 #include "test_support.hpp"
 static void test(sycl::queue &queue) {
@@ -25,5 +26,27 @@ static void test(sycl::queue &queue) {
     near(state.moment[i], 0);
     near(state.velocity[i], 0);
   }
+  bool host_rejected = false;
+  float host_values[2]{};
+  try {
+    validate_usm(queue, Span<float>{host_values, 2});
+  } catch (const std::invalid_argument &) {
+    host_rejected = true;
+  }
+  check(host_rejected,
+        "untagged host memory rejected before runtime pointer query");
+  auto own_context = queue.get_context();
+  validate_usm(queue, borrow_usm(own_context, state.value.p, 2));
+  check(true, "external USM adapter retains explicit context contract");
+  auto foreign_context = sycl::context(queue.get_device());
+  auto foreign_queue = sycl::queue(foreign_context, queue.get_device());
+  usm_array<float> foreign(foreign_queue, 2);
+  bool foreign_rejected = false;
+  try {
+    validate_usm(queue, foreign.view());
+  } catch (const std::invalid_argument &) {
+    foreign_rejected = true;
+  }
+  check(foreign_rejected, "foreign USM context rejected");
 }
 int main() { return run_device_suite("memory", test); }

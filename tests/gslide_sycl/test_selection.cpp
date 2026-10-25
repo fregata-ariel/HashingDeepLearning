@@ -1,4 +1,4 @@
-#include "selection.hpp"
+#include "component_api.hpp"
 #include "test_support.hpp"
 #include <random>
 static void test(sycl::queue &queue) {
@@ -20,11 +20,18 @@ static void test(sycl::queue &queue) {
   labels.assign({3, 0});
   label_offsets.assign({0, 1, 2});
   auto invoke = [&] {
-    select_candidates(queue, shape, NB, H, N, NB * N, 2, 2, 40,
-                      {bins.p, random_nodes.p, bucket_sizes.p, bucket_nodes.p,
-                       hidden.p, labels.p, label_offsets.p, addresses.p,
-                       lengths.p, gather_offsets.p, gathered.p, counts.p,
-                       sizes.p, active_offsets.p, active_nodes.p});
+    auto active = select_candidates(
+        queue,
+        {shape, read_only(bins.view()), read_only(random_nodes.view()),
+         read_only(bucket_sizes.view()), read_only(bucket_nodes.view())},
+        {read_only(hidden.view()), NB, H, Layout::row_major},
+        {read_only(label_offsets.view()), read_only(labels.view()), NB, 2}, 2,
+        2, 40,
+        {addresses.view(), lengths.view(), gather_offsets.view(),
+         gathered.view(), counts.view(), sizes.view(), active_offsets.view(),
+         active_nodes.view()});
+    check(active.used == active_offsets[NB] && active.ids.capacity == NB * N,
+          "active usage versus capacity");
   };
   for (int repeat = 0; repeat < 2; ++repeat) {
     invoke();

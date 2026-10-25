@@ -2,7 +2,7 @@
 
 The portable implementation has since been decomposed into independently
 callable host contracts, storage, selection, numerical operations and Adam;
-see [the library design](../../../docs/GSLIDE_LIBRARY_DESIGN.md). The thirteen
+see [the library design](../../../docs/GSLIDE_LIBRARY_DESIGN.md). The fifteen
 named CTest suites retain the connected model oracle and now test components
 without constructing `Network`. NVIDIA execution is a separate required-device
 profile. Historical CPU acceptance and its evidence below remain distinct.
@@ -81,7 +81,7 @@ host sanitizer.
 The native adapter now contains the same full-capacity reset as a source-level
 repair. This is distinct from native GPU confirmation, so #43 stays open.
 Historical extraction evidence and its stale-delta negative fixture remain
-unchanged. `tools/check_gslide_sycl.py` now requires all thirteen registered test reports,
+unchanged. `tools/check_gslide_sycl.py` now requires all fifteen registered test reports,
 records their exact binaries, all caller/kernel/fixture/source hashes, compiler command
 lines, runtime/device output and numeric tolerances, and removes old success
 reports before each invocation. Run it after activating the shared toolchain:

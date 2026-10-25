@@ -1,4 +1,4 @@
-#include "optimizer.hpp"
+#include "component_api.hpp"
 #include "test_support.hpp"
 static void test(sycl::queue &queue) {
   memory<float> w(queue, 3), g(queue, 3), m(queue, 3), v(queue, 3);
@@ -16,7 +16,7 @@ static void test(sycl::queue &queue) {
       expected_w[i] +=
           double(rate) * expected_m[i] / (std::sqrt(expected_v[i]) + 1e-8);
     }
-    adam_update(queue, w.p, g.p, m.p, v.p, 3, rate);
+    adam_update(queue, {w.view(), g.view(), m.view(), v.view()}, 3, rate);
     for (int i = 0; i < 3; ++i) {
       near(w[i], expected_w[i]);
       near(m[i], expected_m[i]);
@@ -24,5 +24,14 @@ static void test(sycl::queue &queue) {
       near(g[i], 0, 1e-12);
     }
   }
+  bool rejected = false;
+  const float before = w[0];
+  try {
+    adam_update(queue, {w.view(), g.view(), m.view(), {v.p, 2}}, 3, .01f);
+  } catch (const std::invalid_argument &) {
+    rejected = true;
+  }
+  check(rejected && w[0] == before,
+        "short optimizer state rejected before update");
 }
 int main() { return run_device_suite("optimizer", test); }

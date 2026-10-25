@@ -6,8 +6,10 @@
 namespace gslide::sycl_port {
 /** Borrowed selected-output CSC and dense hidden/weight arrays. Weights are
  * [output,hidden], activations [batch,hidden]; probabilities/deltas use CSC
- * slots. Distinct training labels and at least one active output per nonempty
- * sample are caller preconditions. All pointers belong to q's USM context. */
+ * slots. Nonempty training labels and at least one active output per nonempty
+ * sample are caller preconditions. Released membership/label-count semantics
+ * are preserved: duplicate labels do not form a normalized target distribution.
+ * All pointers belong to q's USM context. */
 inline void selected_softmax(sycl::queue &q, int nb, int nh, const int *off,
                              const int *ids, const float *hv, const float *w,
                              const float *bias, float *prob, float *delta,

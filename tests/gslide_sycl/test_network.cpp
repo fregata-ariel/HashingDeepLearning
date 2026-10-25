@@ -197,8 +197,9 @@ static void compare(Network &net, Oracle &ref, int nb) {
   }
 }
 static std::unique_ptr<Network> network(sycl::queue &q) {
-  return std::make_unique<Network>(q, I, H, O, N, 4, 2, hw, hb, ow, ob,
-                                   initial_bins());
+  NetworkConfig config{{I, H, O}, {L, K, BIN, B, O, 2, 1, 40}, {N, 4, 2}, {}};
+  return std::make_unique<Network>(
+      q, config, InitialState{hw, hb, ow, ob, initial_bins()});
 }
 static void test_connected(sycl::queue &q) {
   bool overflow_rejected = false;
@@ -213,6 +214,24 @@ static void test_connected(sycl::queue &q) {
   check(overflow_rejected,
         "configuration extent rejects overflow before allocation");
   auto net = network(q), stale = network(q), stale_index = network(q);
+  Network legacy(q, I, H, O, N, 4, 2, hw, hb, ow, ob, initial_bins());
+  check(legacy.workspace_plan().bucket_values ==
+            net->workspace_plan().bucket_values,
+        "legacy constructor delegates to same plan");
+  usm_array<float> legacy_logits(q, N * O), named_logits(q, N * O);
+  legacy.evaluate_dense(batch1(), legacy_logits.p);
+  net->evaluate_dense(batch1(), {named_logits.view(), N, O, Layout::row_major});
+  for (int i = 0; i < N * O; ++i)
+    near(named_logits[i], legacy_logits[i]);
+  std::unique_ptr<Network> retained;
+  {
+    auto temporary_queue = q;
+    retained = network(temporary_queue);
+  }
+  retained->evaluate_dense(batch1(),
+                           {named_logits.view(), N, O, Layout::row_major});
+  for (int i = 0; i < N * O; ++i)
+    near(named_logits[i], legacy_logits[i]);
   Oracle ref;
   std::vector<int> first_signature;
   std::vector<int> initial_sizes(net->bucket_sizes.p,
@@ -222,7 +241,7 @@ static void test_connected(sycl::queue &q) {
     auto batch = step == 1 ? batch1() : batch2();
     float rate =
         .01 * std::sqrt(1 - std::pow(.999, step)) / (1 - std::pow(.9, step));
-    net->train(batch, rate, true, false);
+    net->train(batch, StepOptions{rate, true, false});
     stale->train(batch, rate, true, false, delta_reset::diagnostic_keep_stale);
     stale_index->train(batch, rate, false, false);
     ref.train(batch, rate);
@@ -279,7 +298,15 @@ static void test_connected(sycl::queue &q) {
   auto unlabeled = partial;
   unlabeled.labels.clear();
   unlabeled.label_offsets = {0, 0};
-  net->evaluate_dense(unlabeled, logits.p);
+  net->evaluate_dense(unlabeled, {logits.view(), 1, O, Layout::row_major});
+  bool short_output = false;
+  try {
+    net->evaluate_dense(unlabeled,
+                        {{logits.p, O - 1}, 1, O, Layout::row_major});
+  } catch (const std::invalid_argument &) {
+    short_output = true;
+  }
+  check(short_output, "typed evaluation rejects short output");
   D dense_hidden(H);
   for (int h = 0; h < H; ++h)
     dense_hidden[h] = std::max(
@@ -320,7 +347,6 @@ static void test_connected(sycl::queue &q) {
             << " stale_parameter_error=" << stale_parameter_error
             << " changed_buckets=" << ref.changed << '\n';
 }
-
 
 int main() {
   try {

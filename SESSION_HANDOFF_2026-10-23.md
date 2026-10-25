@@ -1,12 +1,22 @@
 # 次セッションへの引き継ぎ — 全系統のGPUテスト
 
+## 名前付きAPIと意味論の確定（2026-10-25追記）
+
+推奨案の採用を受け、ModelSpec/IndexConfig/WorkspaceLimits/ExecutionOptionsとInitialStateを分離。
+SDK不要のSpan/MatrixView/SegmentedIdsView、容量計算、checked component API、ModelState/IndexState/TrainingWorkspaceを実装。
+Networkはqueueを保持し、旧constructorとpointer評価は互換adapterとして維持。
+意味論は[論文・固定原典の照合](docs/GSLIDE_SEMANTICS.md)を優先し、今回のAPI整理で数値を変えない。
+bias込みのSYCL評価、重複ラベルのmembership/listed-count、自然対数hash packing、順序未保証のbounded ring、更新後rebuildを明記。
+論文はsave時のlayout変換に言及するが、固定原典の公開APIにはsave/loadがない点も区別した。
+新規host configuration/viewsを含め、15スイートをCPU/NVIDIAで必須とする。公開commit/最新CIと実行証拠はPR #127を参照。
+
 ## G-SLIDEの設計整理（2026-10-25追記）
 
 全機能追加の前に部品化するユーザー方針へ更新。[ライブラリ設計](docs/GSLIDE_LIBRARY_DESIGN.md)を優先する。
 既存演算をhost contracts・USM/parameter ownership・候補選択・Softmax/backward・Adamへ分離し、`Network`を合成役にした。
 新規機能の移植ではなく、既存数値挙動の分解。CPU/NVIDIA各13テストとSDK不要host 2テストが成功し、[証拠](docs/evidence/gslide-library-2026-10-25.json)を保存。
 再検証は `bash tools/run_gpu_container.sh /tmp/gslide-library-NEW sycl run gslide-library`。
-次はnamed configuration、shape/capacity付きview、表現・bias・label/hash意味論のAPIレビュー。多層化・checkpoint追加・最適化は、その後の別作業とする。
+この節は最初の部品化checkpoint。named configuration/viewと意味論は上記追記を優先する。多層化・checkpoint追加・最適化は別作業とする。
 
 ## 最新の再開結果（2026-10-25）
 

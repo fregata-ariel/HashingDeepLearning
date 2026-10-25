@@ -6,6 +6,15 @@ new CUDA dispatch policy or performance acceptance. The incoming revision is
 `3e8186677b8a7ff439c67017ee1a36de36259480`; its numerical checkpoints remain
 historical evidence, distinct from the new component tests.
 
+## Library packaging follow-up
+
+The current work focuses on SYCL library extraction with existing behavior.
+Semantic alternatives and broader stable-API policy are deferred. The
+[package usage guide](../ports/g-slide/library/README.md) describes public
+entry headers, standalone configure/install, relocatable `find_package(GSlide)`
+and independent consumer acceptance. Canonical numerical headers and the shared
+controller are installed without rewriting their bodies.
+
 ## Named API follow-up
 
 The accepted design is now implemented by `configuration.hpp`, `views.hpp`,
@@ -100,7 +109,7 @@ owners; methods remain valid after the original caller queue object is destroyed
 ## Build and test boundaries
 
 `ports/g-slide/library/CMakeLists.txt` provides `gslide::control` and
-`gslide::sycl` header-only targets. It never fetches dependencies or selects a
+`gslide::sycl` header-only targets. It supports standalone install/export and never fetches dependencies or selects a
 device. The original CUDA `ports/g-slide/CMakeLists.txt` is unchanged.
 
 Host consumers need an ordinary C++17 compiler:

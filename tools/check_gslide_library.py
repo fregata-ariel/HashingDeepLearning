@@ -11,6 +11,7 @@ import sys
 import time
 
 from gslide_sycl_suites import ROOT,require_completion,require_enrollment,sources,suites
+from check_gslide_package import run as run_package
 
 
 def digest(path: Path) -> str:
@@ -55,8 +56,10 @@ def main() -> int:
                         raise RuntimeError('required actual device missing from runtime evidence')
             result.update(status='PASS',binary_sha256={row['binary']:digest(build/row['binary']) for row in suites()},
                           compiler_commands=json.loads((build/'compile_commands.json').read_text()))
+            result['package'] = run_package(build/'installed-consumer', sycl=True,
+                require_nvidia=profile=='nvidia', compiler='/usr/lib/llvm-18/bin/clang++', prefix_path='/opt/acpp', env=env)
         except Exception as error:
-            failed=True;result['error']=str(error)
+            failed=True;result['status']='FAIL';result['error']=str(error)
         (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     report['status']='FAIL' if failed else 'PASS'
     (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')

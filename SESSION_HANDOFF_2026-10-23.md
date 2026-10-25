@@ -1,5 +1,16 @@
 # 次セッションへの引き継ぎ — 全系統のGPUテスト
 
+## SYCLライブラリ化に集中（2026-10-26追記）
+
+ユーザーから、意味論や安定APIの追加判断は後に回し、判断が影響しない部分のライブラリ化を進める指示。
+今回の対象はpublic entry headers、standalone CMake install/export、relocatable find_package、外部consumer検証。
+[package guide](ports/g-slide/library/README.md)を参照。既存の数値処理・共有controllerの本文は変更しない。
+外部consumerはソースを証拠dirへコピーし、インストール先を移動した後、checkout includeなしでビルドする。
+SDK不要hostと実SYCL CPU/NVIDIAで、複数translation unit・部品呼出・1更新＋評価の独立FP64 oracleを確認する。
+CPU/NVIDIA各15/15既存スイート＋2/2外部consumer、SDK不要host consumerが成功。
+[保存済み証拠](docs/evidence/gslide-package-2026-10-26.json)を参照。意味論の追加判断は保留。
+最新公開commit/CIはPR #127を参照。
+
 ## 名前付きAPIと意味論の確定（2026-10-25追記）
 
 推奨案の採用を受け、ModelSpec/IndexConfig/WorkspaceLimits/ExecutionOptionsとInitialStateを分離。

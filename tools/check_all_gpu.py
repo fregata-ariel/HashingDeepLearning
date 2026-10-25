@@ -78,7 +78,7 @@ def main() -> int:
     else:
         records.append({"profile":"sycl", "status":"NOT_RUN", "reason":"components image selected; use sycl target"})
     status = "FAIL" if any(r["status"] == "FAIL" for r in records) else "PARTIAL"
-    inputs = [p for directory in ("ports/sycl-common", "ports/g-slide/sycl", "ports/mongoose/sycl", "ports/scatterbrain/sycl", "ports/scatterbrain/cuda", "tests/gslide_sycl", "tests/gpu_lineages", "docker/gpu") for p in (root / directory).rglob("*") if p.is_file() and p.suffix in (".hpp", ".cpp", ".cu", ".py", ".txt", ".sh")]
+    inputs = [p for directory in ("ports/sycl-common", "ports/g-slide/sycl", "ports/g-slide/library", "ports/mongoose/sycl", "ports/scatterbrain/sycl", "ports/scatterbrain/cuda", "tests/gslide_sycl", "tests/gslide_consumer", "tests/gpu_lineages", "docker/gpu") for p in (root / directory).rglob("*") if p.is_file() and p.suffix in (".hpp", ".cpp", ".cu", ".py", ".txt", ".sh", ".in")]
     inputs += [Path(__file__), root / "tools/check_sycl_gpu.sh", root / "tools/run_gpu_container.sh", root / "docker/gpu/Dockerfile"]
     binaries = [output / "sycl" / p for p in ("gslide/gslide_sycl_test", "gslide/gslide_sycl_training_test", "mongoose/mongoose_sycl_fixture", "scatterbrain/libscatterbrain_sycl.so")]
     report = {"status": status, "profiles": records, "source_sha256":{str(p.relative_to(root)):hashlib.sha256(p.read_bytes()).hexdigest() for p in inputs},

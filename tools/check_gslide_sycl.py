@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 from check_gslide_cpu import ROOT, check_archive
 from gslide_sycl_suites import require_completion, require_enrollment, sources, suites
+from check_gslide_package import run as run_package
 
 
 def digest(path):
@@ -40,6 +41,7 @@ def run(build):
         if index == 1:
             require_enrollment(build)
     require_completion(log[-1])
+    package = run_package(build/'installed-consumer', sycl=True)
     paths=[ROOT/'ports/g-slide/sycl/kernels.hpp',ROOT/'ports/g-slide/sycl/source_contracts.json',
            ROOT/'tests/gslide_sycl/test_kernels.cpp',ROOT/'tests/gslide_sycl/test_network.cpp',ROOT/'tests/gslide_sycl/CMakeLists.txt',
            ROOT/'ports/g-slide/sycl/network.hpp', ROOT/'ports/g-slide/include/TrainingControl.h',ROOT/'ports/g-slide/src/Network.cu',ROOT/'tests/gslide_sycl/native_train_adapter.cpp',ROOT/'tools/check_gslide_train_adapter.py',
@@ -51,7 +53,7 @@ def run(build):
         runtime_device_output=log[-1],archive_blobs_verified=archive,source_contracts=contracts,
         inputs_sha256={str(p.relative_to(ROOT)):digest(p) for p in paths},
         binary_sha256={row['binary']:digest(build/row['binary']) for row in suites()},
-        compiler_commands=json.loads((build/'compile_commands.json').read_text()),cmake_cache_sha256=digest(build/'CMakeCache.txt'),
+        compiler_commands=json.loads((build/'compile_commands.json').read_text()),cmake_cache_sha256=digest(build/'CMakeCache.txt'), installed_consumer=package,
         log_sha256=digest(build/'run.log'),gpu_validated=False,original_cuda_executed=False,
         arithmetic_tolerance=1e-5,training_tolerance=8e-6,native_adapter_evidence_sha256=digest(build/"native_adapter/native_train_adapter.json"),integer_contract='exact',execution='real SYCL CPU device'),indent=2)+'\n')
 

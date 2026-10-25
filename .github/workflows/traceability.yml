@@ -25,6 +25,8 @@ on:
       - "tools/run_sycl_paper_cpu.sh"
       - "tests/gslide_sycl/**"
       - "tests/gslide_host/**"
+      - "tests/gslide_consumer/**"
+      - "tools/check_gslide_package.py"
       - "tools/check_gslide_library.py"
       - "tools/gslide_sycl_suites.py"
       - "ports/mongoose/sycl/**"
@@ -99,6 +101,8 @@ on:
       - "tools/run_sycl_paper_cpu.sh"
       - "tests/gslide_sycl/**"
       - "tests/gslide_host/**"
+      - "tests/gslide_consumer/**"
+      - "tools/check_gslide_package.py"
       - "tools/check_gslide_library.py"
       - "tools/gslide_sycl_suites.py"
       - "ports/mongoose/sycl/**"
@@ -238,6 +242,7 @@ jobs:
           python3 tests/traceability/test_nvidia_gpu_reporting.py
           python3 tests/traceability/test_gpu_lineage_reporting.py
           python3 tests/traceability/test_gslide_library_enrollment.py
+          python3 tools/check_gslide_package.py --output traceability-artifact/gslide-package
           cmake -S tests/gslide_host -B traceability-artifact/gslide-host
           cmake --build traceability-artifact/gslide-host --parallel 2
           ctest --test-dir traceability-artifact/gslide-host --no-tests=error --output-on-failure

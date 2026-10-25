@@ -12,7 +12,7 @@ bash tools/run_gpu_container.sh /tmp/hashing-gpu-run-002 components
 bash tools/run_gpu_container.sh /tmp/hashing-gpu-build-001 sycl build-only
 # Retry one failed profile, retaining NOT_RUN for the other profiles:
 bash tools/run_gpu_container.sh /tmp/hashing-gpu-retry-001 sycl run scatterbrain
-# Focused G-SLIDE library tests: required CPU and NVIDIA devices, 13 suites each:
+# Focused G-SLIDE library tests: required CPU and NVIDIA devices, 15 suites each plus relocated installed consumers:
 bash tools/run_gpu_container.sh /tmp/gslide-library-001 sycl run gslide-library
 ```
 

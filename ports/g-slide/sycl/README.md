@@ -1,5 +1,9 @@
 # G-SLIDE shared SYCL device boundary (#115)
 
+Public `<gslide/host.hpp>` / `<gslide/sycl.hpp>` headers and standalone CMake
+install/`find_package(GSlide)` usage are described in the
+[package guide](../library/README.md).
+
 The current component structure and feature/validation scope are documented in
 [the library design](../../../docs/GSLIDE_LIBRARY_DESIGN.md). The checked component API is in `component_api.hpp`; named configuration and
 SDK-free views are in `configuration.hpp` and `views.hpp`. See the

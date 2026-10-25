@@ -41,7 +41,7 @@ def require_completion(log: str) -> None:
 
 
 def sources() -> list[Path]:
-    paths=[ROOT/'ports/g-slide/include/TrainingControl.h',ROOT/'ports/g-slide/library/CMakeLists.txt',ROOT/'ports/sycl-common/include/hashing/sycl_backend.hpp',REGISTRY,Path(__file__).resolve()]
-    for directory in ('ports/g-slide/sycl','tests/gslide_sycl','tests/gslide_host'):
-        paths.extend(p for p in (ROOT/directory).rglob('*') if p.is_file() and p.suffix in ('.hpp','.cpp','.txt','.json'))
+    paths=[ROOT/'ports/g-slide/include/TrainingControl.h',ROOT/'ports/g-slide/LICENSE',ROOT/'papers/g-slide-source-pin.json',ROOT/'tools/check_gslide_package.py',ROOT/'ports/sycl-common/include/hashing/sycl_backend.hpp',REGISTRY,Path(__file__).resolve()]
+    for directory in ('ports/g-slide/library','ports/g-slide/sycl','tests/gslide_sycl','tests/gslide_host','tests/gslide_consumer'):
+        paths.extend(p for p in (ROOT/directory).rglob('*') if p.is_file() and p.suffix in ('.hpp','.cpp','.txt','.json','.in'))
     return sorted(set(paths))

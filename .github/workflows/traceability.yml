@@ -24,6 +24,9 @@ on:
       - "tools/check_gslide_train_adapter.py"
       - "tools/run_sycl_paper_cpu.sh"
       - "tests/gslide_sycl/**"
+      - "tests/gslide_host/**"
+      - "tools/check_gslide_library.py"
+      - "tools/gslide_sycl_suites.py"
       - "ports/mongoose/sycl/**"
       - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
       - "ports/mongoose/lsh_lib/*.h"
@@ -95,6 +98,9 @@ on:
       - "tools/check_gslide_train_adapter.py"
       - "tools/run_sycl_paper_cpu.sh"
       - "tests/gslide_sycl/**"
+      - "tests/gslide_host/**"
+      - "tools/check_gslide_library.py"
+      - "tools/gslide_sycl_suites.py"
       - "ports/mongoose/sycl/**"
       - "ports/mongoose/mongoose_slide/slide_lib/simHash.py"
       - "ports/mongoose/lsh_lib/*.h"
@@ -231,6 +237,10 @@ jobs:
           python3 tests/traceability/test_gslide_suite_contracts.py
           python3 tests/traceability/test_nvidia_gpu_reporting.py
           python3 tests/traceability/test_gpu_lineage_reporting.py
+          python3 tests/traceability/test_gslide_library_enrollment.py
+          cmake -S tests/gslide_host -B traceability-artifact/gslide-host
+          cmake --build traceability-artifact/gslide-host --parallel 2
+          ctest --test-dir traceability-artifact/gslide-host --no-tests=error --output-on-failure
           python3 tools/check_gslide_cpu.py --build-dir traceability-artifact/gslide-cpu/plain
           python3 tools/check_gslide_cpu.py --sanitize --build-dir traceability-artifact/gslide-cpu/sanitized
 

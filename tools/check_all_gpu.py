@@ -16,7 +16,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--sycl", action="store_true")
-    parser.add_argument("--only", choices=("all", "gslide-native", "mongoose-original", "mongoose-wrapper", "mongoose-fallback", "mongoose-rng", "scatterbrain", "magicpig", "sycl"), default="all")
+    parser.add_argument("--only", choices=("all", "gslide-native", "gslide-library", "mongoose-original", "mongoose-wrapper", "mongoose-fallback", "mongoose-rng", "scatterbrain", "magicpig", "sycl"), default="all")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[1]
     output = args.output.resolve()
@@ -56,6 +56,8 @@ def main() -> int:
         (output / "progress.json").write_text(json.dumps(records, indent=2) + "\n")
 
     run("device", ["nvidia-smi"])
+    if args.only == 'gslide-library':
+        run('gslide-library',[sys.executable,'tools/check_gslide_library.py','--build-dir',str(output/'gslide-library')],timeout=900,summary='GSLIDE_LIBRARY_PASS')
     run("gslide-native", [sys.executable, "tools/check_nvidia_gpu.py", "--build-dir", str(output / "gslide"),
         "--cuda-arch", "75", "--cuda-host-compiler", "g++-12", "--jobs", "2", "--compute-sanitizer", "/opt/compute-sanitizer/bin/compute-sanitizer"])
     for profile in ("mongoose-original", "mongoose-wrapper", "mongoose-fallback", "mongoose-rng", "scatterbrain", "magicpig"):

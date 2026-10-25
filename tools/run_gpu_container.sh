@@ -13,10 +13,11 @@ selection=${4:-all}
 [[ $profile == components || $profile == sycl ]] || { echo 'unknown image profile' >&2; exit 2; }
 [[ $mode == run || $mode == build-only ]] || { echo 'unknown mode' >&2; exit 2; }
 case $selection in
-  all|gslide-native|mongoose-original|mongoose-wrapper|mongoose-fallback|mongoose-rng|scatterbrain|magicpig|sycl) ;;
+  all|gslide-native|gslide-library|mongoose-original|mongoose-wrapper|mongoose-fallback|mongoose-rng|scatterbrain|magicpig|sycl) ;;
   *) echo 'unknown execution profile' >&2; exit 2 ;;
 esac
 [[ $selection != sycl || $profile == sycl ]] || { echo 'SYCL image required' >&2; exit 2; }
+[[ $selection != gslide-library || $profile == sycl ]] || { echo 'SYCL image required' >&2; exit 2; }
 [[ $output == /* && ! -e $output ]] || { echo 'new absolute output directory required' >&2; exit 2; }
 output=$(realpath -m -- "$output")
 [[ ! -e $output ]] || { echo 'resolved output directory already exists' >&2; exit 2; }

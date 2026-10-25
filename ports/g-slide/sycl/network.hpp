@@ -1,92 +1,15 @@
 #pragma once
 #include "../include/TrainingControl.h"
+#include "batch.hpp"
 #include "kernels.hpp"
+#include "memory.hpp"
+#include "operators.hpp"
+#include "optimizer.hpp"
+#include "output_ops.hpp"
+#include "selection.hpp"
 #include <memory>
-#include <vector>
 
 namespace gslide::sycl_port {
-template <class T> class usm_array {
-  sycl::queue *queue;
-
-public:
-  T *p;
-  int size;
-  static T *allocate(sycl::queue &q, int n) {
-    require(n >= 0, "allocation extent");
-    return sycl::malloc_shared<T>(std::max(n, 1), q);
-  }
-  usm_array(sycl::queue &q, int n) : queue(&q), p(allocate(q, n)), size(n) {
-    if (!p)
-      throw std::bad_alloc();
-    q.fill(p, T{}, std::max(n, 1)).wait_and_throw();
-  }
-  ~usm_array() { sycl::free(p, *queue); }
-  usm_array(const usm_array &) = delete;
-  usm_array &operator=(const usm_array &) = delete;
-  T &operator[](int i) { return p[i]; }
-  const T &operator[](int i) const { return p[i]; }
-  void assign(const std::vector<T> &v) {
-    require(v.size() <= unsigned(size), "transfer capacity");
-    if (!v.empty())
-      queue->memcpy(p, v.data(), v.size() * sizeof(T)).wait_and_throw();
-  }
-};
-struct parameter {
-  usm_array<float> value, gradient, moment, velocity;
-  parameter(sycl::queue &q, const std::vector<float> &initial)
-      : value(q, initial.size()), gradient(q, initial.size()),
-        moment(q, initial.size()), velocity(q, initial.size()) {
-    value.assign(initial);
-  }
-};
-struct sparse_batch {
-  std::vector<int> nodes, offsets, labels, label_offsets;
-  std::vector<float> values;
-  int size() const { return offsets.size() - 1; }
-};
-enum class delta_reset { each_step, diagnostic_keep_stale };
-// Reference device implementations of the backend library boundary. These are
-// intentionally simple deterministic algorithms, not vendor-library speedups.
-inline void scan_lengths(sycl::queue &q, const int *lengths, int *offsets,
-                         int n) {
-  require(n >= 0, "scan extent");
-  q.parallel_for(sycl::range<1>(n + 1), [=](sycl::id<1> id) {
-     int i = id[0], s = 0;
-     for (int j = 0; j < i; ++j)
-       s += lengths[j];
-     offsets[i] = s;
-   }).wait_and_throw();
-}
-inline void sort_keys(sycl::queue &q, const unsigned *keys, const int *values,
-                      unsigned *out_keys, int *out_values, int n) {
-  require(n >= 0, "sort extent");
-  if (!n)
-    return;
-  q.parallel_for(sycl::range<1>(n), [=](sycl::id<1> id) {
-     int i = id[0], rank = 0;
-     for (int j = 0; j < n; ++j)
-       rank += keys[j] < keys[i] || (keys[j] == keys[i] && j < i);
-     out_keys[rank] = keys[i];
-     out_values[rank] = values[i];
-   }).wait_and_throw();
-}
-// x [batch,input] row major. w may be row major [output,input] or column
-// major [input,output]. y is row major [batch,output], no transpose ambiguity.
-inline void dense_product(sycl::queue &q, const float *x, const float *w,
-                          const float *bias, float *y, int batch, int inputs,
-                          int outputs, bool weights_rowmajor, bool relu) {
-  require(batch >= 0 && inputs > 0 && outputs > 0, "dense shape");
-  if (!batch)
-    return;
-  q.parallel_for(sycl::range<1>(batch * outputs), [=](sycl::id<1> id) {
-     int b = id[0] / outputs, o = id[0] % outputs;
-     float v = bias[o];
-     for (int i = 0; i < inputs; ++i)
-       v += x[b * inputs + i] *
-            w[weights_rowmajor ? o * inputs + i : i * outputs + o];
-     y[id[0]] = relu ? sycl::fmax(0.f, v) : v;
-   }).wait_and_throw();
-}
 // TRACE_TEST_ID: GSLIDE-SYCL-PRODUCTION-116
 // Support: shared production ordering with a two-layer SYCL numerical backend.
 class Network {
@@ -95,37 +18,9 @@ class Network {
       int buckets, int threshold, int minimum, const std::vector<float> &hw,
       const std::vector<float> &hb, const std::vector<float> &ow,
       const std::vector<float> &ob, const std::vector<int> &bins) {
-    require(i > 0 && h > 0 && o > 0 && nb > 0 && ic >= 0 && lc >= 0 &&
-                tables > 0 && k > 0 && bin > 0 && buckets > 0 &&
-                threshold > 0 && minimum >= 0 && minimum <= o,
-            "network configuration");
-    const auto limit = std::int64_t(std::numeric_limits<int>::max());
-    auto check_extent = [&](std::initializer_list<int> dimensions) {
-      std::int64_t extent = 1;
-      for (int dimension : dimensions) {
-        require(dimension > 0 && extent <= (limit - 1) / dimension,
-                "network extent overflow");
-        extent *= dimension;
-      }
-    };
-    check_extent({nb, i});
-    check_extent({nb, h});
-    check_extent({nb, o});
-    check_extent({i, h});
-    check_extent({o, h});
-    check_extent({tables, k, bin});
-    check_extent({nb, tables, o});
-    check_extent({tables, buckets, o});
-    require(hw.size() == unsigned(i * h) && hb.size() == unsigned(h) &&
-                ow.size() == unsigned(o * h) && ob.size() == unsigned(o),
-            "parameter shape");
-    for (const auto *vector : {&hw, &hb, &ow, &ob})
-      for (float value : *vector)
-        require(std::isfinite(value), "finite parameter");
-    require(bins.size() == unsigned(tables * k * bin), "bins extent");
-    for (int id : bins)
-      require(id >= 0 && id < h, "bin ID");
-    return i;
+    return validate_network_configuration(i, h, o, nb, ic, lc, tables, k, bin,
+                                          buckets, threshold, minimum, hw, hb,
+                                          ow, ob, bins);
   }
   sycl::queue &q;
   int inputs, hidden, outputs, max_batch, input_capacity, label_capacity;
@@ -139,32 +34,9 @@ class Network {
   usm_array<int> sort_values, sorted_values;
   int current_batch = 0;
   void validate_batch(const sparse_batch &b, bool training_labels = true) {
-    require(b.offsets.size() >= 1 &&
-                b.label_offsets.size() == b.offsets.size() &&
-                b.size() <= max_batch,
-            "batch extent");
-    require(b.nodes.size() == b.values.size() &&
-                b.nodes.size() <= unsigned(input_capacity) &&
-                b.labels.size() <= unsigned(label_capacity),
-            "batch capacity");
-    require(b.offsets.front() == 0 && b.label_offsets.front() == 0 &&
-                b.offsets.back() == int(b.nodes.size()) &&
-                b.label_offsets.back() == int(b.labels.size()),
-            "compressed endpoints");
-    for (int i = 0; i < b.size(); ++i) {
-      require(b.offsets[i] <= b.offsets[i + 1] &&
-                  b.label_offsets[i] <= b.label_offsets[i + 1],
-              "monotone offsets");
-      if (training_labels)
-        require(b.label_offsets[i] < b.label_offsets[i + 1],
-                "training requires labels");
-    }
-    for (int n : b.nodes)
-      require(n >= 0 && n < inputs, "input ID");
-    for (int n : b.labels)
-      require(n >= 0 && n < outputs, "label ID");
-    for (float x : b.values)
-      require(std::isfinite(x), "finite input");
+    validate_sparse_batch(
+        b, {inputs, outputs, max_batch, input_capacity, label_capacity},
+        training_labels);
   }
   void transfer(const sparse_batch &b, bool training_labels = true) {
     validate_batch(b, training_labels);
@@ -188,160 +60,35 @@ class Network {
        }).wait_and_throw();
   }
   void query() {
-    int nb = current_batch, no = outputs, nh = hidden;
-    auto z = shape;
-    auto bp = bins.p;
-    auto hp = hidden_values.p;
-    auto sp = bucket_sizes.p;
-    auto query = query_addresses.p;
-    auto len = lengths.p;
-    if (nb)
-      q.parallel_for(sycl::range<1>(nb * z.tables), [=](sycl::id<1> id) {
-         int s = id[0] / z.tables, t = id[0] % z.tables;
-         int a = address(bp + t * z.k * z.bin, hp + s * nh, z.k, z.bin,
-                         int(sycl::log(float(z.bin))));
-         query[id[0]] = a;
-         len[id[0]] = sycl::min(sp[t * z.buckets + a], z.capacity);
-       }).wait_and_throw();
-    scan_lengths(q, lengths.p, gather_offsets.p, nb * z.tables);
-    auto go = gather_offsets.p;
-    auto raw = gathered.p;
-    auto buckets = bucket_nodes.p;
-    if (nb)
-      q.parallel_for(sycl::range<1>(nb * z.tables), [=](sycl::id<1> id) {
-         int t = id[0] % z.tables, a = t * z.buckets + query[id[0]];
-         for (int p = go[id[0]]; p < go[id + 1]; ++p)
-           raw[p] = buckets[a * z.capacity + p - go[id[0]]];
-       }).wait_and_throw();
-    q.fill(counts.p, 0, max_batch * outputs).wait_and_throw();
-    count_candidates(q, gathered.p, gather_offsets.p, z.tables, nb, no,
-                     max_batch * outputs, counts.p);
-    activate_labels(q, label_nodes.p, label_offsets.p, random_nodes.p, nb, no,
-                    threshold, minimum, seed, counts.p, sizes.p);
-    scan_lengths(q, sizes.p, active_offsets.p, nb);
-    auto freq = counts.p;
-    auto offsets = active_offsets.p;
-    auto ids = active_nodes.p;
-    int th = threshold;
-    if (nb)
-      q.parallel_for(sycl::range<1>(nb), [=](sycl::id<1> id) {
-         int b = id[0], pos = offsets[b];
-         for (int n = 0; n < no; ++n)
-           if (freq[b * no + n] >= th)
-             ids[pos++] = n;
-       }).wait_and_throw();
+    select_candidates(q, shape, current_batch, hidden, outputs,
+                      max_batch * outputs, threshold, minimum, seed,
+                      {bins.p, random_nodes.p, bucket_sizes.p, bucket_nodes.p,
+                       hidden_values.p, label_nodes.p, label_offsets.p,
+                       query_addresses.p, lengths.p, gather_offsets.p,
+                       gathered.p, counts.p, sizes.p, active_offsets.p,
+                       active_nodes.p});
   }
   void output_forward() {
     query();
-    int nb = current_batch, nh = hidden, no = outputs;
-    auto off = active_offsets.p;
-    auto ids = active_nodes.p;
-    auto hv = hidden_values.p;
-    auto w = output_weights.value.p;
-    auto bias = output_bias.value.p;
-    auto prob = probabilities.p;
-    auto delta = output_deltas.p;
-    auto labs = label_nodes.p;
-    auto loff = label_offsets.p;
-    if (nb)
-      q.parallel_for(sycl::range<1>(nb), [=](sycl::id<1> id) {
-         int s = id[0];
-         float maximum = -std::numeric_limits<float>::max();
-         for (int p = off[s]; p < off[s + 1]; ++p) {
-           int n = ids[p];
-           float v = bias[n];
-           for (int h = 0; h < nh; ++h)
-             v += hv[s * nh + h] * w[n * nh + h];
-           prob[p] = v;
-           maximum = sycl::fmax(maximum, v);
-         }
-         float sum = 0;
-         for (int p = off[s]; p < off[s + 1]; ++p) {
-           prob[p] = sycl::exp(prob[p] - maximum);
-           sum += prob[p];
-         }
-         for (int p = off[s]; p < off[s + 1]; ++p) {
-           prob[p] /= sum;
-           bool label = false;
-           for (int j = loff[s]; j < loff[s + 1]; ++j)
-             label |= labs[j] == ids[p];
-           delta[p] =
-               ((label ? 1.f / (loff[s + 1] - loff[s]) : 0.f) - prob[p]) / nb;
-         }
-       }).wait_and_throw();
+    selected_softmax(q, current_batch, hidden, active_offsets.p, active_nodes.p,
+                     hidden_values.p, output_weights.value.p,
+                     output_bias.value.p, probabilities.p, output_deltas.p,
+                     label_nodes.p, label_offsets.p);
   }
   void output_backward() {
-    int nb = current_batch, nh = hidden, no = outputs;
-    auto off = active_offsets.p;
-    auto ids = active_nodes.p;
-    auto hv = hidden_values.p;
-    auto d = output_deltas.p;
-    auto w = output_weights.value.p;
-    auto hd = hidden_deltas.p;
-    auto gw = output_weights.gradient.p;
-    auto gb = output_bias.gradient.p;
-    if (nb)
-      q.parallel_for(sycl::range<1>(nb * no), [=](sycl::id<1> id) {
-         int b = id[0] / no, p = off[b] + id[0] % no;
-         if (p >= off[b + 1])
-           return;
-         for (int h = 0; h < nh; ++h)
-           if (hv[b * nh + h] > 0) {
-             sycl::atomic_ref<float, sycl::memory_order::relaxed,
-                              sycl::memory_scope::device,
-                              sycl::access::address_space::global_space>
-                 a(hd[b * nh + h]);
-             a.fetch_add(d[p] * w[ids[p] * nh + h]);
-           }
-       }).wait_and_throw();
-    q.parallel_for(sycl::range<1>(no * nh), [=](sycl::id<1> id) {
-       int o = id[0] / nh, h = id[0] % nh;
-       float g = 0;
-       for (int b = 0; b < nb; ++b)
-         for (int p = off[b]; p < off[b + 1]; ++p)
-           if (ids[p] == o)
-             g += d[p] * hv[b * nh + h];
-       gw[id[0]] += g;
-     }).wait_and_throw();
-    q.parallel_for(sycl::range<1>(no), [=](sycl::id<1> id) {
-       float g = 0;
-       for (int b = 0; b < nb; ++b)
-         for (int p = off[b]; p < off[b + 1]; ++p)
-           if (ids[p] == int(id[0]))
-             g += d[p];
-       gb[id[0]] += g;
-     }).wait_and_throw();
+    selected_output_backward(
+        q, current_batch, hidden, outputs, active_offsets.p, active_nodes.p,
+        hidden_values.p, output_deltas.p, output_weights.value.p,
+        hidden_deltas.p, output_weights.gradient.p, output_bias.gradient.p);
   }
   void hidden_backward() {
-    int nb = current_batch, ni = inputs, nh = hidden;
-    auto x = dense_inputs.p;
-    auto d = hidden_deltas.p;
-    auto gw = hidden_weights.gradient.p;
-    auto gb = hidden_bias.gradient.p;
-    q.parallel_for(sycl::range<1>(ni * nh), [=](sycl::id<1> id) {
-       int i = id[0] / nh, h = id[0] % nh;
-       float g = 0;
-       for (int b = 0; b < nb; ++b)
-         g += x[b * ni + i] * d[b * nh + h];
-       gw[id[0]] += g;
-     }).wait_and_throw();
-    q.parallel_for(sycl::range<1>(nh), [=](sycl::id<1> id) {
-       float g = 0;
-       for (int b = 0; b < nb; ++b)
-         g += d[b * nh + id[0]];
-       gb[id[0]] += g;
-     }).wait_and_throw();
+    hidden_parameter_gradients(q, current_batch, inputs, hidden, dense_inputs.p,
+                               hidden_deltas.p, hidden_weights.gradient.p,
+                               hidden_bias.gradient.p);
   }
   void update(parameter &p, float rate) {
-    auto w = p.value.p, g = p.gradient.p, m = p.moment.p, v = p.velocity.p;
-    q.parallel_for(sycl::range<1>(p.value.size), [=](sycl::id<1> id) {
-       int i = id[0];
-       float grad = g[i];
-       m[i] = .9f * m[i] + .1f * grad;
-       v[i] = .999f * v[i] + .001f * grad * grad;
-       w[i] += rate * m[i] / (sycl::sqrt(v[i]) + 1e-8f);
-       g[i] = 0;
-     }).wait_and_throw();
+    adam_update(q, p.value.p, p.gradient.p, p.moment.p, p.velocity.p,
+                p.value.size, rate);
   }
 
 public:

@@ -1,9 +1,15 @@
 # G-SLIDE shared SYCL device boundary (#115)
 
+The current component structure and feature/validation scope are documented in
+[the library design](../../../docs/GSLIDE_LIBRARY_DESIGN.md). Individual headers
+are public component boundaries; `kernels.hpp` remains a compatibility umbrella.
+CTest now registers thirteen host/component/integration tests separately.
+
 This maintained implementation submits the same C++ kernels to a SYCL queue
 selected by the caller. The routine fixture requires an actual CPU device;
-GPU execution, CUDA source execution, performance and CUDA lock progress remain
-unvalidated (#34). It supplements the existing five CUDA-body CPU extraction
+NVIDIA execution is separately recorded in the GPU checkpoints. CUDA source
+execution, performance and CUDA lock progress are distinct contracts (#34).
+It supplements the existing five CUDA-body CPU extraction
 suites rather than reclassifying their scalar adapters as parallel execution.
 
 Configure `tests/gslide_sycl` with AdaptiveCpp and run CTest. Toolchain activation

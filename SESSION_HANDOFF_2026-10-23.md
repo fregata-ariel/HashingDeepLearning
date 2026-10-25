@@ -1,5 +1,13 @@
 # 次セッションへの引き継ぎ — 全系統のGPUテスト
 
+## G-SLIDEの設計整理（2026-10-25追記）
+
+全機能追加の前に部品化するユーザー方針へ更新。[ライブラリ設計](docs/GSLIDE_LIBRARY_DESIGN.md)を優先する。
+既存演算をhost contracts・USM/parameter ownership・候補選択・Softmax/backward・Adamへ分離し、`Network`を合成役にした。
+新規機能の移植ではなく、既存数値挙動の分解。CPU/NVIDIA各13テストとSDK不要host 2テストが成功し、[証拠](docs/evidence/gslide-library-2026-10-25.json)を保存。
+再検証は `bash tools/run_gpu_container.sh /tmp/gslide-library-NEW sycl run gslide-library`。
+次はnamed configuration、shape/capacity付きview、表現・bias・label/hash意味論のAPIレビュー。多層化・checkpoint追加・最適化は、その後の別作業とする。
+
 ## 最新の再開結果（2026-10-25）
 
 以下の2026-10-23本文は履歴。現状は[全系統GPU checkpoint](docs/GPU_LINEAGE_CHECKPOINT.md)と[保存済みJSON](docs/evidence/gpu-lineages-2026-10-25.json)を優先する。

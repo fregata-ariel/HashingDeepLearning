@@ -8,8 +8,7 @@
 static void require(bool ok,const char* why) { if(!ok) throw std::runtime_error(why); }
 int main() {
  try {
-  auto queue=hashing::sycl_backend::make_queue(hashing::sycl_backend::device_kind::cpu);
-  require(queue.get_device().is_cpu(),"real CPU device required");
+  auto queue=hashing::sycl_backend::make_validation_queue();
   hashing::sycl_backend::describe_queue(std::cerr,queue);
   int cases=0;
   // Literal independent expectations: bit0 is first projection, zero is false.
@@ -53,7 +52,8 @@ int main() {
   }
   auto boundary=hashing::mongoose::pack(queue,std::vector<float>(32,1),1,32,1);
   require(boundary[0]==-1,"int32 all bits");
-  std::cout<<"{\"status\":\"passed\",\"id\":\"MONGOOSE-PACKING-SYCL-CPU\",\"projection_cases\":"<<cases
-    <<",\"native_lsh\":true,\"real_cpu\":true,\"original_cuda_executed\":false,\"native_gpu_executed\":false}\n";
+  std::cout<<"{\"status\":\"passed\",\"id\":\""<<(queue.get_device().is_gpu()?"MONGOOSE-PACKING-SYCL-NVIDIA":"MONGOOSE-PACKING-SYCL-CPU")<<"\",\"projection_cases\":"<<cases
+    <<",\"native_lsh\":true,\"real_cpu\":"<<std::boolalpha<<queue.get_device().is_cpu()
+    <<",\"original_cuda_executed\":false,\"native_gpu_executed\":"<<queue.get_device().is_gpu()<<"}\n";
  } catch(const std::exception& e) { std::cerr<<e.what()<<'\n'; return 1; }
 }

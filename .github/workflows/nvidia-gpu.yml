@@ -1,0 +1,106 @@
+name: NVIDIA GPU checkpoint
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Native checkpoint or the isolated Docker environment for all lineages
+        required: true
+        default: native
+        type: choice
+        options: [native, docker-all]
+      cuda_arch:
+        description: CUDA architecture supported by the attached GPU and toolkit
+        required: true
+        default: "75"
+        type: string
+
+permissions:
+  contents: read
+
+# One bounded checkpoint at a time on the explicitly provisioned GPU runner.
+concurrency:
+  group: nvidia-gpu-checkpoint
+  cancel-in-progress: false
+
+jobs:
+  gslide-native:
+    if: inputs.profile == 'native'
+    runs-on: [self-hosted, linux, x64, nvidia-gpu]
+    timeout-minutes: 20
+    env:
+      CUDA_ARCH: ${{ inputs.cuda_arch }}
+    steps:
+      - name: Set checkpoint directories on the assigned runner
+        shell: bash
+        run: |
+          echo "EVIDENCE_DIR=$RUNNER_TEMP/nvidia-gpu-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          echo "SANITIZER_ROOT=$RUNNER_TEMP/nvidia-sanitizer-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Extract verified NVIDIA diagnostic tools locally
+        shell: bash
+        run: bash tools/bootstrap_nvidia_sanitizer.sh "$SANITIZER_ROOT"
+      - name: Native CUDA oracles and required device diagnostics
+        shell: bash
+        run: |
+          python3 tools/check_nvidia_gpu.py \
+            --build-dir "$EVIDENCE_DIR" --cuda-arch "$CUDA_ARCH" \
+            --cuda-host-compiler g++-12 --jobs 2 \
+            --compute-sanitizer "$SANITIZER_ROOT/bin/compute-sanitizer"
+      - name: Summarize executed scope
+        if: always()
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          evidence = Path(os.environ["EVIDENCE_DIR"]) / "result.json"
+          if evidence.exists():
+              data = json.loads(evidence.read_text())
+              text = f"G-SLIDE native checkpoint: {data['status']}\n\n"
+              text += "| Stage | Status | Seconds |\n| --- | --- | --- |\n"
+              for stage in data["stages"]:
+                  text += f"| {stage['name']} | {stage['status']} | {stage.get('wall_seconds', 0):.2f} |\n"
+              text += "\nPending: " + "; ".join(data["pending"]) + ".\n"
+          else:
+              text = "GPU checkpoint did not produce evidence. This is not a pass.\n"
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as out:
+              out.write(text)
+          PY
+      - name: Preserve source, build, numerical and diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nvidia-gpu-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 7
+      - name: Delete downloaded diagnostic tools
+        if: always()
+        shell: bash
+        run: rm -rf -- "$SANITIZER_ROOT"
+
+  docker-all:
+    if: inputs.profile == 'docker-all'
+    runs-on: [self-hosted, linux, x64, nvidia-gpu]
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set artifact directory
+        shell: bash
+        run: echo "EVIDENCE_DIR=$RUNNER_TEMP/gpu-all-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+      - name: Build fixed CUDA environment and execute bounded profiles
+        shell: bash
+        run: bash tools/run_gpu_container.sh "$EVIDENCE_DIR" sycl
+      - name: Preserve each execution and failure independently
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpu-all-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ env.EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 7

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Execute two original CUDA bodies serially to characterize translated fixes.
+"""Execute two archived CUDA bodies to retain pre-repair negative controls.
 No parallel CUDA claim: ordinary CPU threads execute the original hash body
 with a 32-item barrier and atomic_ref; the dense index body executes serially.
 """
@@ -8,20 +8,21 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
-from check_gslide_cpu import ROOT, PORT, extract
+from check_gslide_cpu import ROOT, check_archive, extract
 
 
 def run(build):
     build.mkdir(parents=True, exist_ok=True)
     evidence = build / 'source_regressions.json'
     evidence.unlink(missing_ok=True)
+    check_archive()
     bodies = []
     identities = []
     for file, symbol in [('kernel.cu', 'get_dense_acts_knl'), ('lshKnl.cu', 'init_hash_knl')]:
-        source = (PORT / 'src' / file).read_text()
+        source = (ROOT / 'third_party/g-slide/src' / file).read_text()
         body, line = extract(source, symbol)
         bodies.append(body)
-        identities.append(dict(file='ports/g-slide/src/'+file, symbol=symbol, line=line,
+        identities.append(dict(file='third_party/g-slide/src/'+file, symbol=symbol, line=line,
                                body_sha256=hashlib.sha256(body.encode()).hexdigest()))
     unit = build / 'original.cpp'
     unit.write_text(r'''

@@ -1,0 +1,7 @@
+**
+!docker
+!docker/gpu
+!docker/gpu/Dockerfile
+!docker/gpu/requirements.txt
+!tools
+!tools/bootstrap_nvidia_sanitizer.sh

@@ -1,0 +1,404 @@
+{
+  "profile": "host-CUDA-12.0-before-Docker",
+  "report": {
+    "status": "PASS",
+    "profile": "gslide-native-cuda",
+    "stages": [
+      {
+        "name": "checkout",
+        "command": [
+          "git",
+          "rev-parse",
+          "HEAD"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0014326679520308971,
+        "log_sha256": "455e072368d8810c5fe4027726b8417ae75143bb10b7040b0ef1e1b6a65fb3f9"
+      },
+      {
+        "name": "tree",
+        "command": [
+          "git",
+          "rev-parse",
+          "HEAD^{tree}"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0034572589211165905,
+        "log_sha256": "e24109b116029b1410e24cdaa339b43d9c6e942b5a6baff5aa9eb962f59edf58"
+      },
+      {
+        "name": "git-status",
+        "command": [
+          "git",
+          "status",
+          "--porcelain=v1"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.007544891093857586,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "working-tree",
+        "command": [
+          "git",
+          "diff",
+          "--binary",
+          "HEAD"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0034492029808461666,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "host-os",
+        "command": [
+          "uname",
+          "-a"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0015335860662162304,
+        "log_sha256": "eb00ac8ddcda56306dfa49c180c8b7eb4fab23498bade15195698b4cd5dcecb6"
+      },
+      {
+        "name": "host-cpu",
+        "command": [
+          "lscpu"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.007581279031001031,
+        "log_sha256": "087094a6a1f27bf332afd5fe41c713f58560d9eccd0cc0e566dd07b09b24a5a2"
+      },
+      {
+        "name": "nvcc-version",
+        "command": [
+          "nvcc",
+          "--version"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0035640770802274346,
+        "log_sha256": "4cee3ff19a1cc7a240aa2e6546d570ccb2fcdbabed204c66d72b9bb8ab0fdf0a"
+      },
+      {
+        "name": "host-compiler",
+        "command": [
+          "g++-12",
+          "--version"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0014115390367805958,
+        "log_sha256": "bd0534613f3f887230f395aa5d66e5a6c833045ec78270f410c484db847b59f3"
+      },
+      {
+        "name": "cmake-version",
+        "command": [
+          "cmake",
+          "--version"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.0076636329758912325,
+        "log_sha256": "d3d5b682f3f5ef5b24a79ed8cf4b8c5868fc950dad48cab1be0e3c060a77f8ee"
+      },
+      {
+        "name": "sanitizer-version",
+        "command": [
+          "/tmp/hashing-all-gpu-20261023/sanitizer/bin/compute-sanitizer",
+          "--version"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.007573454990051687,
+        "log_sha256": "3f22a8a71d8cba15810e29e8d0c1fba2f16f477d5cb6c02f2c886bc0511961a9"
+      },
+      {
+        "name": "gpu-before",
+        "command": [
+          "nvidia-smi"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.06386514892801642,
+        "log_sha256": "6a50b165b55f38176aefb45f546e9e4392e4e60a61907f7e719f3c7c14fd29c7"
+      },
+      {
+        "name": "gpu-identity",
+        "command": [
+          "nvidia-smi",
+          "--query-gpu=name,uuid,compute_cap,driver_version,memory.total",
+          "--format=csv"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.03192306193523109,
+        "log_sha256": "19a5eb231f7e89a2d7ce1c48934770f3a4729b4f82ac1d610859349c387f7a6a"
+      },
+      {
+        "name": "configure",
+        "command": [
+          "cmake",
+          "-S",
+          "/home/fischeri/Projects/DNN/HashingDeepLearning/tests/gslide_cuda",
+          "-B",
+          "/tmp/hashing-all-gpu-20261023/gslide/native",
+          "-DCMAKE_BUILD_TYPE=Debug",
+          "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+          "-DCMAKE_CUDA_ARCHITECTURES=75",
+          "-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/x86_64-linux-gnu-g++-12"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 2.1676234010374174,
+        "log_sha256": "7cb6a449afa1f89044955945d9ae296526a0917fbe1c7c118bb8a4402b3dcce9"
+      },
+      {
+        "name": "build",
+        "command": [
+          "/usr/bin/time",
+          "-v",
+          "-o",
+          "/tmp/hashing-all-gpu-20261023/gslide/build-resources.txt",
+          "cmake",
+          "--build",
+          "/tmp/hashing-all-gpu-20261023/gslide/native",
+          "--parallel",
+          "2"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 20.752412831992842,
+        "log_sha256": "44c305fe87e5465139f7ffdc4badeb1bf1fd111866061e0a384aa24c5e90ca74"
+      },
+      {
+        "name": "native",
+        "command": [
+          "/usr/bin/time",
+          "-v",
+          "-o",
+          "/tmp/hashing-all-gpu-20261023/gslide/native-resources.txt",
+          "ctest",
+          "--test-dir",
+          "/tmp/hashing-all-gpu-20261023/gslide/native",
+          "-V",
+          "--no-tests=error",
+          "--output-junit",
+          "/tmp/hashing-all-gpu-20261023/gslide/native.xml"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.5645766229135916,
+        "log_sha256": "5958fe7f24e3d291b609ecb18f41fcdcf1e06c409c10edae0a9444621c0600d1"
+      },
+      {
+        "name": "memcheck",
+        "command": [
+          "/tmp/hashing-all-gpu-20261023/sanitizer/bin/compute-sanitizer",
+          "--tool",
+          "memcheck",
+          "--error-exitcode",
+          "86",
+          "--leak-check",
+          "full",
+          "/tmp/hashing-all-gpu-20261023/gslide/native/gslide_cuda_test"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.6648515700362623,
+        "log_sha256": "c2cd1945fef09d81300ca71215a7a0c608f1e5220d84d19d816eb73652172e8d"
+      },
+      {
+        "name": "racecheck",
+        "command": [
+          "/tmp/hashing-all-gpu-20261023/sanitizer/bin/compute-sanitizer",
+          "--tool",
+          "racecheck",
+          "--error-exitcode",
+          "86",
+          "--racecheck-report",
+          "all",
+          "/tmp/hashing-all-gpu-20261023/gslide/native/gslide_cuda_test"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 3.118192545021884,
+        "log_sha256": "870b43de200ff3251749fe6fd8cd50b1dfc6b876df695bd767b492dfacb47afc"
+      },
+      {
+        "name": "initcheck",
+        "command": [
+          "/tmp/hashing-all-gpu-20261023/sanitizer/bin/compute-sanitizer",
+          "--tool",
+          "initcheck",
+          "--error-exitcode",
+          "86",
+          "/tmp/hashing-all-gpu-20261023/gslide/native/gslide_cuda_test"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.6146807540208101,
+        "log_sha256": "5cf9fc4e783f71c0fcf21c47052c8b3d2edd5dd519b4d27e3d9d20e86aedf4b0"
+      },
+      {
+        "name": "synccheck",
+        "command": [
+          "/tmp/hashing-all-gpu-20261023/sanitizer/bin/compute-sanitizer",
+          "--tool",
+          "synccheck",
+          "--error-exitcode",
+          "86",
+          "/tmp/hashing-all-gpu-20261023/gslide/native/gslide_cuda_test"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.5648715620627627,
+        "log_sha256": "832be55c921b00096e11367140d920665577b3b75f695ea1f3364d2566ba4717"
+      },
+      {
+        "name": "gpu-after",
+        "command": [
+          "nvidia-smi"
+        ],
+        "status": "PASS",
+        "exit_code": 0,
+        "wall_seconds": 0.03187733702361584,
+        "log_sha256": "9d21085658e4daaa6c9b265bd91c522f099215c940216968182dd66d4f9ca850"
+      }
+    ],
+    "gpu_validated": true,
+    "cuda_arch": "75",
+    "diagnostics_required": [
+      "memcheck",
+      "racecheck",
+      "initcheck",
+      "synccheck"
+    ],
+    "pending": [
+      "shared SYCL NVIDIA parity/performance",
+      "model checkpoint save/reload",
+      "MagicPIG CUDA/FlashInfer",
+      "Scatterbrain CUDA",
+      "MONGOOSE CUDA/RNG/DDP",
+      "paper accuracy/performance",
+      "paid execution and TTL calibration"
+    ],
+    "checkout": "f5812afbe2b2bd9f494904a3bc2f9477e6e658e5",
+    "tree": "4c6951ee89311b7db7b90b220ad8d5bedfb7b69a",
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": null,
+      "CUDAHOSTCXX": null,
+      "CUDACXX": null
+    },
+    "inputs_sha256": {
+      ".github/workflows/nvidia-gpu.yml": "f4ef5dfdff9ead242c06dfa4856c49540631e874253ee9242aded55562b852e9",
+      "papers/traceability/gslide-cuda.json": "ca9730958df0adc1b0d4d03b8830a09163010b127e67bb00c64a352b22825564",
+      "ports/g-slide/.gitignore": "fb12203c2b13fd0dffbf89f4ba58e1ddba783d78303efe04fbec441d123b32c7",
+      "ports/g-slide/CMakeLists.txt": "0de377a148c9f08e9f2feaef85d8563007f08431289cf9754597f26988447c19",
+      "ports/g-slide/CPU_VALIDATION.md": "72a1c65acc21bc785ce8b008a02b1a10c54ecedd0b5278d8b7415c680853d190",
+      "ports/g-slide/LICENSE": "482518c2fc010dfed14044688b34b99c13b2c6430394d860de22be72936ea1b6",
+      "ports/g-slide/amazon.json": "d225c7ec3aa0787877a199056ff18f19e978f54d2989a1cbdc22eca407de3116",
+      "ports/g-slide/include/CscActNodes.h": "6ac0a1516a98f5741260a5e70b4631a4406ea427114f103af67b87e6496cddd4",
+      "ports/g-slide/include/GPUMultiLinkedHashTable.h": "2fdc1bbc3cecbb4a9c4fe5773b80b4668ff23d5d9f5768fe8c64ff8ee719fba3",
+      "ports/g-slide/include/GPUTimer.h": "3bedd4b96b46825a72358b7aef15421c151dbe0057b29a95f8ffad6c626bdb75",
+      "ports/g-slide/include/LSH.h": "e7c5ae428cdbcbda4e155166e8d0e93377e0c1b91d95dc2d381a93f53eacf2eb",
+      "ports/g-slide/include/Layer.h": "ce921480b1a71ac793d701fbfc4dff57c2ba731ea84a02d42ae26b3993109ace",
+      "ports/g-slide/include/Network.h": "36fecd81d2256ba49bff3773048a2790841fce9711032f6f595154288b880ba4",
+      "ports/g-slide/include/ReluLayer.h": "31b917b4fc98d94c08e30014a7b2826346e06b879b174de032b2026bc80883ac",
+      "ports/g-slide/include/SoftmaxLayer.h": "278d79b477a46926949c13f707aaa5b4c58ac2930b8c216bbe8690ca06e5ea03",
+      "ports/g-slide/include/TrainingControl.h": "95bf43462e1cb5d778bd7e22b0ecd60108944495de08cffe886dea89fdabf510",
+      "ports/g-slide/include/kernel.h": "62cecf8cae7004ca219f308e34e1776a7e0164461462f7dbe9de3aafe271046a",
+      "ports/g-slide/include/lshKnl.h": "b622479bcdf412d3670f60716c3b7a003d4d04c18080bdee990923dbbac28387",
+      "ports/g-slide/include/utils.h": "591bbe5a3266c49275c565bfa2cd8aa949a976cc91cde52e3ce334f14f4a2066",
+      "ports/g-slide/readme.md": "8ee848b72d06888fa5141397fbd8638e1acbf01b198620ae2f20a549a1c0bad6",
+      "ports/g-slide/src/CscActNodes.cu": "ac2ad0705c2672c262865fc91643cbaa83ea9a3872149cff0661f34de0611651",
+      "ports/g-slide/src/GPUMultiLinkedHashTable.cu": "f9f061bec83e0d5265bbbfd75b13ac66d5684fe229bbb2902e6ea042e5a7b845",
+      "ports/g-slide/src/LSH.cu": "7d6e9f572157b35b78dab83a2b45c8fd0a91bfcb58208bf50efb0b8c222b6f5a",
+      "ports/g-slide/src/Layer.cu": "e0f052aecd047d09d57894f2b4dff85001ee11f7a991efe7aedc071cf39401b3",
+      "ports/g-slide/src/Network.cu": "e6011e5c6ef1bd895920d3dc191c2bad46b8632f81996b44d96f8f870f2c5105",
+      "ports/g-slide/src/ReluLayer.cu": "78018712f3a6af62213e841d8f7a065d19c54308a125016b282b6565cd38255a",
+      "ports/g-slide/src/SoftmaxLayer.cu": "d6f546d462ccb29a99bd322c64809b2043a836cb457c44f866cb9f1a4e16b3b5",
+      "ports/g-slide/src/kernel.cu": "d06aa720d69fe57e9092e46e1febf1e37f53649ef6c728b02e6267ef4a5b36b5",
+      "ports/g-slide/src/lshKnl.cu": "071302e33a4b5d8210f9249f36c6562762d14191c936878b7d077235ec9110c8",
+      "ports/g-slide/src/main.cu": "e0097b2cdde99b3e003d8efa69783a6ab1a865ef594e354df6c81e6d943f5b06",
+      "ports/g-slide/sycl/README.md": "c41245bd8a8cbb14955c6347a80f559d370cd6cbdbca8e7b6e0262bfe74ca5b9",
+      "ports/g-slide/sycl/issue115-source-regressions.md": "6f21229d80bea5c1aa6a90698e81322f2c35e0070f60a81c6bde313807101837",
+      "ports/g-slide/sycl/kernels.hpp": "c5c09380dded26c5dffc636d8ea8157f5917ef4ad398cac4ea624b2b89709f89",
+      "ports/g-slide/sycl/network.hpp": "e18dea0398baf6935e6984072e3d4b2a5c7908fd15b09aaca6c08f8a61f8ba0f",
+      "ports/g-slide/sycl/production.md": "d5f25388f613d7464cf9eb65d9492ad819443434fcad571162983d73409270eb",
+      "ports/g-slide/sycl/source_contracts.json": "01e3bbf8aeaedc0f4b836501f7972f21c02a9f68f621675698a4b19904984208",
+      "ports/g-slide/wikiLSHTC.json": "501a7287775dee8ebc24f90bba85e1b4bf4cb8a16e7ffb3d37062fa2e5750f42",
+      "tests/gslide_cuda/CMakeLists.txt": "fee0fa24990317181f79e94b16e92e577525aa03dbae210c43524b793bd505e1",
+      "tests/gslide_cuda/test_native.cu": "c2ef071cdd47f4d3cde7ace2a36a690fe0da5def82a3fd9d18bbf0ae8089278d",
+      "tests/traceability/test_nvidia_gpu_reporting.py": "18df63f2402aa26943ecfe6d55a320177b3267012cbc88678618f1bc339d4759",
+      "third_party/g-slide/.gitignore": "fb12203c2b13fd0dffbf89f4ba58e1ddba783d78303efe04fbec441d123b32c7",
+      "third_party/g-slide/CMakeLists.txt": "0de377a148c9f08e9f2feaef85d8563007f08431289cf9754597f26988447c19",
+      "third_party/g-slide/LICENSE": "482518c2fc010dfed14044688b34b99c13b2c6430394d860de22be72936ea1b6",
+      "third_party/g-slide/amazon.json": "d225c7ec3aa0787877a199056ff18f19e978f54d2989a1cbdc22eca407de3116",
+      "third_party/g-slide/include/CscActNodes.h": "6ac0a1516a98f5741260a5e70b4631a4406ea427114f103af67b87e6496cddd4",
+      "third_party/g-slide/include/GPUMultiLinkedHashTable.h": "5a7a2fa8383be7b6ba122cf6f692a2f1769b4e8ac83439e5af8be1ead724598d",
+      "third_party/g-slide/include/GPUTimer.h": "3bedd4b96b46825a72358b7aef15421c151dbe0057b29a95f8ffad6c626bdb75",
+      "third_party/g-slide/include/LSH.h": "1b95c2862d32f29cce7dc150371b4c546d2809f93f56213f6377bd927b0e01ae",
+      "third_party/g-slide/include/Layer.h": "ce921480b1a71ac793d701fbfc4dff57c2ba731ea84a02d42ae26b3993109ace",
+      "third_party/g-slide/include/Network.h": "bbcc4dabb8a7acd0921655476da09fccc5ea6171bf6528728191d36b2169eaa4",
+      "third_party/g-slide/include/ReluLayer.h": "31b917b4fc98d94c08e30014a7b2826346e06b879b174de032b2026bc80883ac",
+      "third_party/g-slide/include/SoftmaxLayer.h": "278d79b477a46926949c13f707aaa5b4c58ac2930b8c216bbe8690ca06e5ea03",
+      "third_party/g-slide/include/kernel.h": "56498dfca6601319242ca0574a3924ffb7eee716ef3a5270c8f012d72c726f96",
+      "third_party/g-slide/include/lshKnl.h": "b622479bcdf412d3670f60716c3b7a003d4d04c18080bdee990923dbbac28387",
+      "third_party/g-slide/include/utils.h": "591bbe5a3266c49275c565bfa2cd8aa949a976cc91cde52e3ce334f14f4a2066",
+      "third_party/g-slide/readme.md": "8ee848b72d06888fa5141397fbd8638e1acbf01b198620ae2f20a549a1c0bad6",
+      "third_party/g-slide/src/CscActNodes.cu": "ac2ad0705c2672c262865fc91643cbaa83ea9a3872149cff0661f34de0611651",
+      "third_party/g-slide/src/GPUMultiLinkedHashTable.cu": "7de88a976754540224c67a153817e67b6ab9987bc27acc10b7ccd15927a12a46",
+      "third_party/g-slide/src/LSH.cu": "4bc1011308cae7785da06afef19bea9f60fa2ea62df11fe535eadede775d9dd0",
+      "third_party/g-slide/src/Layer.cu": "e0f052aecd047d09d57894f2b4dff85001ee11f7a991efe7aedc071cf39401b3",
+      "third_party/g-slide/src/Network.cu": "d43f804da774e8f02afaa7f733815222729182582a059f34c12a69bc4a83079d",
+      "third_party/g-slide/src/ReluLayer.cu": "cb67d2600e70d6dcbbb38a814598ba728fb9813338dc6b2d47ad3fda1f8d4cd9",
+      "third_party/g-slide/src/SoftmaxLayer.cu": "d6f546d462ccb29a99bd322c64809b2043a836cb457c44f866cb9f1a4e16b3b5",
+      "third_party/g-slide/src/kernel.cu": "54577afed25292f0f2e3719e8e2dbff53a444358c0ceb91475d1e0675e7d5204",
+      "third_party/g-slide/src/lshKnl.cu": "d2290c3b90ada2cc955afb4d20501ac0bbfa88eacddaf4a36c10bd6aaef4c12f",
+      "third_party/g-slide/src/main.cu": "e0097b2cdde99b3e003d8efa69783a6ab1a865ef594e354df6c81e6d943f5b06",
+      "third_party/g-slide/wikiLSHTC.json": "501a7287775dee8ebc24f90bba85e1b4bf4cb8a16e7ffb3d37062fa2e5750f42",
+      "tools/bootstrap_nvidia_sanitizer.sh": "672ab38de46add23bb94e6fac69dda97a1b9a3cd1a7166dd65c8fe6566f96760",
+      "tools/check_gslide_cpu.py": "018e19ff844e2ec57526c78179173ba286c2b5ef60073a226cab77ece83b0f66",
+      "tools/check_nvidia_gpu.py": "3e48f107559a8bdd730d716c3ea4995207d1b354f26e2ba39573e78531202fca",
+      "tools/generate_gslide_cuda_original.py": "bc7dea4682bec675e3e760476efdfd423736e70a6127cf648ef55d3dd4bb5172"
+    },
+    "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+    "nvidia_smi": "name, uuid, compute_cap, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 2080 Ti, GPU-f569eb97-5171-365d-46f0-130f31ffa76d, 7.5, 595.99.02, 11264 MiB\n",
+    "binary_sha256": "3a7e2a622377902a38c819f4c2270a9473fe74ac41bd6ebb54207a405e3efd32",
+    "generated_original_sha256": "24bf90be09920926977accdbba305902c6de91cb511f68aa04e7a6d783a03979",
+    "native_numerical_pass": true,
+    "scope": "G-SLIDE bounded native fixtures only; see pending"
+  },
+  "retained_logs": {
+    "memcheck.log": "========= COMPUTE-SANITIZER\nCUDA_DEVICE name=NVIDIA GeForce RTX 2080 Ti sm=75 driver=13020 runtime=12000 memory_bytes=11347623936\nORIGINAL_DENSE terminal=-71 independent_expected=2\nDENSE_PASS cases=48 production_overloads=2 empty_batch=true\nORIGINAL_HASH nodes_per_table=32 independent_expected=64 nodes32to63_absent=true\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_PASS cases=135 rebuilds=2 production_build_query=true\nSTALE_PASS retained_positive_delta_confirmed=true changed_compressed_ids=true reset_restores_oracle=true\n[Build LSH Table] 12.763488 ms\nTRAINING_PASS native_Network_train=true steps=2 full_capacity_reset=true relu_gates_change=true adam_oracle=true cublas_eval=true\nGSLIDE_CUDA_PASS checks=9226 max_abs_error=3.8112e-08 tolerance=8e-6 original_negative_controls=2\n========= LEAK SUMMARY: 0 bytes leaked in 0 allocations\n========= ERROR SUMMARY: 0 errors\n",
+    "racecheck.log": "========= COMPUTE-SANITIZER\nCUDA_DEVICE name=NVIDIA GeForce RTX 2080 Ti sm=75 driver=13020 runtime=12000 memory_bytes=11347623936\nORIGINAL_DENSE terminal=-71 independent_expected=2\nDENSE_PASS cases=48 production_overloads=2 empty_batch=true\nORIGINAL_HASH nodes_per_table=32 independent_expected=64 nodes32to63_absent=true\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_PASS cases=135 rebuilds=2 production_build_query=true\nSTALE_PASS retained_positive_delta_confirmed=true changed_compressed_ids=true reset_restores_oracle=true\n[Build LSH Table] 518.507812 ms\nTRAINING_PASS native_Network_train=true steps=2 full_capacity_reset=true relu_gates_change=true adam_oracle=true cublas_eval=true\nGSLIDE_CUDA_PASS checks=9226 max_abs_error=3.8112e-08 tolerance=8e-6 original_negative_controls=2\n========= RACECHECK SUMMARY: 0 hazards displayed (0 errors, 0 warnings)\n",
+    "host-os.log": "Linux scipod 7.0.0-38-generic #38~24.04.4-Ubuntu SMP PREEMPT_DYNAMIC Mon Sep 14 16:37:11 UTC 2 x86_64 x86_64 x86_64 GNU/Linux\n",
+    "tree.log": "4c6951ee89311b7db7b90b220ad8d5bedfb7b69a\n",
+    "synccheck.log": "========= COMPUTE-SANITIZER\nCUDA_DEVICE name=NVIDIA GeForce RTX 2080 Ti sm=75 driver=13020 runtime=12000 memory_bytes=11347623936\nORIGINAL_DENSE terminal=-71 independent_expected=2\nDENSE_PASS cases=48 production_overloads=2 empty_batch=true\nORIGINAL_HASH nodes_per_table=32 independent_expected=64 nodes32to63_absent=true\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_PASS cases=135 rebuilds=2 production_build_query=true\nSTALE_PASS retained_positive_delta_confirmed=true changed_compressed_ids=true reset_restores_oracle=true\n[Build LSH Table] 8.540416 ms\nTRAINING_PASS native_Network_train=true steps=2 full_capacity_reset=true relu_gates_change=true adam_oracle=true cublas_eval=true\nGSLIDE_CUDA_PASS checks=9226 max_abs_error=3.8112e-08 tolerance=8e-6 original_negative_controls=2\n========= ERROR SUMMARY: 0 errors\n",
+    "native.log": "Internal ctest changing into directory: /tmp/hashing-all-gpu-20261023/gslide/native\nUpdateCTestConfiguration  from :/tmp/hashing-all-gpu-20261023/gslide/native/DartConfiguration.tcl\nUpdateCTestConfiguration  from :/tmp/hashing-all-gpu-20261023/gslide/native/DartConfiguration.tcl\nTest project /tmp/hashing-all-gpu-20261023/gslide/native\nConstructing a list of tests\nDone constructing a list of tests\nUpdating test list for fixtures\nAdded 0 tests to meet fixture requirements\nChecking test dependency graph...\nChecking test dependency graph end\ntest 1\n    Start 1: native\n\n1: Test command: /tmp/hashing-all-gpu-20261023/gslide/native/gslide_cuda_test\n1: Working Directory: /tmp/hashing-all-gpu-20261023/gslide/native\n1: Test timeout computed to be: 120\n1: CUDA_DEVICE name=NVIDIA GeForce RTX 2080 Ti sm=75 driver=13020 runtime=12000 memory_bytes=11347623936\n1: ORIGINAL_DENSE terminal=-71 independent_expected=2\n1: DENSE_PASS cases=48 production_overloads=2 empty_batch=true\n1: ORIGINAL_HASH nodes_per_table=32 independent_expected=64 nodes32to63_absent=true\n1: HASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\n1: HASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\n1: HASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\n1: HASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\n1: HASH_PASS cases=135 rebuilds=2 production_build_query=true\n1: STALE_PASS retained_positive_delta_confirmed=true changed_compressed_ids=true reset_restores_oracle=true\n1: [Build LSH Table] 0.210848 ms\n1: TRAINING_PASS native_Network_train=true steps=2 full_capacity_reset=true relu_gates_change=true adam_oracle=true cublas_eval=true\n1: GSLIDE_CUDA_PASS checks=9226 max_abs_error=3.8112e-08 tolerance=8e-6 original_negative_controls=2\n1/1 Test #1: native ...........................   Passed    0.55 sec\n\n100% tests passed, 0 tests failed out of 1\n\nTotal Test time (real) =   0.55 sec\n",
+    "git-status.log": "",
+    "nvcc-version.log": "nvcc: NVIDIA (R) Cuda compiler driver\nCopyright (c) 2005-2023 NVIDIA Corporation\nBuilt on Fri_Jan__6_16:45:21_PST_2023\nCuda compilation tools, release 12.0, V12.0.140\nBuild cuda_12.0.r12.0/compiler.32267302_0\n",
+    "initcheck.log": "========= COMPUTE-SANITIZER\nCUDA_DEVICE name=NVIDIA GeForce RTX 2080 Ti sm=75 driver=13020 runtime=12000 memory_bytes=11347623936\nORIGINAL_DENSE terminal=-71 independent_expected=2\nDENSE_PASS cases=48 production_overloads=2 empty_batch=true\nORIGINAL_HASH nodes_per_table=32 independent_expected=64 nodes32to63_absent=true\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_DISPATCH kernel=init_hash_knl blocks=3 threads=128 shared_bytes=288\nHASH_PASS cases=135 rebuilds=2 production_build_query=true\nSTALE_PASS retained_positive_delta_confirmed=true changed_compressed_ids=true reset_restores_oracle=true\n[Build LSH Table] 8.199776 ms\nTRAINING_PASS native_Network_train=true steps=2 full_capacity_reset=true relu_gates_change=true adam_oracle=true cublas_eval=true\nGSLIDE_CUDA_PASS checks=9226 max_abs_error=3.8112e-08 tolerance=8e-6 original_negative_controls=2\n========= ERROR SUMMARY: 0 errors\n",
+    "host-compiler.log": "g++-12 (Ubuntu 12.4.0-2ubuntu1~24.04.1) 12.4.0\nCopyright (C) 2022 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "host-cpu.log": "Architecture:                            x86_64\nCPU op-mode(s):                          32-bit, 64-bit\nAddress sizes:                           48 bits physical, 48 bits virtual\nByte Order:                              Little Endian\nCPU(s):                                  16\nOn-line CPU(s) list:                     0-15\nVendor ID:                               AuthenticAMD\nModel name:                              AMD Ryzen 7 5700X 8-Core Processor\nCPU family:                              25\nModel:                                   33\nThread(s) per core:                      2\nCore(s) per socket:                      8\nSocket(s):                               1\nStepping:                                2\nFrequency boost:                         enabled\nCPU(s) scaling MHz:                      84%\nCPU max MHz:                             4665.8350\nCPU min MHz:                             562.1490\nBogoMIPS:                                6787.34\nFlags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology nonstop_tsc cpuid extd_apicid aperfmperf rapl pni pclmulqdq monitor ssse3 fma cx16 sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand lahf_lm cmp_legacy svm extapic cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw ibs skinit wdt tce topoext perfctr_core perfctr_nb bpext perfctr_llc mwaitx cpb cat_l3 cdp_l3 hw_pstate ssbd mba ibrs ibpb stibp vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid cqm rdt_a rdseed adx smap clflushopt clwb sha_ni xsaveopt xsavec xgetbv1 xsaves cqm_llc cqm_occup_llc cqm_mbm_total cqm_mbm_local user_shstk clzero irperf xsaveerptr rdpru wbnoinvd arat npt lbrv svm_lock nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold avic v_vmsave_vmload vgif v_spec_ctrl umip pku ospke vaes vpclmulqdq rdpid overflow_recov succor smca fsrm debug_swap\nVirtualization:                          AMD-V\nL1d cache:                               256 KiB (8 instances)\nL1i cache:                               256 KiB (8 instances)\nL2 cache:                                4 MiB (8 instances)\nL3 cache:                                32 MiB (1 instance)\nNUMA node(s):                            1\nNUMA node0 CPU(s):                       0-15\nVulnerability Gather data sampling:      Not affected\nVulnerability Ghostwrite:                Not affected\nVulnerability Indirect target selection: Not affected\nVulnerability Itlb multihit:             Not affected\nVulnerability L1tf:                      Not affected\nVulnerability Mds:                       Not affected\nVulnerability Meltdown:                  Not affected\nVulnerability Mmio stale data:           Not affected\nVulnerability Old microcode:             Not affected\nVulnerability Reg file data sampling:    Not affected\nVulnerability Retbleed:                  Not affected\nVulnerability Spec rstack overflow:      Mitigation; Safe RET\nVulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl\nVulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization\nVulnerability Spectre v2:                Mitigation; Retpolines; IBPB conditional; IBRS_FW; STIBP always-on; RSB filling; PBRSB-eIBRS Not affected; BHI Not affected\nVulnerability Srbds:                     Not affected\nVulnerability Tsa:                       Mitigation; Clear CPU buffers\nVulnerability Tsx async abort:           Not affected\nVulnerability Vmscape:                   Mitigation; IBPB before exit to userspace\n",
+    "build.log": "[ 14%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/CscActNodes.cu.o\n[ 14%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/GPUMultiLinkedHashTable.cu.o\n[ 21%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/LSH.cu.o\n[ 28%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/Layer.cu.o\n[ 35%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/ReluLayer.cu.o\n[ 42%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/SoftmaxLayer.cu.o\n[ 50%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/Network.cu.o\n[ 57%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/kernel.cu.o\n[ 64%] Building CUDA object CMakeFiles/gslide_native.dir/home/fischeri/Projects/DNN/HashingDeepLearning/ports/g-slide/src/lshKnl.cu.o\n[ 71%] Linking CUDA static library libgslide_native.a\n[ 71%] Built target gslide_native\n[ 78%] Building CUDA object CMakeFiles/gslide_cuda_test.dir/test_native.cu.o\n[ 85%] Building CUDA object CMakeFiles/gslide_cuda_test.dir/original.cu.o\n[ 92%] Linking CUDA device code CMakeFiles/gslide_cuda_test.dir/cmake_device_link.o\nnvlink warning : Skipping incompatible '/usr/lib/x86_64-linux-gnu/librt.a' when searching for -lrt\nnvlink warning : Skipping incompatible '/usr/lib/x86_64-linux-gnu/libpthread.a' when searching for -lpthread\nnvlink warning : Skipping incompatible '/usr/lib/x86_64-linux-gnu/libdl.a' when searching for -ldl\n[100%] Linking CUDA executable gslide_cuda_test\n[100%] Built target gslide_cuda_test\n",
+    "checkout.log": "f5812afbe2b2bd9f494904a3bc2f9477e6e658e5\n",
+    "working-tree.log": "",
+    "cmake-version.log": "cmake version 3.28.3\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).\n",
+    "gpu-after.log": "Fri Oct 23 08:01:58 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 595.99.02              Driver Version: 595.99.02      CUDA Version: 13.2     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA GeForce RTX 2080 Ti     Off |   00000000:08:00.0 Off |                  N/A |\n| 35%   34C    P0             66W /  260W |      16MiB /  11264MiB |     32%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|    0   N/A  N/A            2371      G   /usr/lib/xorg/Xorg                        9MiB |\n|    0   N/A  N/A            2593      G   /usr/bin/gnome-shell                      4MiB |\n+-----------------------------------------------------------------------------------------+\n",
+    "gpu-before.log": "Fri Oct 23 08:01:30 2026       \n+-----------------------------------------------------------------------------------------+\n| NVIDIA-SMI 595.99.02              Driver Version: 595.99.02      CUDA Version: 13.2     |\n+-----------------------------------------+------------------------+----------------------+\n| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |\n| Fan  Temp   Perf          Pwr:Usage/Cap |           Memory-Usage | GPU-Util  Compute M. |\n|                                         |                        |               MIG M. |\n|=========================================+========================+======================|\n|   0  NVIDIA GeForce RTX 2080 Ti     Off |   00000000:08:00.0 Off |                  N/A |\n| 35%   29C    P8              2W /  260W |      16MiB /  11264MiB |      0%      Default |\n|                                         |                        |                  N/A |\n+-----------------------------------------+------------------------+----------------------+\n\n+-----------------------------------------------------------------------------------------+\n| Processes:                                                                              |\n|  GPU   GI   CI              PID   Type   Process name                        GPU Memory |\n|        ID   ID                                                               Usage      |\n|=========================================================================================|\n|    0   N/A  N/A            2371      G   /usr/lib/xorg/Xorg                        9MiB |\n|    0   N/A  N/A            2593      G   /usr/bin/gnome-shell                      4MiB |\n+-----------------------------------------------------------------------------------------+\n",
+    "gpu-identity.log": "name, uuid, compute_cap, driver_version, memory.total [MiB]\nNVIDIA GeForce RTX 2080 Ti, GPU-f569eb97-5171-365d-46f0-130f31ffa76d, 7.5, 595.99.02, 11264 MiB\n",
+    "sanitizer-version.log": "NVIDIA (R) Compute Sanitizer\nCopyright (c) 2020-2025 NVIDIA Corporation\nVersion 2025.2.1.0 (build 35969825) (public-release)\n",
+    "configure.log": "-- The CXX compiler identification is GNU 13.3.0\n-- The CUDA compiler identification is NVIDIA 12.0.140\n-- Detecting CXX compiler ABI info\n-- Detecting CXX compiler ABI info - done\n-- Check for working CXX compiler: /usr/bin/c++ - skipped\n-- Detecting CXX compile features\n-- Detecting CXX compile features - done\n-- Detecting CUDA compiler ABI info\n-- Detecting CUDA compiler ABI info - done\n-- Check for working CUDA compiler: /usr/bin/nvcc - skipped\n-- Detecting CUDA compile features\n-- Detecting CUDA compile features - done\n-- Found CUDAToolkit: /usr/include (found version \"12.0.140\") \n-- Performing Test CMAKE_HAVE_LIBC_PTHREAD\n-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success\n-- Found Threads: TRUE  \n-- Found Python3: /usr/bin/python3 (found version \"3.12.3\") found components: Interpreter \n-- Configuring done (2.1s)\n-- Generating done (0.0s)\n-- Build files have been written to: /tmp/hashing-all-gpu-20261023/gslide/native\n"
+  },
+  "resources": {
+    "native-resources.txt": "\tCommand being timed: \"ctest --test-dir /tmp/hashing-all-gpu-20261023/gslide/native -V --no-tests=error --output-junit /tmp/hashing-all-gpu-20261023/gslide/native.xml\"\n\tUser time (seconds): 0.08\n\tSystem time (seconds): 0.43\n\tPercent of CPU this job got: 94%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:00.55\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 312200\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 126\n\tMinor (reclaiming a frame) page faults: 26563\n\tVoluntary context switches: 160\n\tInvoluntary context switches: 62\n\tSwaps: 0\n\tFile system inputs: 0\n\tFile system outputs: 40\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n",
+    "build-resources.txt": "\tCommand being timed: \"cmake --build /tmp/hashing-all-gpu-20261023/gslide/native --parallel 2\"\n\tUser time (seconds): 33.14\n\tSystem time (seconds): 5.42\n\tPercent of CPU this job got: 185%\n\tElapsed (wall clock) time (h:mm:ss or m:ss): 0:20.74\n\tAverage shared text size (kbytes): 0\n\tAverage unshared data size (kbytes): 0\n\tAverage stack size (kbytes): 0\n\tAverage total size (kbytes): 0\n\tMaximum resident set size (kbytes): 410136\n\tAverage resident set size (kbytes): 0\n\tMajor (requiring I/O) page faults: 0\n\tMinor (reclaiming a frame) page faults: 2150804\n\tVoluntary context switches: 924\n\tInvoluntary context switches: 2230\n\tSwaps: 0\n\tFile system inputs: 24\n\tFile system outputs: 517456\n\tSocket messages sent: 0\n\tSocket messages received: 0\n\tSignals delivered: 0\n\tPage size (bytes): 4096\n\tExit status: 0\n"
+  }
+}

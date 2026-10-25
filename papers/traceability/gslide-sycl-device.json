@@ -8,15 +8,17 @@
       "mechanism": "Execute translated reduction, dense index, key generation, tiled WTA hash and candidate wrapper contracts on a real SYCL CPU device.",
       "relation": "support",
       "implementation": {
-        "file": "ports/g-slide/sycl/kernels.hpp",
+        "file": "ports/g-slide/sycl/reductions.hpp",
         "symbol": "reductions"
       },
       "test": {
-        "file": "tests/gslide_sycl/test_kernels.cpp",
+        "file": "tests/gslide_sycl/test_reductions.cpp",
         "id": "GSLIDE-SYCL-DEVICE-115"
       },
       "conditions": {
         "suite": "gslide_sycl",
+        "component_tests": ["reductions", "dense_ids", "random", "hash", "candidates"],
+        "enrollment": "tests/gslide_sycl/suites.json; legacy test_kernels.cpp is compatibility-build-only",
         "execution": "shared SYCL kernels submitted to required actual CPU device",
         "source_contracts": "ports/g-slide/sycl/source_contracts.json",
         "baseline": "097b79528f3b0eceebd715ecc6460e9236ecfd78",

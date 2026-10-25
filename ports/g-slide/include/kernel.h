@@ -1,6 +1,10 @@
 #pragma once
 #include "CscActNodes.h"
 
+// Validates capacities and emits batch+1 offsets, including empty batches.
+void get_dense_acts(CscActNodes csc_acts, int node_num, int batch_size,
+                    int thread_num);
+
 __global__ void get_dense_acts_knl(CscActNodes csc_acts, const int node_num,
                                    const int batch_size);
 

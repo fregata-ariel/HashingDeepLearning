@@ -1,0 +1,9 @@
+# CPython 3.12, CUDA 12.6, SM75; isolated from the permanent CPU wheel gates.
+torch==2.6.0+cu126
+cupy-cuda12x==13.6.0
+pynvrtc==9.2
+numpy==2.3.5
+einops==0.8.1
+ninja==1.13.0
+setuptools==84.0.0
+flashinfer-python==0.2.5

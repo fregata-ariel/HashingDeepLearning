@@ -1,0 +1,7 @@
+@PACKAGE_INIT@
+include("${CMAKE_CURRENT_LIST_DIR}/GSlideTargets.cmake")
+set(GSlide_control_FOUND TRUE)
+set(GSlide_sycl_FOUND TRUE)
+# sycl means headers/target are available. Compiler/runtime integration and
+# device selection remain explicit consumer responsibilities.
+check_required_components(GSlide)

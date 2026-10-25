@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "experiments": [
+    {
+      "id": "SCATTERBRAIN-LOCAL-PRODUCT-CUDA",
+      "paper": "scatterbrain-2021",
+      "paper_location": "NeurIPS 2021 Section 4.2: local sparse-product prerequisite",
+      "mechanism": "Local dot, weighted average and both backwards; prefix cotangents, reversed key window and current-stream launch ownership.",
+      "relation": "support",
+      "implementation": {"file": "ports/scatterbrain/cuda/local_product_cuda.cu", "symbol": "local_dot_backward"},
+      "test": {"file": "tests/gpu_lineages/scatterbrain.py", "id": "SCATTERBRAIN-LOCAL-PRODUCT-CUDA"},
+      "conditions": {
+        "execution": "real NVIDIA CUDA; fixed Docker component/sycl image, explicit manual runner",
+        "source": "Idiap f22c13716fc748bb21a7b226ada7f7b5f87f867f, MIT; immutable original blob 4d10eee240a53ae0bda4499e92b5d64115578310 retained as failing gradient controls",
+        "domain": "FP32 self-attention with equal physical Q/K lengths; odd/even windows 1/2/3/4/9, prefix lengths and constant additive mask; first derivatives and nondefault stream",
+        "oracle": "independent CPU scalar FP64 gather/autograd, 8e-6 primitive tolerance; original padding and key-gradient errors must remain observable",
+        "unsupported": "unequal physical sequence lengths explicitly rejected; no arbitrary dtype/size/general stress claim"
+      },
+      "note": "CPU ledger validity is not a GPU execution. Numerical/diagnostic evidence is retained separately; this support operation does not establish a complete Scatterbrain model or performance claim."
+    },
+    {
+      "id": "SCATTERBRAIN-LOCAL-HYBRID-CUDA",
+      "paper": "scatterbrain-2021",
+      "paper_location": "NeurIPS 2021 Section 4.2 equations 1/2; local replacement plus low-rank normalization",
+      "mechanism": "Maintained SBLocal with repaired CUDA local operators, detached CPU FP64 conditional feature oracle, gradients and tiny train/save/reload.",
+      "relation": "variant",
+      "implementation": {"file": "ports/scatterbrain/src/models/modules/attention/sblocal_attention.py", "symbol": "SBLocalAttention"},
+      "test": {"file": "tests/gpu_lineages/scatterbrain.py", "id": "SCATTERBRAIN-LOCAL-HYBRID-CUDA"},
+      "conditions": {
+        "execution": "actual maintained Torch CUDA hybrid; not host Torch plus SYCL local operators",
+        "domain": "FP32 noncausal/dropout0/eps0 self-attention, fixed sampled cosh projection for conditional FP64 comparison",
+        "training": "two SGD updates to a trainable input projection; attention/projection/optimizer state save/reload and deterministic evaluation",
+        "tolerance": "8e-6 output/weights; 2e-5 gradients; 1e-7 restored output",
+        "unvalidated": "causal hybrid, full model quality, long context, multi-GPU and performance"
+      },
+      "note": "The native original causal primitive is a separate component check; its success is never a causal hybrid claim. Original source gradient failures are independent negative controls, never expected correct values."
+    }
+  ]
+}

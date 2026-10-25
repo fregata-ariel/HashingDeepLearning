@@ -1,0 +1,712 @@
+{
+  "scope": "named configuration, checked component views, ownership groups and primary-source semantic review; no numerical feature expansion",
+  "baseline_commit": "1dd02371913f07c8273895acf6d1d01fa23d742b",
+  "raw_output_directory": "/tmp/hashing-gslide-named-final-v2",
+  "image": [
+    {
+      "Id": "sha256:5c700b0d9fb9ab5a93c3ae393a7df74426301a9a0538b9e0457fcbd635ae414d",
+      "RepoTags": [
+        "hashing-gpu:sycl"
+      ],
+      "RepoDigests": [],
+      "Comment": "buildkit.dockerfile.v0",
+      "Created": "2026-10-25T01:52:08.485126321+09:00",
+      "Config": {
+        "Env": [
+          "PATH=/opt/acpp/bin:/opt/gpu-venv/bin:/usr/local/cuda/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "NVARCH=x86_64",
+          "NVIDIA_REQUIRE_CUDA=cuda>=12.6 brand=unknown,driver>=470,driver<471 brand=grid,driver>=470,driver<471 brand=tesla,driver>=470,driver<471 brand=nvidia,driver>=470,driver<471 brand=quadro,driver>=470,driver<471 brand=quadrortx,driver>=470,driver<471 brand=nvidiartx,driver>=470,driver<471 brand=vapps,driver>=470,driver<471 brand=vpc,driver>=470,driver<471 brand=vcs,driver>=470,driver<471 brand=vws,driver>=470,driver<471 brand=cloudgaming,driver>=470,driver<471 brand=unknown,driver>=535,driver<536 brand=grid,driver>=535,driver<536 brand=tesla,driver>=535,driver<536 brand=nvidia,driver>=535,driver<536 brand=quadro,driver>=535,driver<536 brand=quadrortx,driver>=535,driver<536 brand=nvidiartx,driver>=535,driver<536 brand=vapps,driver>=535,driver<536 brand=vpc,driver>=535,driver<536 brand=vcs,driver>=535,driver<536 brand=vws,driver>=535,driver<536 brand=cloudgaming,driver>=535,driver<536 brand=unknown,driver>=550,driver<551 brand=grid,driver>=550,driver<551 brand=tesla,driver>=550,driver<551 brand=nvidia,driver>=550,driver<551 brand=quadro,driver>=550,driver<551 brand=quadrortx,driver>=550,driver<551 brand=nvidiartx,driver>=550,driver<551 brand=vapps,driver>=550,driver<551 brand=vpc,driver>=550,driver<551 brand=vcs,driver>=550,driver<551 brand=vws,driver>=550,driver<551 brand=cloudgaming,driver>=550,driver<551",
+          "NV_CUDA_CUDART_VERSION=12.6.77-1",
+          "CUDA_VERSION=12.6.3",
+          "LD_LIBRARY_PATH=/opt/acpp/lib:/usr/local/cuda/lib64",
+          "NVIDIA_VISIBLE_DEVICES=all",
+          "NVIDIA_DRIVER_CAPABILITIES=compute,utility",
+          "NV_CUDA_LIB_VERSION=12.6.3-1",
+          "NV_NVTX_VERSION=12.6.77-1",
+          "NV_LIBNPP_VERSION=12.3.1.54-1",
+          "NV_LIBNPP_PACKAGE=libnpp-12-6=12.3.1.54-1",
+          "NV_LIBCUSPARSE_VERSION=12.5.4.2-1",
+          "NV_LIBCUBLAS_PACKAGE_NAME=libcublas-12-6",
+          "NV_LIBCUBLAS_VERSION=12.6.4.1-1",
+          "NV_LIBCUBLAS_PACKAGE=libcublas-12-6=12.6.4.1-1",
+          "NV_LIBNCCL_PACKAGE_NAME=libnccl2",
+          "NV_LIBNCCL_PACKAGE_VERSION=2.23.4-1",
+          "NCCL_VERSION=2.23.4-1",
+          "NV_LIBNCCL_PACKAGE=libnccl2=2.23.4-1+cuda12.6",
+          "NVIDIA_PRODUCT_NAME=CUDA",
+          "NV_CUDA_CUDART_DEV_VERSION=12.6.77-1",
+          "NV_NVML_DEV_VERSION=12.6.77-1",
+          "NV_LIBCUSPARSE_DEV_VERSION=12.5.4.2-1",
+          "NV_LIBNPP_DEV_VERSION=12.3.1.54-1",
+          "NV_LIBNPP_DEV_PACKAGE=libnpp-dev-12-6=12.3.1.54-1",
+          "NV_LIBCUBLAS_DEV_VERSION=12.6.4.1-1",
+          "NV_LIBCUBLAS_DEV_PACKAGE_NAME=libcublas-dev-12-6",
+          "NV_LIBCUBLAS_DEV_PACKAGE=libcublas-dev-12-6=12.6.4.1-1",
+          "NV_CUDA_NSIGHT_COMPUTE_VERSION=12.6.3-1",
+          "NV_CUDA_NSIGHT_COMPUTE_DEV_PACKAGE=cuda-nsight-compute-12-6=12.6.3-1",
+          "NV_NVPROF_VERSION=12.6.80-1",
+          "NV_NVPROF_DEV_PACKAGE=cuda-nvprof-12-6=12.6.80-1",
+          "NV_LIBNCCL_DEV_PACKAGE_NAME=libnccl-dev",
+          "NV_LIBNCCL_DEV_PACKAGE_VERSION=2.23.4-1",
+          "NV_LIBNCCL_DEV_PACKAGE=libnccl-dev=2.23.4-1+cuda12.6",
+          "LIBRARY_PATH=/usr/local/cuda/lib64/stubs",
+          "DEBIAN_FRONTEND=noninteractive",
+          "VIRTUAL_ENV=/opt/gpu-venv",
+          "CUDA_HOME=/usr/local/cuda",
+          "CUDA_PATH=/usr/local/cuda",
+          "CC=gcc-12",
+          "CXX=g++-12",
+          "CUDAHOSTCXX=g++-12",
+          "MAX_JOBS=2",
+          "OMP_NUM_THREADS=2",
+          "TORCH_CUDA_ARCH_LIST=7.5",
+          "PYTHONDONTWRITEBYTECODE=1",
+          "PIP_DISABLE_PIP_VERSION_CHECK=1",
+          "ACPP_TARGETS=generic",
+          "ACPP_VISIBILITY_MASK=cuda",
+          "CMAKE_PREFIX_PATH=/opt/acpp",
+          "ACPP_INSTALL_DIR=/opt/acpp"
+        ],
+        "Entrypoint": [
+          "/opt/nvidia/nvidia_entrypoint.sh"
+        ],
+        "WorkingDir": "/workspace",
+        "Labels": {
+          "maintainer": "NVIDIA CORPORATION <cudatools@nvidia.com>",
+          "org.opencontainers.image.ref.name": "ubuntu",
+          "org.opencontainers.image.version": "24.04"
+        }
+      },
+      "Architecture": "amd64",
+      "Os": "linux",
+      "Size": 14833757102,
+      "GraphDriver": {
+        "Data": {
+          "LowerDir": "/mnt/data/docker/overlay2/zfiiih7rhc334jfzfc25ood4y/diff:/mnt/data/docker/overlay2/svdj7rwqc71dty46qg3k93gp9/diff:/mnt/data/docker/overlay2/r0wtrh05814irrbq2idwhpvm3/diff:/mnt/data/docker/overlay2/wfhrgwx5t49pr8ewb1c2yxzy6/diff:/mnt/data/docker/overlay2/ejpwr4z8zydvrtbvpnz3fk9io/diff:/mnt/data/docker/overlay2/nddxkeebz06fgf4w0kbv103r7/diff:/mnt/data/docker/overlay2/kczta71zfndbpnfp19v5xoioa/diff:/mnt/data/docker/overlay2/i2tmr5ptpvcnopw30opy4l0qd/diff:/mnt/data/docker/overlay2/c158cdf54d76924474bae1a795c65d3ff7d480742b47b0a14582448100f66fd8/diff:/mnt/data/docker/overlay2/e3458966bc4eedd58b12407c978a0cde1fc0e4dbe985c2d76364a5720d29bb64/diff:/mnt/data/docker/overlay2/cdcba93e3dea9fbede61af9a5418f6d10f2efe9820aaa7c5d906c5c7389ddb9e/diff:/mnt/data/docker/overlay2/a036817bc7a7f2c572bb58a659480389a5e8fac920770b7edd208a220fcafa37/diff:/mnt/data/docker/overlay2/f4d2d572a0f776921adb1960be7f16d97914ca665d330ab9cb4f4d16fd49bf86/diff:/mnt/data/docker/overlay2/64893cf5d35fee8ef875adc41e6b8d9ebe67d7cd5e7d011854597d1596425713/diff:/mnt/data/docker/overlay2/7129a15a355a35895869338838f7e952c2df8db1a0df8b37f6ada3e11d42266c/diff:/mnt/data/docker/overlay2/613fabb76679d593884bfe22403cd7a2818d5a351354702e821e41d891e8ca65/diff:/mnt/data/docker/overlay2/3d26f8f265943457a5ae7d2701731c935b6b5d99495b8d2c279dcff0db03099c/diff:/mnt/data/docker/overlay2/77a272d6fdc31869e2546f59b948fe159ce14a207a95c0c61afdfa90ead09b88/diff:/mnt/data/docker/overlay2/a4aa573fa62f72beadcace6fae7b111efd820a48f468a3821fe3da7585eb528b/diff",
+          "MergedDir": "/mnt/data/docker/overlay2/g7pyrc2kvvu6govsf6gdgnf5q/merged",
+          "UpperDir": "/mnt/data/docker/overlay2/g7pyrc2kvvu6govsf6gdgnf5q/diff",
+          "WorkDir": "/mnt/data/docker/overlay2/g7pyrc2kvvu6govsf6gdgnf5q/work"
+        },
+        "Name": "overlay2"
+      },
+      "RootFS": {
+        "Type": "layers",
+        "Layers": [
+          "sha256:27123a71e85e0540333291adccf7b9c340d089e8c3717c380d3b75cc8c7df90f",
+          "sha256:e523ea6ed9fbf4fc6165712010761109b428f1cdbb90b45321f314353ded88fc",
+          "sha256:311e2007374d02c2b56b78001e4e8601ee0c72c09a3cec7c104393444c533374",
+          "sha256:910b63bb00adb5a625b6bb74ab7b8eebc4ab4a1b839c366d00a4390fbbb98184",
+          "sha256:f72f00af3d1173f2896261009fdf165589496b3d8d3db4f15f93034a3aadf38d",
+          "sha256:344cd4317909695385bfa3c2ab514ee48bfa373d00f79ebfae437045bedb04d4",
+          "sha256:d4bdf88b7c27d652eead66accdc52f8af2eba6818adc5387bcd42812c97e319d",
+          "sha256:0a527e8bdcb7ed7be439f6c94a57024593314c0b26d59ad8cbf0d012ca86c005",
+          "sha256:ddb1a9e6dbb4ca986aded36a3eec38c9c17538550a9543f7a54dd3c8bd69777a",
+          "sha256:8ea47e0c5c68b44f6a05d25e5b8fa4c7bdc7574766b8d2d2d871af94ed68e8f9",
+          "sha256:7167130cd07bf41cd51cbe092699dde8fa4517f303332fcfadc904bcadb43d55",
+          "sha256:7d6883ed22fe53fea684e90cc7ada71ed08fee1057a091867b59c3f838997331",
+          "sha256:72995ad34e9f351443fc9fec0dcfd6a132c88ae676c9c8b909906a04ce403c96",
+          "sha256:cebf9d979d148a1b4229dfdb37345fe447126bc68dcf2300834505a596cf37cc",
+          "sha256:0f9615f956bb0f73e27b83be35abb8bea57f274c303a955626cc3d426856673e",
+          "sha256:bf929549bed7c110e6decea93095b336bb96a7f57c7031f39fe42ee694108bfa",
+          "sha256:bbe7387d5bbe9e4996b32f3a0ae2eb082c3523db52156c6693c419c40fa4020f",
+          "sha256:b240f4300ede31f99e29528ddcda503aa34329677da03614e4ad4157d6ef75ac",
+          "sha256:74461926fc8f0d899fad290b535a06bcc394ef2cfa59612a881770413096d301",
+          "sha256:d1fc7f8db04f36e67575101b007ebbedfb5a06a0f1322511fdb8988232109df1"
+        ]
+      },
+      "Metadata": {
+        "LastTagTime": "2026-10-25T23:13:49.48735129+09:00"
+      }
+    }
+  ],
+  "execution": {
+    "status": "PASS",
+    "checkout": "1dd02371913f07c8273895acf6d1d01fa23d742b",
+    "profiles": [
+      {
+        "profile": "cpu",
+        "status": "PASS",
+        "stages": [
+          {
+            "command": [
+              "cmake",
+              "-S",
+              "/workspace/tests/gslide_sycl",
+              "-B",
+              "/evidence/gslide-library/cpu",
+              "-DCMAKE_BUILD_TYPE=Release",
+              "-DCMAKE_CXX_COMPILER=/usr/lib/llvm-18/bin/clang++",
+              "-DCMAKE_PREFIX_PATH=/opt/acpp",
+              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+              "-DHASHING_SYCL_REQUIRE_NVIDIA=OFF"
+            ],
+            "exit_code": 0,
+            "wall_seconds": 0.29893520392943174
+          },
+          {
+            "command": [
+              "cmake",
+              "--build",
+              "/evidence/gslide-library/cpu",
+              "--parallel",
+              "2"
+            ],
+            "exit_code": 0,
+            "wall_seconds": 34.72642491199076
+          },
+          {
+            "command": [
+              "ctest",
+              "--test-dir",
+              "/evidence/gslide-library/cpu",
+              "-V",
+              "--no-tests=error",
+              "--timeout",
+              "120",
+              "--output-junit",
+              "/evidence/gslide-library/cpu/tests.xml"
+            ],
+            "exit_code": 0,
+            "wall_seconds": 13.892429949948564
+          }
+        ],
+        "binary_sha256": {
+          "host/gslide_host_control": "1f25fcf80a8eda358844d772d915916226a072f579d6c9c9b3c5ed83b9861b26",
+          "host/gslide_host_batch": "e6261d34187c660b925d06de570f4a4e16b58dd1d48c6d1e65b6e51755054f5b",
+          "gslide_reductions_test": "10bca081683df373a43e4601a59f1f6c26b8137000ffd5ca1bf9e604d85f88c0",
+          "gslide_dense_ids_test": "890c1709febc7555d3e489187cb76ee609500f02f3087c8e08ab86a9838e3c08",
+          "gslide_random_test": "4158c921c3e47d64c27148fe136db1eceee08a0d4852dae381814232bcc1eb29",
+          "gslide_hash_test": "f498583bb810712c784d097368fb6314a962c61a9f2514af2b5a9ce8a60e501f",
+          "gslide_candidates_test": "0aebfa3e3be119eb9de1cfe02f2726ede5a483efee75d62a0f045841d07cada3",
+          "gslide_operators_test": "d6c851601595e3f4365534e063c3e7d7095e4f8bd2fcb6b52e7561ecb3390e27",
+          "gslide_memory_test": "c934359aa27a7fc1b01cede46fc94330f813df7e0d9f1317aaf19aad17f7b9e5",
+          "gslide_optimizer_test": "b8141898e4184df43bc9de52471993c040cd40df43a7de529298975c61ac9f3b",
+          "gslide_output_test": "8baf0345e0b1209a738473536644778a2094999bd494f95cf2c83a2efc1fe9d5",
+          "gslide_selection_test": "f9a2557e62b0cdb5eb7c52d0220f9f815b5259b196e81e9ff611b6e56cbcefc4",
+          "gslide_sycl_training_test": "ee0312d7cad1b1ffa1616306a6f144719d5a8e6d5f29dc467276e3574050b1a7",
+          "host/gslide_host_configuration": "563ee8d451bf2cccc06f7a1fa4619a1b6b283c0938727f5e4fa9bfeda3814bf2",
+          "host/gslide_host_views": "e3ce305aea2e1be957b6d5ac02a2d11802d17669ed4d64f74f83c6b47663848a"
+        },
+        "compiler_commands": [
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_sycl_test.dir/test_kernels.cpp.o -c /workspace/tests/gslide_sycl/test_kernels.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_kernels.cpp",
+            "output": "CMakeFiles/gslide_sycl_test.dir/test_kernels.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_reductions_test.dir/test_reductions.cpp.o -c /workspace/tests/gslide_sycl/test_reductions.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_reductions.cpp",
+            "output": "CMakeFiles/gslide_reductions_test.dir/test_reductions.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_dense_ids_test.dir/test_dense_ids.cpp.o -c /workspace/tests/gslide_sycl/test_dense_ids.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_dense_ids.cpp",
+            "output": "CMakeFiles/gslide_dense_ids_test.dir/test_dense_ids.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_random_test.dir/test_random.cpp.o -c /workspace/tests/gslide_sycl/test_random.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_random.cpp",
+            "output": "CMakeFiles/gslide_random_test.dir/test_random.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_hash_test.dir/test_hash.cpp.o -c /workspace/tests/gslide_sycl/test_hash.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_hash.cpp",
+            "output": "CMakeFiles/gslide_hash_test.dir/test_hash.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_candidates_test.dir/test_candidates.cpp.o -c /workspace/tests/gslide_sycl/test_candidates.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_candidates.cpp",
+            "output": "CMakeFiles/gslide_candidates_test.dir/test_candidates.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_operators_test.dir/test_operators.cpp.o -c /workspace/tests/gslide_sycl/test_operators.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_operators.cpp",
+            "output": "CMakeFiles/gslide_operators_test.dir/test_operators.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_memory_test.dir/test_memory.cpp.o -c /workspace/tests/gslide_sycl/test_memory.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_memory.cpp",
+            "output": "CMakeFiles/gslide_memory_test.dir/test_memory.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_optimizer_test.dir/test_optimizer.cpp.o -c /workspace/tests/gslide_sycl/test_optimizer.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_optimizer.cpp",
+            "output": "CMakeFiles/gslide_optimizer_test.dir/test_optimizer.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_output_test.dir/test_output.cpp.o -c /workspace/tests/gslide_sycl/test_output.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_output.cpp",
+            "output": "CMakeFiles/gslide_output_test.dir/test_output.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_selection_test.dir/test_selection.cpp.o -c /workspace/tests/gslide_sycl/test_selection.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_selection.cpp",
+            "output": "CMakeFiles/gslide_selection_test.dir/test_selection.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_sycl_training_test.dir/test_network.cpp.o -c /workspace/tests/gslide_sycl/test_network.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_network.cpp",
+            "output": "CMakeFiles/gslide_sycl_training_test.dir/test_network.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu/host",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_control.dir/test_control.cpp.o -c /workspace/tests/gslide_host/test_control.cpp",
+            "file": "/workspace/tests/gslide_host/test_control.cpp",
+            "output": "host/CMakeFiles/gslide_host_control.dir/test_control.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu/host",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_batch.dir/test_batch.cpp.o -c /workspace/tests/gslide_host/test_batch.cpp",
+            "file": "/workspace/tests/gslide_host/test_batch.cpp",
+            "output": "host/CMakeFiles/gslide_host_batch.dir/test_batch.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu/host",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_configuration.dir/test_configuration.cpp.o -c /workspace/tests/gslide_host/test_configuration.cpp",
+            "file": "/workspace/tests/gslide_host/test_configuration.cpp",
+            "output": "host/CMakeFiles/gslide_host_configuration.dir/test_configuration.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/cpu/host",
+            "command": "/usr/lib/llvm-18/bin/clang++  -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_views.dir/test_views.cpp.o -c /workspace/tests/gslide_host/test_views.cpp",
+            "file": "/workspace/tests/gslide_host/test_views.cpp",
+            "output": "host/CMakeFiles/gslide_host_views.dir/test_views.cpp.o"
+          }
+        ],
+        "ctest_output": "Internal ctest changing into directory: /evidence/gslide-library/cpu\nUpdateCTestConfiguration  from :/evidence/gslide-library/cpu/DartConfiguration.tcl\nUpdateCTestConfiguration  from :/evidence/gslide-library/cpu/DartConfiguration.tcl\nTest project /evidence/gslide-library/cpu\nConstructing a list of tests\nDone constructing a list of tests\nUpdating test list for fixtures\nAdded 0 tests to meet fixture requirements\nChecking test dependency graph...\nChecking test dependency graph end\ntest 1\n      Start  1: gslide.sycl.reductions\n\n1: Test command: /evidence/gslide-library/cpu/gslide_reductions_test\n1: Working Directory: /evidence/gslide-library/cpu\n1: Test timeout computed to be: 120\n1: platform=OpenMP (platform 0)\n1: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n1: backend_enum=4\n1: device=AdaptiveCpp OpenMP host device\n1: device_vendor=the AdaptiveCpp project\n1: driver=1.2\n1: is_cpu=1\n1: is_gpu=0\n1: max_work_group_size=1024\n1: local_mem_bytes=18446744073709551615\n1: usm_shared=1\n1: queue_in_order=1\n1: queue_profiling=1\n1: sub_group_sizes=1,\n1: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n1: GSLIDE_SYCL_UNIT suite=reductions checks=3380 max_abs_error=0 gpu_validated=0\n 1/15 Test  #1: gslide.sycl.reductions ...........   Passed    1.60 sec\ntest 2\n      Start  2: gslide.sycl.dense_ids\n\n2: Test command: /evidence/gslide-library/cpu/gslide_dense_ids_test\n2: Working Directory: /evidence/gslide-library/cpu\n2: Test timeout computed to be: 120\n2: platform=OpenMP (platform 0)\n2: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n2: backend_enum=4\n2: device=AdaptiveCpp OpenMP host device\n2: device_vendor=the AdaptiveCpp project\n2: driver=1.2\n2: is_cpu=1\n2: is_gpu=0\n2: max_work_group_size=1024\n2: local_mem_bytes=18446744073709551615\n2: usm_shared=1\n2: queue_in_order=1\n2: queue_profiling=1\n2: sub_group_sizes=1,\n2: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n2: GSLIDE_SYCL_UNIT suite=dense_ids checks=317 max_abs_error=0 gpu_validated=0\n 2/15 Test  #2: gslide.sycl.dense_ids ............   Passed    0.58 sec\ntest 3\n      Start  3: gslide.sycl.random\n\n3: Test command: /evidence/gslide-library/cpu/gslide_random_test\n3: Working Directory: /evidence/gslide-library/cpu\n3: Test timeout computed to be: 120\n3: platform=OpenMP (platform 0)\n3: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n3: backend_enum=4\n3: device=AdaptiveCpp OpenMP host device\n3: device_vendor=the AdaptiveCpp project\n3: driver=1.2\n3: is_cpu=1\n3: is_gpu=0\n3: max_work_group_size=1024\n3: local_mem_bytes=18446744073709551615\n3: usm_shared=1\n3: queue_in_order=1\n3: queue_profiling=1\n3: sub_group_sizes=1,\n3: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n3: GSLIDE_SYCL_UNIT suite=random checks=1552 max_abs_error=0 gpu_validated=0\n 3/15 Test  #3: gslide.sycl.random ...............   Passed    0.18 sec\ntest 4\n      Start  4: gslide.sycl.hash\n\n4: Test command: /evidence/gslide-library/cpu/gslide_hash_test\n4: Working Directory: /evidence/gslide-library/cpu\n4: Test timeout computed to be: 120\n4: platform=OpenMP (platform 0)\n4: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n4: backend_enum=4\n4: device=AdaptiveCpp OpenMP host device\n4: device_vendor=the AdaptiveCpp project\n4: driver=1.2\n4: is_cpu=1\n4: is_gpu=0\n4: max_work_group_size=1024\n4: local_mem_bytes=18446744073709551615\n4: usm_shared=1\n4: queue_in_order=1\n4: queue_profiling=1\n4: sub_group_sizes=1,\n4: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n4: GSLIDE_SYCL_UNIT suite=hash checks=3962 max_abs_error=0 gpu_validated=0\n 4/15 Test  #4: gslide.sycl.hash .................   Passed    1.60 sec\ntest 5\n      Start  5: gslide.sycl.candidates\n\n5: Test command: /evidence/gslide-library/cpu/gslide_candidates_test\n5: Working Directory: /evidence/gslide-library/cpu\n5: Test timeout computed to be: 120\n5: platform=OpenMP (platform 0)\n5: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n5: backend_enum=4\n5: device=AdaptiveCpp OpenMP host device\n5: device_vendor=the AdaptiveCpp project\n5: driver=1.2\n5: is_cpu=1\n5: is_gpu=0\n5: max_work_group_size=1024\n5: local_mem_bytes=18446744073709551615\n5: usm_shared=1\n5: queue_in_order=1\n5: queue_profiling=1\n5: sub_group_sizes=1,\n5: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n5: GSLIDE_SYCL_UNIT suite=candidates checks=2538 max_abs_error=0 gpu_validated=0\n 5/15 Test  #5: gslide.sycl.candidates ...........   Passed    0.82 sec\ntest 6\n      Start  6: gslide.sycl.operators\n\n6: Test command: /evidence/gslide-library/cpu/gslide_operators_test\n6: Working Directory: /evidence/gslide-library/cpu\n6: Test timeout computed to be: 120\n6: platform=OpenMP (platform 0)\n6: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n6: backend_enum=4\n6: device=AdaptiveCpp OpenMP host device\n6: device_vendor=the AdaptiveCpp project\n6: driver=1.2\n6: is_cpu=1\n6: is_gpu=0\n6: max_work_group_size=1024\n6: local_mem_bytes=18446744073709551615\n6: usm_shared=1\n6: queue_in_order=1\n6: queue_profiling=1\n6: sub_group_sizes=1,\n6: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n6: GSLIDE_SYCL_UNIT suite=operators checks=20 max_abs_error=1.43051e-08 gpu_validated=0\n 6/15 Test  #6: gslide.sycl.operators ............   Passed    0.76 sec\ntest 7\n      Start  7: gslide.sycl.memory\n\n7: Test command: /evidence/gslide-library/cpu/gslide_memory_test\n7: Working Directory: /evidence/gslide-library/cpu\n7: Test timeout computed to be: 120\n7: platform=OpenMP (platform 0)\n7: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n7: backend_enum=4\n7: device=AdaptiveCpp OpenMP host device\n7: device_vendor=the AdaptiveCpp project\n7: driver=1.2\n7: is_cpu=1\n7: is_gpu=0\n7: max_work_group_size=1024\n7: local_mem_bytes=18446744073709551615\n7: usm_shared=1\n7: queue_in_order=1\n7: queue_profiling=1\n7: sub_group_sizes=1,\n7: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n7: GSLIDE_SYCL_UNIT suite=memory checks=11 max_abs_error=0 gpu_validated=0\n 7/15 Test  #7: gslide.sycl.memory ...............   Passed    0.19 sec\ntest 8\n      Start  8: gslide.sycl.optimizer\n\n8: Test command: /evidence/gslide-library/cpu/gslide_optimizer_test\n8: Working Directory: /evidence/gslide-library/cpu\n8: Test timeout computed to be: 120\n8: platform=OpenMP (platform 0)\n8: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n8: backend_enum=4\n8: device=AdaptiveCpp OpenMP host device\n8: device_vendor=the AdaptiveCpp project\n8: driver=1.2\n8: is_cpu=1\n8: is_gpu=0\n8: max_work_group_size=1024\n8: local_mem_bytes=18446744073709551615\n8: usm_shared=1\n8: queue_in_order=1\n8: queue_profiling=1\n8: sub_group_sizes=1,\n8: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n8: GSLIDE_SYCL_UNIT suite=optimizer checks=37 max_abs_error=3.06485e-08 gpu_validated=0\n 8/15 Test  #8: gslide.sycl.optimizer ............   Passed    0.14 sec\ntest 9\n      Start  9: gslide.sycl.output\n\n9: Test command: /evidence/gslide-library/cpu/gslide_output_test\n9: Working Directory: /evidence/gslide-library/cpu\n9: Test timeout computed to be: 120\n9: platform=OpenMP (platform 0)\n9: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n9: backend_enum=4\n9: device=AdaptiveCpp OpenMP host device\n9: device_vendor=the AdaptiveCpp project\n9: driver=1.2\n9: is_cpu=1\n9: is_gpu=0\n9: max_work_group_size=1024\n9: local_mem_bytes=18446744073709551615\n9: usm_shared=1\n9: queue_in_order=1\n9: queue_profiling=1\n9: sub_group_sizes=1,\n9: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n9: GSLIDE_SYCL_UNIT suite=output checks=66 max_abs_error=4.36935e-08 gpu_validated=0\n 9/15 Test  #9: gslide.sycl.output ...............   Passed    1.55 sec\ntest 10\n      Start 10: gslide.sycl.selection\n\n10: Test command: /evidence/gslide-library/cpu/gslide_selection_test\n10: Working Directory: /evidence/gslide-library/cpu\n10: Test timeout computed to be: 120\n10: platform=OpenMP (platform 0)\n10: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n10: backend_enum=4\n10: device=AdaptiveCpp OpenMP host device\n10: device_vendor=the AdaptiveCpp project\n10: driver=1.2\n10: is_cpu=1\n10: is_gpu=0\n10: max_work_group_size=1024\n10: local_mem_bytes=18446744073709551615\n10: usm_shared=1\n10: queue_in_order=1\n10: queue_profiling=1\n10: sub_group_sizes=1,\n10: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n10: GSLIDE_SYCL_UNIT suite=selection checks=44 max_abs_error=0 gpu_validated=0\n10/15 Test #10: gslide.sycl.selection ............   Passed    1.51 sec\ntest 11\n      Start 11: gslide.sycl.network\n\n11: Test command: /evidence/gslide-library/cpu/gslide_sycl_training_test\n11: Working Directory: /evidence/gslide-library/cpu\n11: Test timeout computed to be: 120\n11: platform=OpenMP (platform 0)\n11: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n11: backend_enum=4\n11: device=AdaptiveCpp OpenMP host device\n11: device_vendor=the AdaptiveCpp project\n11: driver=1.2\n11: is_cpu=1\n11: is_gpu=0\n11: max_work_group_size=1024\n11: local_mem_bytes=18446744073709551615\n11: usm_shared=1\n11: queue_in_order=1\n11: queue_profiling=1\n11: sub_group_sizes=1,\n11: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n11: connected_updates=2 stale_delta_error=0.201329 stale_parameter_error=0.00729114 changed_buckets=6\n11: GSLIDE_SYCL_PRODUCTION checks=752 max_abs_error=5.69841e-08 gpu_validated=0 native_cuda_train_executed=false\n11/15 Test #11: gslide.sycl.network ..............   Passed    4.94 sec\ntest 12\n      Start 12: gslide.host.control\n\n12: Test command: /evidence/gslide-library/cpu/host/gslide_host_control\n12: Working Directory: /evidence/gslide-library/cpu/host\n12: Test timeout computed to be: 120\n12: GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false\n12/15 Test #12: gslide.host.control ..............   Passed    0.00 sec\ntest 13\n      Start 13: gslide.host.batch\n\n13: Test command: /evidence/gslide-library/cpu/host/gslide_host_batch\n13: Working Directory: /evidence/gslide-library/cpu/host\n13: Test timeout computed to be: 120\n13: GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false\n13/15 Test #13: gslide.host.batch ................   Passed    0.00 sec\ntest 14\n      Start 14: gslide.host.configuration\n\n14: Test command: /evidence/gslide-library/cpu/host/gslide_host_configuration\n14: Working Directory: /evidence/gslide-library/cpu/host\n14: Test timeout computed to be: 120\n14: GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false\n14/15 Test #14: gslide.host.configuration ........   Passed    0.00 sec\ntest 15\n      Start 15: gslide.host.views\n\n15: Test command: /evidence/gslide-library/cpu/host/gslide_host_views\n15: Working Directory: /evidence/gslide-library/cpu/host\n15: Test timeout computed to be: 120\n15: GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false\n15/15 Test #15: gslide.host.views ................   Passed    0.00 sec\n\n100% tests passed, 0 tests failed out of 15\n\nTotal Test time (real) =  13.88 sec\n",
+        "ctest_junit": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuite name=\"(empty)\"\n\ttests=\"15\"\n\tfailures=\"0\"\n\tdisabled=\"0\"\n\tskipped=\"0\"\n\thostname=\"\"\n\ttime=\"13\"\n\ttimestamp=\"2026-10-25T14:14:24\"\n\t>\n\t<testcase name=\"gslide.sycl.reductions\" classname=\"gslide.sycl.reductions\" time=\"1.60307\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=reductions checks=3380 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.dense_ids\" classname=\"gslide.sycl.dense_ids\" time=\"0.583817\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=dense_ids checks=317 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.random\" classname=\"gslide.sycl.random\" time=\"0.176998\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=random checks=1552 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.hash\" classname=\"gslide.sycl.hash\" time=\"1.60138\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=hash checks=3962 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.candidates\" classname=\"gslide.sycl.candidates\" time=\"0.815958\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=candidates checks=2538 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.operators\" classname=\"gslide.sycl.operators\" time=\"0.758656\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=operators checks=20 max_abs_error=1.43051e-08 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.memory\" classname=\"gslide.sycl.memory\" time=\"0.193611\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=memory checks=11 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.optimizer\" classname=\"gslide.sycl.optimizer\" time=\"0.143839\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=optimizer checks=37 max_abs_error=3.06485e-08 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.output\" classname=\"gslide.sycl.output\" time=\"1.54566\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=output checks=66 max_abs_error=4.36935e-08 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.selection\" classname=\"gslide.sycl.selection\" time=\"1.51282\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=selection checks=44 max_abs_error=0 gpu_validated=0\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.network\" classname=\"gslide.sycl.network\" time=\"4.936\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=OpenMP (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=4\ndevice=AdaptiveCpp OpenMP host device\ndevice_vendor=the AdaptiveCpp project\ndriver=1.2\nis_cpu=1\nis_gpu=0\nmax_work_group_size=1024\nlocal_mem_bytes=18446744073709551615\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=1,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nconnected_updates=2 stale_delta_error=0.201329 stale_parameter_error=0.00729114 changed_buckets=6\nGSLIDE_SYCL_PRODUCTION checks=752 max_abs_error=5.69841e-08 gpu_validated=0 native_cuda_train_executed=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.control\" classname=\"gslide.host.control\" time=\"0.0018003\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.batch\" classname=\"gslide.host.batch\" time=\"0.00171186\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.configuration\" classname=\"gslide.host.configuration\" time=\"0.00209206\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.views\" classname=\"gslide.host.views\" time=\"0.00169387\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false\n</system-out>\n\t</testcase>\n</testsuite>\n",
+        "compile_log_sha256": "969a63b92e7d32f2636f64d04d4c87427bdd50c559e02e2238dc9ba34355c4c7",
+        "cmake_cache_sha256": "dcd6743b61b1e7fc93b8e88164388cec9d2d604d0c30cbeb742c283613107dcb",
+        "suite_summaries": [
+          "1: GSLIDE_SYCL_UNIT suite=reductions checks=3380 max_abs_error=0 gpu_validated=0",
+          "2: GSLIDE_SYCL_UNIT suite=dense_ids checks=317 max_abs_error=0 gpu_validated=0",
+          "3: GSLIDE_SYCL_UNIT suite=random checks=1552 max_abs_error=0 gpu_validated=0",
+          "4: GSLIDE_SYCL_UNIT suite=hash checks=3962 max_abs_error=0 gpu_validated=0",
+          "5: GSLIDE_SYCL_UNIT suite=candidates checks=2538 max_abs_error=0 gpu_validated=0",
+          "6: GSLIDE_SYCL_UNIT suite=operators checks=20 max_abs_error=1.43051e-08 gpu_validated=0",
+          "7: GSLIDE_SYCL_UNIT suite=memory checks=11 max_abs_error=0 gpu_validated=0",
+          "8: GSLIDE_SYCL_UNIT suite=optimizer checks=37 max_abs_error=3.06485e-08 gpu_validated=0",
+          "9: GSLIDE_SYCL_UNIT suite=output checks=66 max_abs_error=4.36935e-08 gpu_validated=0",
+          "10: GSLIDE_SYCL_UNIT suite=selection checks=44 max_abs_error=0 gpu_validated=0",
+          "11: GSLIDE_SYCL_PRODUCTION checks=752 max_abs_error=5.69841e-08 gpu_validated=0 native_cuda_train_executed=false",
+          "12: GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false",
+          "13: GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false",
+          "14: GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false",
+          "15: GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false",
+          "100% tests passed, 0 tests failed out of 15"
+        ]
+      },
+      {
+        "profile": "nvidia",
+        "status": "PASS",
+        "stages": [
+          {
+            "command": [
+              "cmake",
+              "-S",
+              "/workspace/tests/gslide_sycl",
+              "-B",
+              "/evidence/gslide-library/nvidia",
+              "-DCMAKE_BUILD_TYPE=Release",
+              "-DCMAKE_CXX_COMPILER=/usr/lib/llvm-18/bin/clang++",
+              "-DCMAKE_PREFIX_PATH=/opt/acpp",
+              "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+              "-DHASHING_SYCL_REQUIRE_NVIDIA=ON"
+            ],
+            "exit_code": 0,
+            "wall_seconds": 0.2984652479644865
+          },
+          {
+            "command": [
+              "cmake",
+              "--build",
+              "/evidence/gslide-library/nvidia",
+              "--parallel",
+              "2"
+            ],
+            "exit_code": 0,
+            "wall_seconds": 34.5935906029772
+          },
+          {
+            "command": [
+              "ctest",
+              "--test-dir",
+              "/evidence/gslide-library/nvidia",
+              "-V",
+              "--no-tests=error",
+              "--timeout",
+              "120",
+              "--output-junit",
+              "/evidence/gslide-library/nvidia/tests.xml"
+            ],
+            "exit_code": 0,
+            "wall_seconds": 8.990011148969643
+          }
+        ],
+        "binary_sha256": {
+          "host/gslide_host_control": "1f25fcf80a8eda358844d772d915916226a072f579d6c9c9b3c5ed83b9861b26",
+          "host/gslide_host_batch": "e6261d34187c660b925d06de570f4a4e16b58dd1d48c6d1e65b6e51755054f5b",
+          "gslide_reductions_test": "2058b1030e141dda792ad9da9f58548c18a1e24dbd206117212a52b14ab0f5f2",
+          "gslide_dense_ids_test": "5e05a419e8602ae9c342a1bba96616ec814ca0b3562b55bd914e23e7ff81b70e",
+          "gslide_random_test": "994dbb2a06629dac9358ef30be107c948b9a0b0d785021e677f7677c18f05e76",
+          "gslide_hash_test": "90cfc4489b77624d361b4b214e5faca0c113ecb84430bcc8cfee817f21419b5a",
+          "gslide_candidates_test": "80b4140631c001c3986a1da61bdc8ea954166c6c5265c8e7956878212bf5a505",
+          "gslide_operators_test": "6acd176a91a1bc213e4d1ef09d4b6b921e25864ea3130e16a7e0aa3dcad73dbc",
+          "gslide_memory_test": "c76ade15c6077f19d34044c291d089f0b192b25fbaf3056a4a7215ee2cf830b1",
+          "gslide_optimizer_test": "ee3c0f47cc82ac7cd34ed0c332a5c94ec13d5f4cc9698c5f3aa6ad9e70ab7c26",
+          "gslide_output_test": "0a6c6c750e81fde91924156ddf92330d5814c6297adc0736a5c440034c54704a",
+          "gslide_selection_test": "b850980123dc2c7bd97f502101f17e80f6c7852e2d5d4e65cddd5f6af632fdb4",
+          "gslide_sycl_training_test": "51e75241c20260ff8c44036f4479949aa850ee40bee72e09a9563ab6d9cb7d3b",
+          "host/gslide_host_configuration": "563ee8d451bf2cccc06f7a1fa4619a1b6b283c0938727f5e4fa9bfeda3814bf2",
+          "host/gslide_host_views": "e3ce305aea2e1be957b6d5ac02a2d11802d17669ed4d64f74f83c6b47663848a"
+        },
+        "compiler_commands": [
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_sycl_test.dir/test_kernels.cpp.o -c /workspace/tests/gslide_sycl/test_kernels.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_kernels.cpp",
+            "output": "CMakeFiles/gslide_sycl_test.dir/test_kernels.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_reductions_test.dir/test_reductions.cpp.o -c /workspace/tests/gslide_sycl/test_reductions.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_reductions.cpp",
+            "output": "CMakeFiles/gslide_reductions_test.dir/test_reductions.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_dense_ids_test.dir/test_dense_ids.cpp.o -c /workspace/tests/gslide_sycl/test_dense_ids.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_dense_ids.cpp",
+            "output": "CMakeFiles/gslide_dense_ids_test.dir/test_dense_ids.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_random_test.dir/test_random.cpp.o -c /workspace/tests/gslide_sycl/test_random.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_random.cpp",
+            "output": "CMakeFiles/gslide_random_test.dir/test_random.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_hash_test.dir/test_hash.cpp.o -c /workspace/tests/gslide_sycl/test_hash.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_hash.cpp",
+            "output": "CMakeFiles/gslide_hash_test.dir/test_hash.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_candidates_test.dir/test_candidates.cpp.o -c /workspace/tests/gslide_sycl/test_candidates.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_candidates.cpp",
+            "output": "CMakeFiles/gslide_candidates_test.dir/test_candidates.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_operators_test.dir/test_operators.cpp.o -c /workspace/tests/gslide_sycl/test_operators.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_operators.cpp",
+            "output": "CMakeFiles/gslide_operators_test.dir/test_operators.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_memory_test.dir/test_memory.cpp.o -c /workspace/tests/gslide_sycl/test_memory.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_memory.cpp",
+            "output": "CMakeFiles/gslide_memory_test.dir/test_memory.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_optimizer_test.dir/test_optimizer.cpp.o -c /workspace/tests/gslide_sycl/test_optimizer.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_optimizer.cpp",
+            "output": "CMakeFiles/gslide_optimizer_test.dir/test_optimizer.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_output_test.dir/test_output.cpp.o -c /workspace/tests/gslide_sycl/test_output.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_output.cpp",
+            "output": "CMakeFiles/gslide_output_test.dir/test_output.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_selection_test.dir/test_selection.cpp.o -c /workspace/tests/gslide_sycl/test_selection.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_selection.cpp",
+            "output": "CMakeFiles/gslide_selection_test.dir/test_selection.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/tests/gslide_sycl/../../ports/sycl-common/include -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -isystem /opt/acpp/include -isystem /opt/acpp/include/AdaptiveCpp -O3 -DNDEBUG -o CMakeFiles/gslide_sycl_training_test.dir/test_network.cpp.o -c /workspace/tests/gslide_sycl/test_network.cpp",
+            "file": "/workspace/tests/gslide_sycl/test_network.cpp",
+            "output": "CMakeFiles/gslide_sycl_training_test.dir/test_network.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia/host",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_control.dir/test_control.cpp.o -c /workspace/tests/gslide_host/test_control.cpp",
+            "file": "/workspace/tests/gslide_host/test_control.cpp",
+            "output": "host/CMakeFiles/gslide_host_control.dir/test_control.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia/host",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_batch.dir/test_batch.cpp.o -c /workspace/tests/gslide_host/test_batch.cpp",
+            "file": "/workspace/tests/gslide_host/test_batch.cpp",
+            "output": "host/CMakeFiles/gslide_host_batch.dir/test_batch.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia/host",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_configuration.dir/test_configuration.cpp.o -c /workspace/tests/gslide_host/test_configuration.cpp",
+            "file": "/workspace/tests/gslide_host/test_configuration.cpp",
+            "output": "host/CMakeFiles/gslide_host_configuration.dir/test_configuration.cpp.o"
+          },
+          {
+            "directory": "/evidence/gslide-library/nvidia/host",
+            "command": "/usr/lib/llvm-18/bin/clang++ -DHASHING_SYCL_REQUIRE_NVIDIA=1 -I/workspace/ports/g-slide/library/../include -I/workspace/ports/g-slide/library/../sycl -O3 -DNDEBUG -o CMakeFiles/gslide_host_views.dir/test_views.cpp.o -c /workspace/tests/gslide_host/test_views.cpp",
+            "file": "/workspace/tests/gslide_host/test_views.cpp",
+            "output": "host/CMakeFiles/gslide_host_views.dir/test_views.cpp.o"
+          }
+        ],
+        "ctest_output": "Internal ctest changing into directory: /evidence/gslide-library/nvidia\nUpdateCTestConfiguration  from :/evidence/gslide-library/nvidia/DartConfiguration.tcl\nUpdateCTestConfiguration  from :/evidence/gslide-library/nvidia/DartConfiguration.tcl\nTest project /evidence/gslide-library/nvidia\nConstructing a list of tests\nDone constructing a list of tests\nUpdating test list for fixtures\nAdded 0 tests to meet fixture requirements\nChecking test dependency graph...\nChecking test dependency graph end\ntest 1\n      Start  1: gslide.sycl.reductions\n\n1: Test command: /evidence/gslide-library/nvidia/gslide_reductions_test\n1: Working Directory: /evidence/gslide-library/nvidia\n1: Test timeout computed to be: 120\n1: platform=CUDA (platform 0)\n1: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n1: backend_enum=0\n1: device=NVIDIA GeForce RTX 2080 Ti\n1: device_vendor=NVIDIA\n1: driver=13020\n1: is_cpu=0\n1: is_gpu=1\n1: max_work_group_size=1024\n1: local_mem_bytes=49152\n1: usm_shared=1\n1: queue_in_order=1\n1: queue_profiling=1\n1: sub_group_sizes=32,\n1: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n1: GSLIDE_SYCL_UNIT suite=reductions checks=3380 max_abs_error=0 gpu_validated=1\n 1/15 Test  #1: gslide.sycl.reductions ...........   Passed    0.95 sec\ntest 2\n      Start  2: gslide.sycl.dense_ids\n\n2: Test command: /evidence/gslide-library/nvidia/gslide_dense_ids_test\n2: Working Directory: /evidence/gslide-library/nvidia\n2: Test timeout computed to be: 120\n2: platform=CUDA (platform 0)\n2: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n2: backend_enum=0\n2: device=NVIDIA GeForce RTX 2080 Ti\n2: device_vendor=NVIDIA\n2: driver=13020\n2: is_cpu=0\n2: is_gpu=1\n2: max_work_group_size=1024\n2: local_mem_bytes=49152\n2: usm_shared=1\n2: queue_in_order=1\n2: queue_profiling=1\n2: sub_group_sizes=32,\n2: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n2: GSLIDE_SYCL_UNIT suite=dense_ids checks=317 max_abs_error=0 gpu_validated=1\n 2/15 Test  #2: gslide.sycl.dense_ids ............   Passed    0.42 sec\ntest 3\n      Start  3: gslide.sycl.random\n\n3: Test command: /evidence/gslide-library/nvidia/gslide_random_test\n3: Working Directory: /evidence/gslide-library/nvidia\n3: Test timeout computed to be: 120\n3: platform=CUDA (platform 0)\n3: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n3: backend_enum=0\n3: device=NVIDIA GeForce RTX 2080 Ti\n3: device_vendor=NVIDIA\n3: driver=13020\n3: is_cpu=0\n3: is_gpu=1\n3: max_work_group_size=1024\n3: local_mem_bytes=49152\n3: usm_shared=1\n3: queue_in_order=1\n3: queue_profiling=1\n3: sub_group_sizes=32,\n3: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n3: GSLIDE_SYCL_UNIT suite=random checks=1552 max_abs_error=0 gpu_validated=1\n 3/15 Test  #3: gslide.sycl.random ...............   Passed    0.43 sec\ntest 4\n      Start  4: gslide.sycl.hash\n\n4: Test command: /evidence/gslide-library/nvidia/gslide_hash_test\n4: Working Directory: /evidence/gslide-library/nvidia\n4: Test timeout computed to be: 120\n4: platform=CUDA (platform 0)\n4: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n4: backend_enum=0\n4: device=NVIDIA GeForce RTX 2080 Ti\n4: device_vendor=NVIDIA\n4: driver=13020\n4: is_cpu=0\n4: is_gpu=1\n4: max_work_group_size=1024\n4: local_mem_bytes=49152\n4: usm_shared=1\n4: queue_in_order=1\n4: queue_profiling=1\n4: sub_group_sizes=32,\n4: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n4: GSLIDE_SYCL_UNIT suite=hash checks=3962 max_abs_error=0 gpu_validated=1\n 4/15 Test  #4: gslide.sycl.hash .................   Passed    0.94 sec\ntest 5\n      Start  5: gslide.sycl.candidates\n\n5: Test command: /evidence/gslide-library/nvidia/gslide_candidates_test\n5: Working Directory: /evidence/gslide-library/nvidia\n5: Test timeout computed to be: 120\n5: platform=CUDA (platform 0)\n5: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n5: backend_enum=0\n5: device=NVIDIA GeForce RTX 2080 Ti\n5: device_vendor=NVIDIA\n5: driver=13020\n5: is_cpu=0\n5: is_gpu=1\n5: max_work_group_size=1024\n5: local_mem_bytes=49152\n5: usm_shared=1\n5: queue_in_order=1\n5: queue_profiling=1\n5: sub_group_sizes=32,\n5: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n5: GSLIDE_SYCL_UNIT suite=candidates checks=2538 max_abs_error=0 gpu_validated=1\n 5/15 Test  #5: gslide.sycl.candidates ...........   Passed    0.59 sec\ntest 6\n      Start  6: gslide.sycl.operators\n\n6: Test command: /evidence/gslide-library/nvidia/gslide_operators_test\n6: Working Directory: /evidence/gslide-library/nvidia\n6: Test timeout computed to be: 120\n6: platform=CUDA (platform 0)\n6: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n6: backend_enum=0\n6: device=NVIDIA GeForce RTX 2080 Ti\n6: device_vendor=NVIDIA\n6: driver=13020\n6: is_cpu=0\n6: is_gpu=1\n6: max_work_group_size=1024\n6: local_mem_bytes=49152\n6: usm_shared=1\n6: queue_in_order=1\n6: queue_profiling=1\n6: sub_group_sizes=32,\n6: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n6: GSLIDE_SYCL_UNIT suite=operators checks=20 max_abs_error=1.43051e-08 gpu_validated=1\n 6/15 Test  #6: gslide.sycl.operators ............   Passed    0.73 sec\ntest 7\n      Start  7: gslide.sycl.memory\n\n7: Test command: /evidence/gslide-library/nvidia/gslide_memory_test\n7: Working Directory: /evidence/gslide-library/nvidia\n7: Test timeout computed to be: 120\n7: platform=CUDA (platform 0)\n7: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n7: backend_enum=0\n7: device=NVIDIA GeForce RTX 2080 Ti\n7: device_vendor=NVIDIA\n7: driver=13020\n7: is_cpu=0\n7: is_gpu=1\n7: max_work_group_size=1024\n7: local_mem_bytes=49152\n7: usm_shared=1\n7: queue_in_order=1\n7: queue_profiling=1\n7: sub_group_sizes=32,\n7: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n7: GSLIDE_SYCL_UNIT suite=memory checks=11 max_abs_error=0 gpu_validated=1\n 7/15 Test  #7: gslide.sycl.memory ...............   Passed    0.43 sec\ntest 8\n      Start  8: gslide.sycl.optimizer\n\n8: Test command: /evidence/gslide-library/nvidia/gslide_optimizer_test\n8: Working Directory: /evidence/gslide-library/nvidia\n8: Test timeout computed to be: 120\n8: platform=CUDA (platform 0)\n8: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n8: backend_enum=0\n8: device=NVIDIA GeForce RTX 2080 Ti\n8: device_vendor=NVIDIA\n8: driver=13020\n8: is_cpu=0\n8: is_gpu=1\n8: max_work_group_size=1024\n8: local_mem_bytes=49152\n8: usm_shared=1\n8: queue_in_order=1\n8: queue_profiling=1\n8: sub_group_sizes=32,\n8: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n8: GSLIDE_SYCL_UNIT suite=optimizer checks=37 max_abs_error=3.06485e-08 gpu_validated=1\n 8/15 Test  #8: gslide.sycl.optimizer ............   Passed    0.42 sec\ntest 9\n      Start  9: gslide.sycl.output\n\n9: Test command: /evidence/gslide-library/nvidia/gslide_output_test\n9: Working Directory: /evidence/gslide-library/nvidia\n9: Test timeout computed to be: 120\n9: platform=CUDA (platform 0)\n9: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n9: backend_enum=0\n9: device=NVIDIA GeForce RTX 2080 Ti\n9: device_vendor=NVIDIA\n9: driver=13020\n9: is_cpu=0\n9: is_gpu=1\n9: max_work_group_size=1024\n9: local_mem_bytes=49152\n9: usm_shared=1\n9: queue_in_order=1\n9: queue_profiling=1\n9: sub_group_sizes=32,\n9: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n9: GSLIDE_SYCL_UNIT suite=output checks=66 max_abs_error=4.36935e-08 gpu_validated=1\n 9/15 Test  #9: gslide.sycl.output ...............   Passed    0.96 sec\ntest 10\n      Start 10: gslide.sycl.selection\n\n10: Test command: /evidence/gslide-library/nvidia/gslide_selection_test\n10: Working Directory: /evidence/gslide-library/nvidia\n10: Test timeout computed to be: 120\n10: platform=CUDA (platform 0)\n10: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n10: backend_enum=0\n10: device=NVIDIA GeForce RTX 2080 Ti\n10: device_vendor=NVIDIA\n10: driver=13020\n10: is_cpu=0\n10: is_gpu=1\n10: max_work_group_size=1024\n10: local_mem_bytes=49152\n10: usm_shared=1\n10: queue_in_order=1\n10: queue_profiling=1\n10: sub_group_sizes=32,\n10: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n10: GSLIDE_SYCL_UNIT suite=selection checks=44 max_abs_error=0 gpu_validated=1\n10/15 Test #10: gslide.sycl.selection ............   Passed    1.03 sec\ntest 11\n      Start 11: gslide.sycl.network\n\n11: Test command: /evidence/gslide-library/nvidia/gslide_sycl_training_test\n11: Working Directory: /evidence/gslide-library/nvidia\n11: Test timeout computed to be: 120\n11: platform=CUDA (platform 0)\n11: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\n11: backend_enum=0\n11: device=NVIDIA GeForce RTX 2080 Ti\n11: device_vendor=NVIDIA\n11: driver=13020\n11: is_cpu=0\n11: is_gpu=1\n11: max_work_group_size=1024\n11: local_mem_bytes=49152\n11: usm_shared=1\n11: queue_in_order=1\n11: queue_profiling=1\n11: sub_group_sizes=32,\n11: \u001b[;35m[AdaptiveCpp Warning] \u001b[0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\n11: connected_updates=2 stale_delta_error=0.201329 stale_parameter_error=0.00729114 changed_buckets=6\n11: GSLIDE_SYCL_PRODUCTION checks=752 max_abs_error=5.69841e-08 gpu_validated=1 native_cuda_train_executed=false\n11/15 Test #11: gslide.sycl.network ..............   Passed    2.06 sec\ntest 12\n      Start 12: gslide.host.control\n\n12: Test command: /evidence/gslide-library/nvidia/host/gslide_host_control\n12: Working Directory: /evidence/gslide-library/nvidia/host\n12: Test timeout computed to be: 120\n12: GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false\n12/15 Test #12: gslide.host.control ..............   Passed    0.00 sec\ntest 13\n      Start 13: gslide.host.batch\n\n13: Test command: /evidence/gslide-library/nvidia/host/gslide_host_batch\n13: Working Directory: /evidence/gslide-library/nvidia/host\n13: Test timeout computed to be: 120\n13: GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false\n13/15 Test #13: gslide.host.batch ................   Passed    0.00 sec\ntest 14\n      Start 14: gslide.host.configuration\n\n14: Test command: /evidence/gslide-library/nvidia/host/gslide_host_configuration\n14: Working Directory: /evidence/gslide-library/nvidia/host\n14: Test timeout computed to be: 120\n14: GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false\n14/15 Test #14: gslide.host.configuration ........   Passed    0.00 sec\ntest 15\n      Start 15: gslide.host.views\n\n15: Test command: /evidence/gslide-library/nvidia/host/gslide_host_views\n15: Working Directory: /evidence/gslide-library/nvidia/host\n15: Test timeout computed to be: 120\n15: GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false\n15/15 Test #15: gslide.host.views ................   Passed    0.00 sec\n\n100% tests passed, 0 tests failed out of 15\n\nTotal Test time (real) =   8.98 sec\n",
+        "ctest_junit": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<testsuite name=\"(empty)\"\n\ttests=\"15\"\n\tfailures=\"0\"\n\tdisabled=\"0\"\n\tskipped=\"0\"\n\thostname=\"\"\n\ttime=\"8\"\n\ttimestamp=\"2026-10-25T14:15:13\"\n\t>\n\t<testcase name=\"gslide.sycl.reductions\" classname=\"gslide.sycl.reductions\" time=\"0.950279\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=reductions checks=3380 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.dense_ids\" classname=\"gslide.sycl.dense_ids\" time=\"0.421702\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=dense_ids checks=317 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.random\" classname=\"gslide.sycl.random\" time=\"0.432801\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=random checks=1552 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.hash\" classname=\"gslide.sycl.hash\" time=\"0.939692\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=hash checks=3962 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.candidates\" classname=\"gslide.sycl.candidates\" time=\"0.592806\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=candidates checks=2538 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.operators\" classname=\"gslide.sycl.operators\" time=\"0.732937\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=operators checks=20 max_abs_error=1.43051e-08 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.memory\" classname=\"gslide.sycl.memory\" time=\"0.427792\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=memory checks=11 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.optimizer\" classname=\"gslide.sycl.optimizer\" time=\"0.419845\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=optimizer checks=37 max_abs_error=3.06485e-08 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.output\" classname=\"gslide.sycl.output\" time=\"0.963746\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=output checks=66 max_abs_error=4.36935e-08 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.selection\" classname=\"gslide.sycl.selection\" time=\"1.03382\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nGSLIDE_SYCL_UNIT suite=selection checks=44 max_abs_error=0 gpu_validated=1\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.sycl.network\" classname=\"gslide.sycl.network\" time=\"2.05569\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>platform=CUDA (platform 0)\nplatform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD\nbackend_enum=0\ndevice=NVIDIA GeForce RTX 2080 Ti\ndevice_vendor=NVIDIA\ndriver=13020\nis_cpu=0\nis_gpu=1\nmax_work_group_size=1024\nlocal_mem_bytes=49152\nusm_shared=1\nqueue_in_order=1\nqueue_profiling=1\nsub_group_sizes=32,\n[NON-XML-CHAR-0x1B][;35m[AdaptiveCpp Warning] [NON-XML-CHAR-0x1B][0mkernel_cache: This application run has resulted in new binaries being JIT-compiled. This indicates that the runtime optimization process has not yet reached peak performance. You may want to run the application again until this warning no longer appears to achieve optimal performance.\nconnected_updates=2 stale_delta_error=0.201329 stale_parameter_error=0.00729114 changed_buckets=6\nGSLIDE_SYCL_PRODUCTION checks=752 max_abs_error=5.69841e-08 gpu_validated=1 native_cuda_train_executed=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.control\" classname=\"gslide.host.control\" time=\"0.00202183\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.batch\" classname=\"gslide.host.batch\" time=\"0.00170629\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.configuration\" classname=\"gslide.host.configuration\" time=\"0.00238539\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false\n</system-out>\n\t</testcase>\n\t<testcase name=\"gslide.host.views\" classname=\"gslide.host.views\" time=\"0.00174707\" status=\"run\">\n\t\t<properties/>\n\t\t<system-out>GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false\n</system-out>\n\t</testcase>\n</testsuite>\n",
+        "compile_log_sha256": "969a63b92e7d32f2636f64d04d4c87427bdd50c559e02e2238dc9ba34355c4c7",
+        "cmake_cache_sha256": "10089f13510432cb5da7c2989b36cb4ce9741e8e3bcee068261dc9fbaba70fda",
+        "suite_summaries": [
+          "1: GSLIDE_SYCL_UNIT suite=reductions checks=3380 max_abs_error=0 gpu_validated=1",
+          "2: GSLIDE_SYCL_UNIT suite=dense_ids checks=317 max_abs_error=0 gpu_validated=1",
+          "3: GSLIDE_SYCL_UNIT suite=random checks=1552 max_abs_error=0 gpu_validated=1",
+          "4: GSLIDE_SYCL_UNIT suite=hash checks=3962 max_abs_error=0 gpu_validated=1",
+          "5: GSLIDE_SYCL_UNIT suite=candidates checks=2538 max_abs_error=0 gpu_validated=1",
+          "6: GSLIDE_SYCL_UNIT suite=operators checks=20 max_abs_error=1.43051e-08 gpu_validated=1",
+          "7: GSLIDE_SYCL_UNIT suite=memory checks=11 max_abs_error=0 gpu_validated=1",
+          "8: GSLIDE_SYCL_UNIT suite=optimizer checks=37 max_abs_error=3.06485e-08 gpu_validated=1",
+          "9: GSLIDE_SYCL_UNIT suite=output checks=66 max_abs_error=4.36935e-08 gpu_validated=1",
+          "10: GSLIDE_SYCL_UNIT suite=selection checks=44 max_abs_error=0 gpu_validated=1",
+          "11: GSLIDE_SYCL_PRODUCTION checks=752 max_abs_error=5.69841e-08 gpu_validated=1 native_cuda_train_executed=false",
+          "12: GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false",
+          "13: GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false",
+          "14: GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false",
+          "15: GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false",
+          "100% tests passed, 0 tests failed out of 15"
+        ]
+      }
+    ],
+    "input_sha256": {
+      "ports/g-slide/include/TrainingControl.h": "95bf43462e1cb5d778bd7e22b0ecd60108944495de08cffe886dea89fdabf510",
+      "ports/g-slide/library/CMakeLists.txt": "7fb01e8cf2019ef55cc54c5e47001611462004a1c919afd9cbef65a18911200f",
+      "ports/g-slide/sycl/batch.hpp": "730aad9d5db42fff05f2cf378b4a2a22fc0343282ed7815c6d85faf0e508ab3e",
+      "ports/g-slide/sycl/candidates.hpp": "99b429b1215e2cc6798fac873ecca16d994b2b26c264a480dc55fbb4fff23f3e",
+      "ports/g-slide/sycl/component_api.hpp": "f8f2a5a9f41dd340670262d2198e8e437d81ee510a8053ac97437619e7e23673",
+      "ports/g-slide/sycl/configuration.hpp": "fb84fa336e3630202067bcd99d59276a8e662c9355a42c59e29b3c962326fb47",
+      "ports/g-slide/sycl/contracts.hpp": "b5cfff9691b5f6d550128a9ff4a860451c875c297b907315920623d6ddfcc034",
+      "ports/g-slide/sycl/dense_ids.hpp": "b13a715b9e9911bd7d7281d883059a2e9e2bfbd56eb57bbc8ae84dbe3a2a2e4d",
+      "ports/g-slide/sycl/device_policy.hpp": "df3e403d6b4dfb6b62f55998f189ed22b44095f668c6864e4ef88abe0ff7b883",
+      "ports/g-slide/sycl/hash_index.hpp": "a0b786cde5e0b0fe7fdb659e204326fb6003ec61314c43b1d126de8a3549e0b4",
+      "ports/g-slide/sycl/kernels.hpp": "6bbc5bcd4495721480d41bcb75537f6b8037d7f2b9fb70251ec0ad902dde52e3",
+      "ports/g-slide/sycl/memory.hpp": "e155d0181e82c58e3508f955aaac977c96c9e2a4f6b17a4376acea9059c2038c",
+      "ports/g-slide/sycl/network.hpp": "7cc64eb70fd8971264480219b0b7fc22fdbd5749801191efce749a68997e4ab5",
+      "ports/g-slide/sycl/operators.hpp": "a0a826e63fe9e0e331d22fb50329149e1c7dfaa6eba53734eb229aaaedd4f124",
+      "ports/g-slide/sycl/optimizer.hpp": "db3b8a194f21d8a968b55fb92869eda7f5107da34f39cba649e71dd245028992",
+      "ports/g-slide/sycl/output_ops.hpp": "1bc50d835b6bf3fa16be076bfbb3cad8b3474b8b5fcac7277511f30704b7b0fc",
+      "ports/g-slide/sycl/random.hpp": "da64a7d8fb7cc30205468d1c6c64cca58825ba438166d8c4e803c42c86183135",
+      "ports/g-slide/sycl/reductions.hpp": "10bd4fce4dca03a405ba328467d84f4279fb79287b165fb7a6d7f825a9a8ec5b",
+      "ports/g-slide/sycl/selection.hpp": "71d43da73409ed0bc7400b1fae65972418bf51fe0574112dc7c14326ef750e39",
+      "ports/g-slide/sycl/source_contracts.json": "01e3bbf8aeaedc0f4b836501f7972f21c02a9f68f621675698a4b19904984208",
+      "ports/g-slide/sycl/storage.hpp": "944a99ecb9c289e643050a762180e0f035738e0e9b89d7f2c9bd671c14b77c4c",
+      "ports/g-slide/sycl/views.hpp": "d37bdbf9212dde38dfe08c93848a33543626287427df759080ad7b047dabbfa7",
+      "ports/sycl-common/include/hashing/sycl_backend.hpp": "91d759f71d9c1d8d88dfd8c3685370d2c6a67b611f6ca0de4580a5f55d613ebb",
+      "tests/gslide_host/CMakeLists.txt": "d8635b0b7949fdb7a328cd85b28bcda0d6a3794009b0c75517aa98ce380a58ce",
+      "tests/gslide_host/test_batch.cpp": "77d3f666531af4da54be64dde625f34e26fa361f6ece687eb6930950af3fc8d6",
+      "tests/gslide_host/test_configuration.cpp": "be418756446c634657e5f2c0db4254f6071b8f900aa30f90476518129150aeec",
+      "tests/gslide_host/test_control.cpp": "25582d951553dab95692b9670ebb7e60382eeb842e21b1156c953ff79333a3e5",
+      "tests/gslide_host/test_views.cpp": "c9b3d100033acf8814f6ecf8033e60b7c4b1c3a602a6c4a096a13f09987c945c",
+      "tests/gslide_sycl/CMakeLists.txt": "814733261bca7700dbfe160e557e786f19052872958403168c98e2824320e35c",
+      "tests/gslide_sycl/native_train_adapter.cpp": "7340821e479267c2cdffc301fe38da88221cb465d2cd0da94ea5fcc2bd3358b6",
+      "tests/gslide_sycl/suites.json": "0f3affcba5b08696011f56dae0689331fb11cf4e9f94fa16ff120259f972ab16",
+      "tests/gslide_sycl/test_candidates.cpp": "840d3ce7977e0fa06c5441a07ef77ff7431c009fcea73e4fd8f5dd4f553651f7",
+      "tests/gslide_sycl/test_dense_ids.cpp": "ee2b972216d703d39a632fd1dd29587694b88cf759b6c9cf1fd38538a35e377c",
+      "tests/gslide_sycl/test_hash.cpp": "f26fa60ed1e27ee2671e0e69ef90ab0d8d3b97257e7ad00beeac4e9bbbc5d477",
+      "tests/gslide_sycl/test_kernels.cpp": "e8d8bd70f50def4afda030691e593065f0a5cc8d406398a0b8adfe7eb22954c4",
+      "tests/gslide_sycl/test_memory.cpp": "c3b629d515d06d9031c898f1e18a258f967f5b972e6a15078bf175f96c48c0d6",
+      "tests/gslide_sycl/test_network.cpp": "d03a9b9af0233b2b67d5e46f398f6cf52096321a6abace852af44ee15a32b75d",
+      "tests/gslide_sycl/test_operators.cpp": "3c199c5b1dd3a8146787998f5e440312f8a9f3bc22d944661e02c3942fba7691",
+      "tests/gslide_sycl/test_optimizer.cpp": "7ccc74e5d392f384a62a524422c6552bc9e249e6789fb8a5ced03d22d43221be",
+      "tests/gslide_sycl/test_output.cpp": "c9125b7d51d8b605e9444584af58848e1d2231a35ecf23dd2c5dc68095dd398d",
+      "tests/gslide_sycl/test_random.cpp": "99056ded945125fb858c9c3beaf78455fcb06b30bd67b92c52c97f952772b1b3",
+      "tests/gslide_sycl/test_reductions.cpp": "f76e3fd120065ae0c844d972b7f4b88d300359eafb9155677d155a87c123a6dd",
+      "tests/gslide_sycl/test_selection.cpp": "e90d278430e3223cfd0eaf10dc2f3502fa945ffc9c45990c5716c8fca29434a7",
+      "tests/gslide_sycl/test_support.hpp": "65d838b41e93cada99a969243b9a5e80876f639b5fd2e470620a7a580849ffb6",
+      "tools/gslide_sycl_suites.py": "32c68ead3d3df11d43af6f65fc237cf9ff772d1fdcf7921c8170590cd27bd886",
+      "tools/check_gslide_library.py": "fb367f7ce09865cca21c57bccb76944b0d52a71985995efdf7576fcef87e5dda"
+    }
+  },
+  "unchanged_numerical_source": [
+    {
+      "path": "ports/g-slide/sycl/operators.hpp",
+      "baseline_sha256": "a0a826e63fe9e0e331d22fb50329149e1c7dfaa6eba53734eb229aaaedd4f124",
+      "current_sha256": "a0a826e63fe9e0e331d22fb50329149e1c7dfaa6eba53734eb229aaaedd4f124",
+      "same_after_comment_whitespace_removal": true
+    },
+    {
+      "path": "ports/g-slide/sycl/optimizer.hpp",
+      "baseline_sha256": "db3b8a194f21d8a968b55fb92869eda7f5107da34f39cba649e71dd245028992",
+      "current_sha256": "db3b8a194f21d8a968b55fb92869eda7f5107da34f39cba649e71dd245028992",
+      "same_after_comment_whitespace_removal": true
+    },
+    {
+      "path": "ports/g-slide/sycl/selection.hpp",
+      "baseline_sha256": "71d43da73409ed0bc7400b1fae65972418bf51fe0574112dc7c14326ef750e39",
+      "current_sha256": "71d43da73409ed0bc7400b1fae65972418bf51fe0574112dc7c14326ef750e39",
+      "same_after_comment_whitespace_removal": true
+    },
+    {
+      "path": "ports/g-slide/sycl/output_ops.hpp",
+      "baseline_sha256": "4a08d46016d076c821b354a30766a979456e5c178e0e74a0b7f0c2bd92df0f3f",
+      "current_sha256": "1bc50d835b6bf3fa16be076bfbb3cad8b3474b8b5fcac7277511f30704b7b0fc",
+      "same_after_comment_whitespace_removal": true
+    }
+  ],
+  "archive_blobs_verified": 27,
+  "sdk_free_host": {
+    "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "status": "PASS",
+    "suites": 4,
+    "ctest_output": "Internal ctest changing into directory: /tmp/hashing-gslide-named-host-01\nUpdateCTestConfiguration  from :/tmp/hashing-gslide-named-host-01/DartConfiguration.tcl\nUpdateCTestConfiguration  from :/tmp/hashing-gslide-named-host-01/DartConfiguration.tcl\nTest project /tmp/hashing-gslide-named-host-01\nConstructing a list of tests\nDone constructing a list of tests\nUpdating test list for fixtures\nAdded 0 tests to meet fixture requirements\nChecking test dependency graph...\nChecking test dependency graph end\ntest 1\n    Start 1: gslide.host.control\n\n1: Test command: /tmp/hashing-gslide-named-host-01/gslide_host_control\n1: Working Directory: /tmp/hashing-gslide-named-host-01\n1: Test timeout computed to be: 10000000\n1: GSLIDE_HOST_UNIT suite=control cases=8 sycl_required=false\n1/4 Test #1: gslide.host.control ..............   Passed    0.00 sec\ntest 2\n    Start 2: gslide.host.batch\n\n2: Test command: /tmp/hashing-gslide-named-host-01/gslide_host_batch\n2: Working Directory: /tmp/hashing-gslide-named-host-01\n2: Test timeout computed to be: 10000000\n2: GSLIDE_HOST_UNIT suite=batch rejected=9 sycl_required=false\n2/4 Test #2: gslide.host.batch ................   Passed    0.00 sec\ntest 3\n    Start 3: gslide.host.configuration\n\n3: Test command: /tmp/hashing-gslide-named-host-01/gslide_host_configuration\n3: Working Directory: /tmp/hashing-gslide-named-host-01\n3: Test timeout computed to be: 10000000\n3: GSLIDE_HOST_UNIT suite=configuration checks=14 sycl_required=false\n3/4 Test #3: gslide.host.configuration ........   Passed    0.00 sec\ntest 4\n    Start 4: gslide.host.views\n\n4: Test command: /tmp/hashing-gslide-named-host-01/gslide_host_views\n4: Working Directory: /tmp/hashing-gslide-named-host-01\n4: Test timeout computed to be: 10000000\n4: GSLIDE_HOST_UNIT suite=views checks=12 sycl_required=false\n4/4 Test #4: gslide.host.views ................   Passed    0.00 sec\n\n100% tests passed, 0 tests failed out of 4\n\nTotal Test time (real) =   0.01 sec\n"
+  },
+  "semantic_sources": {
+    "author_manuscript_url": "https://panzaifeng.github.io/assets/pdf/tpds22gslide.pdf",
+    "reviewed_on": "2026-10-25",
+    "sections": [
+      "2.3",
+      "4.2",
+      "4.3",
+      "4.4"
+    ],
+    "pdf_pages": [
+      3,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "local_pdf_hash": null,
+    "source_pin": "papers/g-slide-source-pin.json"
+  },
+  "negative_probe": {
+    "output_directory": "/tmp/hashing-gslide-named-device-02",
+    "status": "FAIL",
+    "cause": "runtime pointer queries alone did not reject ordinary host memory on OpenMP, or foreign context on NVIDIA; explicit retained context provenance added, then both final profiles passed",
+    "final_regressions": [
+      "untagged host memory rejection",
+      "foreign-context rejection",
+      "external-USM explicit adapter"
+    ],
+    "input_sha256": {
+      "ports/g-slide/include/TrainingControl.h": "95bf43462e1cb5d778bd7e22b0ecd60108944495de08cffe886dea89fdabf510",
+      "ports/g-slide/library/CMakeLists.txt": "7fb01e8cf2019ef55cc54c5e47001611462004a1c919afd9cbef65a18911200f",
+      "ports/g-slide/sycl/batch.hpp": "730aad9d5db42fff05f2cf378b4a2a22fc0343282ed7815c6d85faf0e508ab3e",
+      "ports/g-slide/sycl/candidates.hpp": "99b429b1215e2cc6798fac873ecca16d994b2b26c264a480dc55fbb4fff23f3e",
+      "ports/g-slide/sycl/component_api.hpp": "d88a9e0bb2e5785548813ac5c44c2a40dccd95b79fdfaaf98dacd24a0ee4c7ce",
+      "ports/g-slide/sycl/configuration.hpp": "5cf86d924d3d5455adbaa1bd25bc0a707d683976efec9043c433a13ed6c3bde9",
+      "ports/g-slide/sycl/contracts.hpp": "b5cfff9691b5f6d550128a9ff4a860451c875c297b907315920623d6ddfcc034",
+      "ports/g-slide/sycl/dense_ids.hpp": "b13a715b9e9911bd7d7281d883059a2e9e2bfbd56eb57bbc8ae84dbe3a2a2e4d",
+      "ports/g-slide/sycl/device_policy.hpp": "df3e403d6b4dfb6b62f55998f189ed22b44095f668c6864e4ef88abe0ff7b883",
+      "ports/g-slide/sycl/hash_index.hpp": "a0b786cde5e0b0fe7fdb659e204326fb6003ec61314c43b1d126de8a3549e0b4",
+      "ports/g-slide/sycl/kernels.hpp": "6bbc5bcd4495721480d41bcb75537f6b8037d7f2b9fb70251ec0ad902dde52e3",
+      "ports/g-slide/sycl/memory.hpp": "dbedb21091e3f372cec07efb7f88b684a15c9bc7ccd537dfec7e6863a35c92aa",
+      "ports/g-slide/sycl/network.hpp": "d8a7882fcd7eff50f97ca771dfbab767f1c471ce50f0f0de8a973464fb598ab5",
+      "ports/g-slide/sycl/operators.hpp": "a0a826e63fe9e0e331d22fb50329149e1c7dfaa6eba53734eb229aaaedd4f124",
+      "ports/g-slide/sycl/optimizer.hpp": "db3b8a194f21d8a968b55fb92869eda7f5107da34f39cba649e71dd245028992",
+      "ports/g-slide/sycl/output_ops.hpp": "1bc50d835b6bf3fa16be076bfbb3cad8b3474b8b5fcac7277511f30704b7b0fc",
+      "ports/g-slide/sycl/random.hpp": "da64a7d8fb7cc30205468d1c6c64cca58825ba438166d8c4e803c42c86183135",
+      "ports/g-slide/sycl/reductions.hpp": "10bd4fce4dca03a405ba328467d84f4279fb79287b165fb7a6d7f825a9a8ec5b",
+      "ports/g-slide/sycl/selection.hpp": "71d43da73409ed0bc7400b1fae65972418bf51fe0574112dc7c14326ef750e39",
+      "ports/g-slide/sycl/source_contracts.json": "01e3bbf8aeaedc0f4b836501f7972f21c02a9f68f621675698a4b19904984208",
+      "ports/g-slide/sycl/storage.hpp": "944a99ecb9c289e643050a762180e0f035738e0e9b89d7f2c9bd671c14b77c4c",
+      "ports/g-slide/sycl/views.hpp": "5beefa665715bad20424e2b487479e366ddbc9161152334a5aba3c1efb4fac66",
+      "ports/sycl-common/include/hashing/sycl_backend.hpp": "91d759f71d9c1d8d88dfd8c3685370d2c6a67b611f6ca0de4580a5f55d613ebb",
+      "tests/gslide_host/CMakeLists.txt": "d8635b0b7949fdb7a328cd85b28bcda0d6a3794009b0c75517aa98ce380a58ce",
+      "tests/gslide_host/test_batch.cpp": "77d3f666531af4da54be64dde625f34e26fa361f6ece687eb6930950af3fc8d6",
+      "tests/gslide_host/test_configuration.cpp": "37313482a51acd92078c16bd16cd1eeef16e40b3e250be1f89e300ba1303132e",
+      "tests/gslide_host/test_control.cpp": "25582d951553dab95692b9670ebb7e60382eeb842e21b1156c953ff79333a3e5",
+      "tests/gslide_host/test_views.cpp": "c9b3d100033acf8814f6ecf8033e60b7c4b1c3a602a6c4a096a13f09987c945c",
+      "tests/gslide_sycl/CMakeLists.txt": "814733261bca7700dbfe160e557e786f19052872958403168c98e2824320e35c",
+      "tests/gslide_sycl/native_train_adapter.cpp": "7340821e479267c2cdffc301fe38da88221cb465d2cd0da94ea5fcc2bd3358b6",
+      "tests/gslide_sycl/suites.json": "0f3affcba5b08696011f56dae0689331fb11cf4e9f94fa16ff120259f972ab16",
+      "tests/gslide_sycl/test_candidates.cpp": "840d3ce7977e0fa06c5441a07ef77ff7431c009fcea73e4fd8f5dd4f553651f7",
+      "tests/gslide_sycl/test_dense_ids.cpp": "ee2b972216d703d39a632fd1dd29587694b88cf759b6c9cf1fd38538a35e377c",
+      "tests/gslide_sycl/test_hash.cpp": "f26fa60ed1e27ee2671e0e69ef90ab0d8d3b97257e7ad00beeac4e9bbbc5d477",
+      "tests/gslide_sycl/test_kernels.cpp": "e8d8bd70f50def4afda030691e593065f0a5cc8d406398a0b8adfe7eb22954c4",
+      "tests/gslide_sycl/test_memory.cpp": "a1510dca169118756fafcb60137cd13ef5240f3980a37327bcf754151575e8d1",
+      "tests/gslide_sycl/test_network.cpp": "d03a9b9af0233b2b67d5e46f398f6cf52096321a6abace852af44ee15a32b75d",
+      "tests/gslide_sycl/test_operators.cpp": "2ed8b8f4d0eadc04748c9ffae90717ed9d8bb6433b9b75e05ff23b936fb07465",
+      "tests/gslide_sycl/test_optimizer.cpp": "7ccc74e5d392f384a62a524422c6552bc9e249e6789fb8a5ced03d22d43221be",
+      "tests/gslide_sycl/test_output.cpp": "c9125b7d51d8b605e9444584af58848e1d2231a35ecf23dd2c5dc68095dd398d",
+      "tests/gslide_sycl/test_random.cpp": "99056ded945125fb858c9c3beaf78455fcb06b30bd67b92c52c97f952772b1b3",
+      "tests/gslide_sycl/test_reductions.cpp": "f76e3fd120065ae0c844d972b7f4b88d300359eafb9155677d155a87c123a6dd",
+      "tests/gslide_sycl/test_selection.cpp": "e90d278430e3223cfd0eaf10dc2f3502fa945ffc9c45990c5716c8fca29434a7",
+      "tests/gslide_sycl/test_support.hpp": "65d838b41e93cada99a969243b9a5e80876f639b5fd2e470620a7a580849ffb6",
+      "tools/gslide_sycl_suites.py": "32c68ead3d3df11d43af6f65fc237cf9ff772d1fdcf7921c8170590cd27bd886",
+      "tools/check_gslide_library.py": "fb367f7ce09865cca21c57bccb76944b0d52a71985995efdf7576fcef87e5dda"
+    },
+    "runtime_failure_logs": {
+      "cpu": {
+        "sha256": "28887db2c2d022607322617087aca92568f2ff1ae46010e3d5013eea5808feef",
+        "memory_suite_output": [
+          "7: Test command: /evidence/gslide-library/cpu/gslide_memory_test",
+          "7: Working Directory: /evidence/gslide-library/cpu",
+          "7: Test timeout computed to be: 120",
+          "7: platform=OpenMP (platform 0)",
+          "7: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD",
+          "7: backend_enum=4",
+          "7: device=AdaptiveCpp OpenMP host device",
+          "7: device_vendor=the AdaptiveCpp project",
+          "7: driver=1.2",
+          "7: is_cpu=1",
+          "7: is_gpu=0",
+          "7: max_work_group_size=1024",
+          "7: local_mem_bytes=18446744073709551615",
+          "7: usm_shared=1",
+          "7: queue_in_order=1",
+          "7: queue_profiling=1",
+          "7: sub_group_sizes=1,",
+          "7: ordinary host allocation rejected as USM"
+        ]
+      },
+      "nvidia": {
+        "sha256": "8f420357db7b40f2ba56439ed2997d24ef0f63bbc5e592f8729fb2af6cd03263",
+        "memory_suite_output": [
+          "7: Test command: /evidence/gslide-library/nvidia/gslide_memory_test",
+          "7: Working Directory: /evidence/gslide-library/nvidia",
+          "7: Test timeout computed to be: 120",
+          "7: platform=CUDA (platform 0)",
+          "7: platform_version=AdaptiveCpp 25.10.0+git.31db2e83.20261016.branch.HEAD",
+          "7: backend_enum=0",
+          "7: device=NVIDIA GeForce RTX 2080 Ti",
+          "7: device_vendor=NVIDIA",
+          "7: driver=13020",
+          "7: is_cpu=0",
+          "7: is_gpu=1",
+          "7: max_work_group_size=1024",
+          "7: local_mem_bytes=49152",
+          "7: usm_shared=1",
+          "7: queue_in_order=1",
+          "7: queue_profiling=1",
+          "7: sub_group_sizes=32,",
+          "7: foreign USM context rejected"
+        ]
+      }
+    }
+  },
+  "limits": [
+    "external capacity/context assertions, lifetime and non-destructive aliasing remain caller contracts",
+    "no arbitrary strides or asynchronous API",
+    "other GPU lineages not rerun",
+    "historical native CUDA and prior component evidence unchanged"
+  ],
+  "cleanup": "no new dependency download; reusable image and final raw evidence retained; scratch probes removed after recording"
+}

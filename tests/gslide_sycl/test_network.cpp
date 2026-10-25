@@ -197,8 +197,9 @@ static void compare(Network &net, Oracle &ref, int nb) {
   }
 }
 static std::unique_ptr<Network> network(sycl::queue &q) {
-  return std::make_unique<Network>(q, I, H, O, N, 4, 2, hw, hb, ow, ob,
-                                   initial_bins());
+  NetworkConfig config{{I, H, O}, {L, K, BIN, B, O, 2, 1, 40}, {N, 4, 2}, {}};
+  return std::make_unique<Network>(
+      q, config, InitialState{hw, hb, ow, ob, initial_bins()});
 }
 static void test_connected(sycl::queue &q) {
   bool overflow_rejected = false;
@@ -213,6 +214,24 @@ static void test_connected(sycl::queue &q) {
   check(overflow_rejected,
         "configuration extent rejects overflow before allocation");
   auto net = network(q), stale = network(q), stale_index = network(q);
+  Network legacy(q, I, H, O, N, 4, 2, hw, hb, ow, ob, initial_bins());
+  check(legacy.workspace_plan().bucket_values ==
+            net->workspace_plan().bucket_values,
+        "legacy constructor delegates to same plan");
+  usm_array<float> legacy_logits(q, N * O), named_logits(q, N * O);
+  legacy.evaluate_dense(batch1(), legacy_logits.p);
+  net->evaluate_dense(batch1(), {named_logits.view(), N, O, Layout::row_major});
+  for (int i = 0; i < N * O; ++i)
+    near(named_logits[i], legacy_logits[i]);
+  std::unique_ptr<Network> retained;
+  {
+    auto temporary_queue = q;
+    retained = network(temporary_queue);
+  }
+  retained->evaluate_dense(batch1(),
+                           {named_logits.view(), N, O, Layout::row_major});
+  for (int i = 0; i < N * O; ++i)
+    near(named_logits[i], legacy_logits[i]);
   Oracle ref;
   std::vector<int> first_signature;
   std::vector<int> initial_sizes(net->bucket_sizes.p,
@@ -222,7 +241,7 @@ static void test_connected(sycl::queue &q) {
     auto batch = step == 1 ? batch1() : batch2();
     float rate =
         .01 * std::sqrt(1 - std::pow(.999, step)) / (1 - std::pow(.9, step));
-    net->train(batch, rate, true, false);
+    net->train(batch, StepOptions{rate, true, false});
     stale->train(batch, rate, true, false, delta_reset::diagnostic_keep_stale);
     stale_index->train(batch, rate, false, false);
     ref.train(batch, rate);
@@ -279,7 +298,15 @@ static void test_connected(sycl::queue &q) {
   auto unlabeled = partial;
   unlabeled.labels.clear();
   unlabeled.label_offsets = {0, 0};
-  net->evaluate_dense(unlabeled, logits.p);
+  net->evaluate_dense(unlabeled, {logits.view(), 1, O, Layout::row_major});
+  bool short_output = false;
+  try {
+    net->evaluate_dense(unlabeled,
+                        {{logits.p, O - 1}, 1, O, Layout::row_major});
+  } catch (const std::invalid_argument &) {
+    short_output = true;
+  }
+  check(short_output, "typed evaluation rejects short output");
   D dense_hidden(H);
   for (int h = 0; h < H; ++h)
     dense_hidden[h] = std::max(
@@ -320,86 +347,16 @@ static void test_connected(sycl::queue &q) {
             << " stale_parameter_error=" << stale_parameter_error
             << " changed_buckets=" << ref.changed << '\n';
 }
-static void test_library_boundary(sycl::queue &q) {
-  usm_array<int> lengths(q, 4), offsets(q, 5);
-  for (int i = 0; i < 4; ++i)
-    lengths[i] = i % 3;
-  scan_lengths(q, lengths.p, offsets.p, 4);
-  int sum = 0;
-  for (int i = 0; i <= 4; ++i) {
-    check(offsets[i] == sum, "scan independent offsets");
-    if (i < 4)
-      sum += lengths[i];
-  }
-  scan_lengths(q, lengths.p, offsets.p, 0);
-  check(offsets[0] == 0, "empty scan");
-  usm_array<unsigned> keys(q, 5), sorted(q, 5);
-  usm_array<int> values(q, 5), result(q, 5);
-  unsigned k[] = {3, 1, 1, 4, 0};
-  for (int i = 0; i < 5; ++i) {
-    keys[i] = k[i];
-    values[i] = 10 + i;
-  }
-  sort_keys(q, keys.p, values.p, sorted.p, result.p, 5);
-  std::multiset<std::pair<unsigned, int>> expected, actual;
-  for (int i = 0; i < 5; ++i) {
-    expected.emplace(keys[i], values[i]);
-    actual.emplace(sorted[i], result[i]);
-    if (i)
-      check(sorted[i - 1] <= sorted[i], "sort order");
-  }
-  check(actual == expected, "sort correspondence/ties");
-  sort_keys(q, keys.p, values.p, sorted.p, result.p, 0);
-  usm_array<float> x(q, 6), row(q, 6), col(q, 6), bias(q, 2), yr(q, 4),
-      yc(q, 4);
-  for (int i = 0; i < 6; ++i)
-    x[i] = (i - 2) * .3f;
-  for (int o = 0; o < 2; ++o)
-    for (int i = 0; i < 3; ++i)
-      row[o * 3 + i] = col[i * 2 + o] = float(i - o) * .4f;
-  bias[0] = -.7f;
-  bias[1] = .2f;
-  dense_product(q, x.p, row.p, bias.p, yr.p, 2, 3, 2, true, false);
-  dense_product(q, x.p, col.p, bias.p, yc.p, 2, 3, 2, false, false);
-  for (int b = 0; b < 2; ++b)
-    for (int o = 0; o < 2; ++o) {
-      double expected = bias[o];
-      for (int i = 0; i < 3; ++i)
-        expected += double(x[b * 3 + i]) * row[o * 3 + i];
-      near(yr[b * 2 + o], expected);
-      near(yc[b * 2 + o], expected);
-    }
-  dense_product(q, x.p, row.p, bias.p, yr.p, 0, 3, 2, true, false);
-}
-static void test_control_order() {
-  std::string order;
-  gslide::TrainingOperations op;
-  op.hidden_layers = 2;
-  op.transfer = [&] { order += 'T'; };
-  op.hidden_forward = [&](int i) { order += char('a' + i); };
-  op.output_forward = [&] { order += 'F'; };
-  op.reset_hidden_deltas = [&] { order += 'R'; };
-  op.output_backward = [&] { order += 'B'; };
-  op.hidden_backward = [&](int i) { order += char('c' + i); };
-  op.hidden_update = [&](int i) { order += char('e' + i); };
-  op.output_update = [&] { order += 'U'; };
-  op.rebuild_index = [&](bool shuffle) { order += shuffle ? 'S' : 'I'; };
-  op.complete = [&] { order += 'C'; };
-  gslide::train_step(op, false, true);
-  check(order == "TabFRBdcefUSC", "production control exact ordering");
-}
+
 int main() {
   try {
-    auto q = hashing::sycl_backend::make_queue(
-        hashing::sycl_backend::device_kind::cpu);
-    hashing::sycl_backend::require_cpu(q);
+    auto q = hashing::sycl_backend::make_validation_queue();
     hashing::sycl_backend::describe_queue(std::cout, q);
-    test_control_order();
-    test_library_boundary(q);
     test_connected(q);
     std::cout << "GSLIDE_SYCL_PRODUCTION checks=" << checks
               << " max_abs_error=" << max_error
-              << " gpu_validated=false native_cuda_train_executed=false\n";
+              << " gpu_validated=" << q.get_device().is_gpu()
+              << " native_cuda_train_executed=false\n";
     return 0;
   } catch (const std::exception &e) {
     std::cerr << e.what() << '\n';

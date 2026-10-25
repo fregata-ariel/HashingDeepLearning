@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,11 @@ def run(output: Path, *, sycl: bool = False, require_nvidia: bool = False,
         inputs += [p for p in (ROOT / directory).rglob('*') if p.is_file() and p.suffix in ('.hpp', '.cpp', '.txt', '.in')]
     report['input_sha256'] = {str(p.relative_to(ROOT)): digest(p) for p in sorted(set(inputs))}
     destination = output / 'result.json'
+    # Build outside both checkout and artifact trees in every profile, including
+    # hosted jobs whose artifact directory itself lives inside the checkout.
+    scratch = tempfile.TemporaryDirectory(prefix='gslide-package-')
+    workspace = Path(scratch.name)
+    report['build_workspace'] = str(workspace)
 
     def command(argv: list[str], expected_failure: bool = False) -> str:
         index = len(report['stages'])
@@ -57,11 +63,11 @@ def run(output: Path, *, sycl: bool = False, require_nvidia: bool = False,
         return log
 
     try:
-        producer = output / 'producer'
-        original = output / 'install-before-relocation'
-        installed = output / 'relocated-prefix'
-        consumer_source = output / 'consumer-source'
-        consumer = output / 'consumer-build'
+        producer = workspace / 'producer'
+        original = workspace / 'install-before-relocation'
+        installed = workspace / 'relocated-prefix'
+        consumer_source = workspace / 'consumer-source'
+        consumer = workspace / 'consumer-build'
         options = ['-DCMAKE_CXX_COMPILER=' + compiler] if compiler else []
         command(['cmake', '-S', str(ROOT / 'ports/g-slide/library'), '-B', str(producer),
                  '-DCMAKE_INSTALL_PREFIX=' + str(original), '-DCMAKE_INSTALL_LIBDIR=lib'] + options)
@@ -109,7 +115,7 @@ def run(output: Path, *, sycl: bool = False, require_nvidia: bool = False,
         report['junit'] = (output / 'consumer-tests.xml').read_text()
         report['binary_sha256'] = {name: digest(consumer / name) for name in expected.values()}
         # A misspelled required component must fail at configure time.
-        negative = output / 'unsupported-component'
+        negative = workspace / 'unsupported-component'
         negative.mkdir()
         (negative / 'CMakeLists.txt').write_text('cmake_minimum_required(VERSION 3.20)\n'
             'project(unsupported_component LANGUAGES NONE)\n'
@@ -121,6 +127,13 @@ def run(output: Path, *, sycl: bool = False, require_nvidia: bool = False,
         report['error'] = str(error)
         raise
     finally:
+        try:
+            snapshot = output / 'external-workspace-evidence'
+            shutil.copytree(workspace, snapshot)
+            report['workspace_snapshot'] = str(snapshot)
+        finally:
+            scratch.cleanup()
+            report['scratch_workspace_cleaned'] = True
         destination.write_text(json.dumps(report, indent=2) + '\n')
     print('GSLIDE_PACKAGE_PASS', flush=True)
     return report

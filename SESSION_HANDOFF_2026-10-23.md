@@ -8,7 +8,8 @@
 外部consumerはソースを証拠dirへコピーし、インストール先を移動した後、checkout includeなしでビルドする。
 SDK不要hostと実SYCL CPU/NVIDIAで、複数translation unit・部品呼出・1更新＋評価の独立FP64 oracleを確認する。
 CPU/NVIDIA各15/15既存スイート＋2/2外部consumer、SDK不要host consumerが成功。
-[保存済み証拠](docs/evidence/gslide-package-2026-10-26.json)を参照。意味論の追加判断は保留。
+[保存済み証拠](docs/evidence/gslide-package-ci-2026-10-26.json)を参照。意味論の追加判断は保留。
+CIのartifactがcheckout内にある場合にも、consumerを外部一時領域でbuild/install/移動/利用し、snapshot保存後にscratchを削除する修正を含む。
 最新公開commit/CIはPR #127を参照。
 
 ## 名前付きAPIと意味論の確定（2026-10-25追記）

@@ -99,10 +99,16 @@ and JUnit output are retained. The 15 existing suites remain distinct evidence.
 The routine CI runs the SDK-free consumer and the installed real-SYCL CPU
 consumer. GPU execution remains the explicit bounded Docker/manual profile.
 
-The [2026-10-26 execution evidence](../../../docs/evidence/gslide-package-2026-10-26.json)
+The [2026-10-26 execution evidence](../../../docs/evidence/gslide-package-ci-2026-10-26.json)
 records 15/15 existing suites and 2/2 installed-consumer tests on each required
 CPU/NVIDIA profile, plus an ordinary GNU C++ SDK-free installed consumer.
 Both device consumers have maximum absolute error `5.1888e-8` against the FP64
 oracle. All 23 installed public/implementation/controller headers match their
 source bytes; the 20 existing numerical/controller headers match the incoming
 commit exactly.
+
+The CI artifact directory can be inside the checkout. The driver always builds
+the consumer in an external temporary workspace, retains a full workspace
+snapshot with the evidence, and removes scratch after success/failure. The
+[initial local checkpoint](../../../docs/evidence/gslide-package-2026-10-26.json)
+is preserved separately from this CI-layout correction.
